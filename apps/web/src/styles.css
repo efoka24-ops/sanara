@@ -183,3 +183,139 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Formulaires et pages (US1 à US3) */
+.card-form {
+  max-width: 520px;
+  margin: 48px auto;
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-line);
+  border-radius: var(--sa-r-card);
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--sa-shadow-card);
+}
+.card-form--wide {
+  max-width: 760px;
+}
+.card-form h1 {
+  font-size: 32px;
+  line-height: 1.1;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 640px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+  .card-form {
+    margin: 16px;
+    padding: 22px;
+  }
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.muted {
+  color: var(--sa-muted);
+}
+.form-error {
+  background: var(--sa-red-bg);
+  color: var(--sa-red);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-weight: 600;
+}
+.notice {
+  background: var(--sa-amber-bg);
+  color: var(--sa-amber-fg);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+}
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1.5px dashed var(--sa-green-700);
+  border-radius: 14px;
+  padding: 18px 20px;
+  cursor: pointer;
+}
+.dropzone--ok {
+  background: var(--sa-green-100);
+  border-style: solid;
+}
+.dropzone--error {
+  border-color: var(--sa-red);
+}
+.big-number {
+  background: var(--sa-bg);
+  border-radius: 14px;
+  padding: 16px 24px;
+  text-align: center;
+}
+.big-number small {
+  display: block;
+  color: var(--sa-muted);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.big-number b {
+  font: 800 32px var(--sa-font-display);
+  color: var(--sa-green-900);
+  letter-spacing: 0.04em;
+}
+a.sa-btn {
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.chip--on {
+  background: var(--sa-green-900);
+  color: #fff;
+  border-color: var(--sa-green-900);
+}
+.panel {
+  background: var(--sa-surface);
+  border-radius: var(--sa-r-card);
+  padding: 20px 22px;
+  margin: 14px 0;
+}
+.panel h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.panel dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+.panel dt {
+  color: var(--sa-muted);
+}
+.panel dd {
+  margin: 0;
+  font-weight: 600;
+}

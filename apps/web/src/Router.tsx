@@ -2,6 +2,10 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { I18nProvider } from '@sanara/i18n';
 import { ToastProvider } from '@sanara/ui';
 import { Home } from './App';
+import { LoginPage } from './pages/LoginPage';
+import { ApplyPage } from './pages/ApplyPage';
+import { ActivatePage, SentPage, TrackPage } from './pages/TrackPages';
+import { AdminApplicationPage, AdminApplicationsPage } from './pages/AdminPages';
 import { AdminLayout, PharmacyLayout, PublicLayout } from './app/layouts';
 import { RequireArea } from './app/guards';
 import { SessionProvider } from './app/session';
@@ -17,7 +21,11 @@ export function Router() {
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route index element={<Home />} />
-                <Route path="connexion" element={<Placeholder name="Connexion" />} />
+                <Route path="connexion" element={<LoginPage />} />
+                <Route path="inscription" element={<ApplyPage />} />
+                <Route path="inscription/envoyee" element={<SentPage />} />
+                <Route path="inscription/suivi/:code" element={<TrackPage />} />
+                <Route path="activer/:token" element={<ActivatePage />} />
               </Route>
               <Route path="app" element={<RequireArea area="pharmacy" />}>
                 <Route element={<PharmacyLayout />}>
@@ -26,7 +34,8 @@ export function Router() {
               </Route>
               <Route path="admin" element={<RequireArea area="admin" />}>
                 <Route element={<AdminLayout />}>
-                  <Route index element={<Placeholder name="Console d’administration" />} />
+                  <Route index element={<AdminApplicationsPage />} />
+                  <Route path="demandes/:id" element={<AdminApplicationPage />} />
                 </Route>
               </Route>
             </Routes>

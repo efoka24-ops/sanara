@@ -102,8 +102,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T042 [US1] Endpoint de soumission avec upload sécurisé des documents (`apps/api/src/modules/applications/applications.controller.ts`)
 - [x] T043 [US1] Génération du code de suivi et endpoint `GET /public/applications/:code/status` (`apps/api/src/modules/applications/`)
 - [x] T044 [P] [US1] Email d'accusé de réception FR/EN (`apps/api/src/modules/notifications/templates/application-received.*`)
-- [ ] T045 [US1] Page « Digitaliser ma pharmacie » multi-étapes avec carte pour la position (`apps/web/src/app/(public)/inscription/`)
-- [ ] T046 [P] [US1] Page de suivi de demande (`apps/web/src/app/(public)/inscription/suivi/[code]/page.tsx`)
+- [x] T045 [US1] Page « Digitaliser ma pharmacie » multi-étapes avec carte pour la position (`apps/web/src/app/(public)/inscription/`) (carte Leaflet : à brancher ; position par géolocalisation ou saisie)
+- [x] T046 [P] [US1] Page de suivi de demande (`apps/web/src/app/(public)/inscription/suivi/[code]/page.tsx`)
 - [ ] T047 [US1] Anti-spam : limite de débit et captcha sur la soumission
 - [ ] T048 [US1] Test E2E Playwright du parcours complet (`tests/e2e/us1-application.spec.ts`)
 
@@ -116,8 +116,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T049 **[TDD]** [US2] Tests : validation crée tenant + propriétaire, rejet exige un motif, pas de double traitement (transaction + verrou) (`apps/api/test/application-review.e2e-spec.ts`)
 - [x] T050 [US2] Service de validation transactionnelle (création Tenant, User propriétaire, jeton d'activation à durée limitée) (`apps/api/src/modules/applications/review.service.ts`)
 - [x] T051 [P] [US2] Emails d'activation et de rejet avec motif FR/EN (`apps/api/src/modules/notifications/templates/`)
-- [ ] T052 [US2] Console super admin : liste des demandes avec filtres et statuts (`apps/web/src/app/(admin)/applications/page.tsx`)
-- [ ] T053 [US2] Vue détail : prévisualisation sécurisée des documents, carte, historique, boutons valider/rejeter (`apps/web/src/app/(admin)/applications/[id]/page.tsx`)
+- [x] T052 [US2] Console super admin : liste des demandes avec filtres et statuts (`apps/web/src/app/(admin)/applications/page.tsx`)
+- [x] T053 [US2] Vue détail : prévisualisation sécurisée des documents, carte, historique, boutons valider/rejeter (`apps/web/src/app/(admin)/applications/[id]/page.tsx`)
 - [ ] T054 [P] [US2] Renvoi d'un lien d'activation expiré (`apps/api/src/modules/applications/resend-activation.ts`)
 - [x] T055 [US2] Audit de toutes les décisions et notification interne aux super admins pour les nouvelles demandes
 - [ ] T056 [US2] Test E2E : soumission → validation → réception de l'email (MailHog) (`tests/e2e/us2-review.spec.ts`)
@@ -129,7 +129,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [ ] T057 [P] [US3] Modèles `TenantSettings`, `OpeningHours`, `OnboardingProgress` (`apps/api/prisma/schema.prisma`)
 - [x] T058 **[TDD]** [US3] Tests : jeton valide/expiré/déjà utilisé, politique de mot de passe (`apps/api/test/activation.e2e-spec.ts`)
 - [x] T059 [US3] Endpoint d'activation (définition du mot de passe, proposition 2FA) (`apps/api/src/modules/users/activation.controller.ts`)
-- [ ] T060 [US3] Page d'activation (`apps/web/src/app/(public)/activer/[token]/page.tsx`)
+- [x] T060 [US3] Page d'activation (`apps/web/src/app/(public)/activer/[token]/page.tsx`)
 - [ ] T061 [US3] Assistant de configuration en étapes sauvegardées : infos, logo, horaires, devise/TVA, imprimante, visibilité publique, import catalogue (`apps/web/src/app/(pharmacy)/configuration/`)
 - [ ] T062 [P] [US3] Endpoints de lecture/écriture des paramètres de l'officine (`apps/api/src/modules/tenants/settings.controller.ts`)
 - [ ] T063 [US3] Reprise de l'assistant à l'étape interrompue ; indicateur de progression sur le tableau de bord
