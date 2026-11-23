@@ -1,0 +1,75 @@
+# Research (Phase 0) : Sanara
+
+**Date**: 2026-11-23 | **Statut**: décisions prises, points ouverts listés en fin de document
+
+## 1. Audit de l'hébergement Camoo (mesuré le 2026-11-23, en lecture seule)
+
+| Élément | Constat | Conséquence |
+|---|---|---|
+| Serveur web | Apache, PHP-FPM (`fpm-fcgi`), Linux | `.htaccess` et `.user.ini` utilisables ; mod_rewrite à confirmer par un test réel |
+| PHP | **8.1.34** | Laravel 11 (PHP ≥ 8.2) exclu. **Slim 4** retenu (Laravel 10 possible mais en fin de support) |
+| Extensions | pdo_mysql, mysqli, sodium, openssl, gd, zip, mbstring, curl, intl, fileinfo, exif, imagick : toutes présentes | Argon2id (sodium), chiffrement des documents (sodium/openssl), traitement d'images (gd/imagick), exports zip OK |
+| Fonctions désactivées | `system`, `passthru`, `popen`, `eval`, `dl`, `pcntl_*`, etc. ; `exec` et `mail` disponibles | Pas d'antivirus en ligne de commande ; pas de processus enfants permanents |
+| Limites PHP | `upload_max_filesize` 2 Mo, `post_max_size` 8 Mo, `memory_limit` 128 Mo, `max_execution_time` 30 s | **Les photos d'ordonnances dépassent 2 Mo** : redimensionnement côté navigateur avant envoi + tentative de relèvement via `.user.ini` ; traitements longs découpés en jobs courts |
+| MySQL | **8.0.46**, base `trugro9159_sanara` vide, jeu de caractères utf8mb4, **`sql_mode` vide** | Activer le mode strict à chaque connexion (`STRICT_TRANS_TABLES,ONLY_FULL_GROUP_BY,NO_ZERO_DATE`) pour éviter les troncatures silencieuses |
+| Racine web | Le **répertoire FTP est lui-même la racine du sous-domaine** (`/home/trugro9159/sanara`) ; un dossier `public_html` existe mais n'est pas servi | Déployer à la racine ; l'API et les secrets sensibles doivent être protégés par `.htaccess` (la racine entière est publique) |
+| Disque | ~600 Go libres | Pas de contrainte de quota prévisible |
+| HTTPS | Aucune réponse en HTTPS sur `sanara.trugroup.cm` | **Décision du propriétaire : HTTP pour l'instant** (voir §2) |
+| FTP | FTP simple fonctionne ; **FTPS refusé** | Déploiement en FTP simple en développement |
+| Pare-feu applicatif | Un POST contenant des apostrophes atteint Apache (404 d'une page absente, pas un 403) | Test à refaire sur une vraie route PHP dès la première story ; garder un plan de contournement (encodage JSON, pas de formulaires bruts) |
+| Cron | Non vérifiable en lecture seule | À vérifier dans le panneau Camoo : fréquence minimale, nombre de tâches (point ouvert) |
+| SMTP / envoi d'email | `mail()` disponible | Utiliser un SMTP authentifié si possible ; SPF/DKIM à configurer sur `trugroup.cm` (point ouvert) |
+
+## 2. Décision : HTTP provisoire
+
+Le propriétaire a décidé de travailler en HTTP pour l'instant. Règles associées (constitution v1.0.1) :
+1. **Uniquement des données de test** tant que le site est en HTTP : aucune vraie ordonnance, aucun vrai patient, aucun vrai mot de passe de pharmacie.
+2. Les mots de passe transitent en clair en HTTP : n'utiliser que des comptes de test jetables.
+3. Les cookies de session sont posés **sans** `Secure` en développement seulement, via un réglage d'environnement ; en production `Secure`, `HttpOnly`, `SameSite=Lax` obligatoires.
+4. Le passage en HTTPS (certificat Let's Encrypt via Camoo) est **un prérequis de la mise en production et de toute pharmacie réelle** (tâche T001a).
+5. Le desktop et le web utilisent une variable `APP_URL` : le basculement HTTPS ne doit demander aucun changement de code.
+
+## 3. Décisions techniques
+
+| Sujet | Décision | Raison | Alternative écartée |
+|---|---|---|---|
+| Desktop | **Electron** + electron-builder (NSIS) | Même interface que le web, écosystème Node pour imprimantes et SQLite, Rust absent | Tauri (Rust requis), JavaFX (deux bases de code) |
+| API | **Slim 4** + Illuminate Database (query builder/Eloquent autonome) + PHP-DI | Compatible PHP 8.1, léger sur mutualisé, scopes globaux pour le tenant | Laravel 10 (support de sécurité terminé), Laravel 11 (PHP 8.2 requis) |
+| Front | React + Vite (SPA statique) + React Router + TanStack Query + Tailwind | Aucun Node sur le serveur ; même code pour le desktop | Next.js (serveur Node requis) |
+| Authentification | Jetons d'accès courts (JWT signé, 15 min) + refresh rotatif stocké en base ; Argon2id | Pas de session serveur partagée entre web et desktop | Sessions PHP seules (inadaptées au desktop hors-ligne) |
+| Jobs | Table `jobs` + script cron chaque minute avec verrou | Pas de Redis | Cron direct sans file |
+| Temps réel | Polling 10 à 15 s | Pas de WebSocket sur mutualisé | SSE long (coupé par PHP-FPM) |
+| Sync desktop | Journal d'opérations idempotent, ULID générés côté client, référentiels « serveur gagnant », mouvements « cumul d'événements » | Sémantique de stock ; offline-first | CRDT génériques |
+| Carte | Leaflet + tuiles OpenStreetMap ; recherche par boîte englobante + Haversine (index sur latitude/longitude) | Simple et suffisant à l'échelle visée | Index spatial MySQL (possible plus tard) |
+| Lecture d'ordonnances | API Claude (vision) derrière `AssistantProvider`, appelée par le serveur PHP via cURL ; sortie JSON validée ; garde-fous déterministes | Qualité sur écriture manuscrite ; remplaçable | OCR classique seul (faible sur manuscrit) |
+| Stockage des documents | Dossier hors des chemins servis (ou protégé par `.htaccess` `Deny from all`), fichiers chiffrés (sodium secretstream/secretbox), accès par endpoint authentifié | Racine web entièrement publique | Fichiers en clair sous la racine |
+| SMS | Interface `SmsProvider`, implémentation à choisir (passerelle locale ou agrégateur) ; on peut s'appuyer sur le service teeeotp existant | Réutilisation d'un service mutualisé existant | Développement d'une passerelle dédiée |
+| Paiement | `PaymentProvider` désactivé ; futur branchement sur apisungku (pawaPay) | Paiement à la pharmacie en v1 | Intégration directe dès le départ |
+| Numérotation des ventes | Préfixe poste + séquence locale ; numéro légal attribué à la synchro si exigé | Pas de collision hors-ligne | Séquence serveur seule (impossible hors-ligne) |
+
+## 4. Stratégie de déploiement sur Camoo
+
+- Racine = `/home/trugro9159/sanara`. Structure déployée :
+  - `/` : build statique du front (`index.html`, `assets/`), `.htaccess` (réécriture SPA, en-têtes de sécurité).
+  - `/api/` : point d'entrée Slim (`index.php`) + `.htaccess` ; le code PHP (`app/`, `vendor/`, `database/`) est placé dans `/api-core/` protégé par `Deny from all`, seul `/api/index.php` est exposé.
+  - `/storage-private/` : documents chiffrés, `Deny from all`.
+  - `/desktop-releases/` : binaires et métadonnées de mise à jour du desktop.
+- `.env` serveur placé hors des chemins exposés et protégé en refus total.
+- Déploiement par script FTP (`infra/deploy/deploy.ps1`) en deux temps : envoi vers un dossier de préparation, puis bascule rapide pour limiter l'indisponibilité.
+- Migrations exécutées par un endpoint protégé (jeton + liste d'IP) ou par un script cron à usage unique, jamais accessible publiquement.
+- Sauvegardes MySQL par cron (dump compressé et chiffré) conservées hors racine.
+
+## 5. Risques et points ouverts
+
+| # | Point | Action |
+|---|---|---|
+| R1 | HTTPS absent | Demander à Camoo l'activation d'un certificat pour `sanara.trugroup.cm` ; bloquant pour la production (T001a) |
+| R2 | Fréquence minimale du cron inconnue | Vérifier dans le panneau Camoo ; si > 1 min, l'escalade urgente doit s'appuyer aussi sur un déclenchement opportuniste à chaque requête |
+| R3 | Upload limité à 2 Mo | Compression côté client ; test d'un `.user.ini` relevant la limite ; sinon envoi par morceaux |
+| R4 | Apostrophes et pare-feu | Test sur route PHP réelle lors de la story US1 ; transport JSON |
+| R5 | `mod_rewrite` non confirmé | Test lors de la mise en place du routage ; sinon routage par `index.php/…` |
+| R6 | Envoi d'emails fiable | Configurer SMTP + SPF/DKIM ; tester la délivrabilité vers Gmail et Orange |
+| R7 | Qualité de lecture sur ordonnances camerounaises manuscrites | Jeu d'évaluation de 100 ordonnances (T004) avant d'augmenter l'autonomie |
+| R8 | Réglementation locale (vente à distance, conservation, registres) | Validation par un pharmacien pilote et l'ordre (T005) |
+| R9 | Secrets partagés en conversation | Rotation prévue à la mise en production (T001b) |
+| R10 | Mémoire 128 Mo et 30 s par requête | Découper l'analyse d'ordonnances en jobs, éviter les traitements d'images lourds côté serveur |

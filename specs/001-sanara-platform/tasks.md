@@ -23,10 +23,10 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 0 : Recherche et conception (avant tout code)
 
-- [ ] T001 Rédiger `specs/001-sanara-platform/research.md` : Electron vs Tauri (décision : Electron), moteur de sync, modèle de vision pour ordonnances, tuiles de carte, passerelle SMS (Cameroun), **audit de l'hébergement Camoo** : HTTPS sur `sanara.trugroup.cm`, version PHP et extensions, quotas disque/base, cron disponibles, taille d'upload, SMTP, comportement du pare-feu (apostrophes), choix Laravel vs Slim
-- [ ] T001a **Prérequis bloquant** : obtenir un certificat HTTPS valide sur `sanara.trugroup.cm` ; sans lui, aucune donnée de santé ne passe en production (constitution III)
+- [x] T001 Rédiger `specs/001-sanara-platform/research.md` : Electron vs Tauri (décision : Electron), moteur de sync, modèle de vision pour ordonnances, tuiles de carte, passerelle SMS (Cameroun), **audit de l'hébergement Camoo** : HTTPS sur `sanara.trugroup.cm`, version PHP et extensions, quotas disque/base, cron disponibles, taille d'upload, SMTP, comportement du pare-feu (apostrophes), choix Laravel vs Slim (décidé : Slim 4)
+- [ ] T001a **Prérequis bloquant pour la production** : obtenir un certificat HTTPS valide sur `sanara.trugroup.cm` ; en attendant, développement en HTTP avec données de test uniquement (dérogation constitution v1.0.1). `APP_URL` pilote le basculement sans changement de code
 - [ ] T001b Identifiants Camoo (MySQL, FTP) rangés dans `.env` hors dépôt et utilisés pour le développement et les déploiements au fil des stories ; **les remplacer par de nouveaux identifiants avant la mise en production** (décision du propriétaire : rotation à la bascule en production)
-- [ ] T002 [P] Rédiger `specs/001-sanara-platform/data-model.md` : entités, relations, clés (ULID), colonnes `tenant_id`, champs d'audit, stratégie de suppression logique
+- [x] T002 [P] Rédiger `specs/001-sanara-platform/data-model.md` : entités, relations, clés (ULID), colonnes `tenant_id`, champs d'audit, stratégie de suppression logique
 - [ ] T003 [P] Rédiger `specs/001-sanara-platform/contracts/` : squelettes OpenAPI par module (auth, applications, catalog, stock, sales, public, requests, sync)
 - [ ] T004 [P] Constituer avec un pharmacien pilote une liste de 100 ordonnances anonymisées annotées (jeu d'évaluation de l'assistant) dans `tests/assistant-eval/fixtures/` (hors dépôt public si données réelles)
 - [ ] T005 [P] Valider avec le pharmacien pilote et l'ordre des pharmaciens les exigences locales : registre des stupéfiants, conservation des ordonnances, vente à distance, mentions sur facture
@@ -36,7 +36,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 - [ ] T007 Initialiser le monorepo pnpm : `package.json`, `pnpm-workspace.yaml`, `.gitignore`, `.editorconfig`, `.nvmrc`
 - [ ] T008 [P] Créer `packages/config` (tsconfig de base, ESLint, Prettier) et l'appliquer à tous les workspaces
-- [ ] T009 [P] Créer `apps/api` (PHP : Laravel ou Slim, composer), `apps/web` (React + Vite), `apps/desktop` (Electron) avec scripts `dev`, `build`, `test`
+- [ ] T009 [P] Créer `apps/api` (PHP 8.1 : Slim 4, composer), `apps/web` (React + Vite), `apps/desktop` (Electron) avec scripts `dev`, `build`, `test`
 - [ ] T010 [P] Créer `packages/shared`, `packages/ui`, `packages/sync`, `packages/assistant`, `packages/i18n` (squelettes exportant un index typé)
 - [ ] T011 [P] Docker Compose de dev reproduisant Camoo : PHP 8.x (version alignée sur l'hébergeur) + MySQL 8.0 + MailHog dans `infra/docker-compose.dev.yml` (pas de Redis ni PostgreSQL)
 - [ ] T012 [P] CI (GitHub Actions) dans `.github/workflows/ci.yml` : lint, typecheck, tests front et PHP, build web, build desktop Windows

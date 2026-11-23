@@ -4,14 +4,14 @@
 
 ## Summary
 
-Plateforme SaaS multi-tenant hébergée sur Camoo (`sanara.trugroup.cm`) : une API PHP/MySQL, une interface React (Vite) partagée entre le web et le desktop (Electron), un site public avec carte, et un assistant IA à autonomie progressive. Le desktop travaille hors-ligne sur SQLite et se synchronise par journal d'opérations idempotent.
+Plateforme SaaS multi-tenant hébergée sur Camoo (`sanara.trugroup.cm`) : une API PHP (Slim 4) + MySQL, une interface React (Vite) partagée entre le web et le desktop (Electron), un site public avec carte, et un assistant IA à autonomie progressive. Le desktop travaille hors-ligne sur SQLite et se synchronise par journal d'opérations idempotent.
 
-> **Révision du 2026-11-23 (hébergement)** : l'hébergement fourni est un mutualisé Camoo (PHP, MySQL 8.0, FTP). Le plan initial NestJS + PostgreSQL + Redis n'y est pas exécutable. Le backend devient PHP/MySQL, le front un build statique React/Vite. Les chemins `apps/web/src/app/...` des tâches désignent des routes React Router rangées dans des dossiers équivalents (`apps/web/src/routes/...`) ; les chemins `apps/api/src/modules/...` désignent des modules PHP (`apps/api/app/Modules/...`). Les tâches dont le contenu change sont corrigées dans tasks.md.
+> **Révision du 2026-11-23 (hébergement)** : l'hébergement fourni est un mutualisé Camoo (PHP, MySQL 8.0, FTP). Le plan initial NestJS + PostgreSQL + Redis n'y est pas exécutable. Le backend devient PHP/MySQL, le front un build statique React/Vite. Les chemins `apps/web/src/app/...` des tâches désignent des routes React Router rangées dans des dossiers équivalents (`apps/web/src/routes/...`) ; les chemins `apps/api/src/modules/...` désignent des modules PHP (`apps/api/app/Modules/...`). Phase 0 réalisée : voir research.md (audit Camoo) et data-model.md. Les tâches dont le contenu change sont corrigées dans tasks.md.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x (front, desktop, packages), PHP 8.x (API, version exacte à confirmer sur Camoo en phase 0), Node.js 22+ en local pour les builds uniquement
-**Primary Dependencies**: React 19, Vite, React Router, Tailwind, Laravel (ou Slim) côté API, better-sqlite3 + Kysely côté desktop, Electron + electron-builder + electron-updater, Leaflet, Zod, TanStack Query, i18next, PHPUnit/Pest, Playwright, Vitest
+**Language/Version**: TypeScript 5.x (front, desktop, packages), PHP 8.1 (API, Camoo : 8.1.34 constaté), Node.js 22+ en local pour les builds uniquement
+**Primary Dependencies**: React 19, Vite, React Router, Tailwind, Slim 4 + Illuminate Database côté API, better-sqlite3 + Kysely côté desktop, Electron + electron-builder + electron-updater, Leaflet, Zod, TanStack Query, i18next, PHPUnit/Pest, Playwright, Vitest
 **Storage**: MySQL 8.0 (serveur, base `trugro9159_sanara`), SQLite (desktop), documents sensibles chiffrés sur disque hors racine web (ou stockage objet externe si le quota Camoo est insuffisant)
 **Testing**: Vitest (unitaires front/packages), Pest/PHPUnit (API), Playwright (E2E web), tests de synchro en simulation réseau, tests d'isolation multi-tenant
 **Target Platform**: navigateurs modernes (mobile inclus), Windows 10/11 (desktop), hébergement mutualisé Camoo
@@ -52,7 +52,7 @@ specs/001-sanara-platform/
 ```text
 Sanara/
 ├── apps/
-│   ├── api/                 # PHP (Laravel/Slim) : app/Modules/... (nommé src/modules/... dans les tâches)
+│   ├── api/                 # PHP (Slim 4) : app/Modules/... (nommé src/modules/... dans les tâches)
 │   │   └── src/
 │   │       ├── common/      # auth, tenancy (scope global), audit, i18n, errors, rate-limit
 │   │       ├── modules/

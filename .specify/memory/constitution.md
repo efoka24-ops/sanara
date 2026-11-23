@@ -51,7 +51,7 @@ Chaque user story est livrable, testable et démontrable seule. On livre par ord
 | Interface web + desktop | React + Vite (SPA) + TypeScript, Tailwind CSS ; build statique servi par l'hébergeur |
 | Desktop installable | Electron + electron-builder (installateur Windows `.exe`, mise à jour automatique) |
 | Base locale desktop | SQLite (better-sqlite3) + file d'opérations de synchronisation |
-| API | PHP 8.x (Laravel si la version de PHP de l'hébergeur le permet, sinon Slim), REST + OpenAPI |
+| API | PHP 8.1 (version Camoo constatée : 8.1.34) avec Slim 4, REST + OpenAPI |
 | Base serveur | MySQL 8.0 (filtre tenant imposé par la couche d'accès) |
 | Hébergement | Camoo (mutualisé) : sous-domaine `sanara.trugroup.cm`, MySQL, FTP ; pas de Node, pas de Redis, HTTPS indispensable |
 | Carte | Leaflet + OpenStreetMap |
@@ -60,7 +60,7 @@ Chaque user story est livrable, testable et démontrable seule. On livre par ord
 | Paiement en ligne | Interface `PaymentProvider` (désactivée en v1, paiement à la pharmacie) |
 | Monorepo | pnpm workspaces : `apps/web`, `apps/desktop`, `apps/api`, `packages/*` |
 
-Secrets hors dépôt (fichier `.env` ignoré par git, jamais committé ni collé dans une spec), dépendances à jour et auditées, aucun mot de passe en clair (lien d'activation à durée limitée, hachage Argon2id). Aucune donnée de santé ne transite en HTTP clair : la mise en production est conditionnée à un certificat HTTPS valide sur le sous-domaine. Les contraintes de l'hébergeur (pare-feu applicatif, tâches planifiées limitées, pas de processus permanents) sont traitées comme des exigences de conception : files de jobs en base déclenchées par cron, temps réel par polling court.
+Secrets hors dépôt (fichier `.env` ignoré par git, jamais committé ni collé dans une spec), dépendances à jour et auditées, aucun mot de passe en clair (lien d'activation à durée limitée, hachage Argon2id). Aucune donnée de santé réelle ne transite en HTTP clair : la mise en production et toute pharmacie réelle sont conditionnées à un certificat HTTPS valide sur le sous-domaine. Dérogation de développement (décision du propriétaire, 2026-11-23) : tant que le site est en HTTP, uniquement des données de test et des comptes jetables. Les contraintes de l'hébergeur (pare-feu applicatif, tâches planifiées limitées, pas de processus permanents) sont traitées comme des exigences de conception : files de jobs en base déclenchées par cron, temps réel par polling court.
 
 ## Workflow de développement
 
@@ -74,4 +74,4 @@ Secrets hors dépôt (fichier `.env` ignoré par git, jamais committé ni collé
 
 Cette constitution prime sur toute autre pratique. Tout amendement doit être documenté (motif, impact, plan de migration) et approuvé par le propriétaire du produit. Les revues vérifient la conformité aux principes I à X ; toute dérogation est consignée dans la section « Complexity Tracking » du plan concerné.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-23 | **Last Amended**: 2026-11-23
+**Version**: 1.0.1 | **Ratified**: 2026-11-23 | **Last Amended**: 2026-11-23 (hébergement Camoo, dérogation HTTP de développement)
