@@ -3,7 +3,7 @@ import { Logo } from '@sanara/ui';
 
 type Health = { status: string; database?: { ok: boolean; version?: string } };
 
-export function App() {
+export function Home() {
   const [health, setHealth] = useState<Health | 'error' | null>(null);
 
   useEffect(() => {

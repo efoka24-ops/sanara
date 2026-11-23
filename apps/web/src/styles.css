@@ -84,3 +84,102 @@
     padding: 32px 24px;
   }
 }
+
+/* Layouts (T033) : uniquement des tokens */
+.layout {
+  min-height: 100vh;
+}
+.layout--public .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 68px;
+  padding: 0 48px;
+  background: var(--sa-surface);
+  border-bottom: 1px solid var(--sa-line);
+}
+.topbar__actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-weight: 600;
+}
+.topbar__actions a {
+  color: var(--sa-ink);
+  text-decoration: none;
+}
+.chip {
+  border: 1px solid var(--sa-line);
+  background: var(--sa-surface);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: 600 14px var(--sa-font-text);
+  cursor: pointer;
+}
+.layout--pharmacy,
+.layout--admin {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+.sidebar {
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar__item {
+  padding: 11px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+}
+.sidebar--light {
+  background: var(--sa-surface);
+  border-right: 1px solid var(--sa-line);
+}
+.sidebar--light .sidebar__item {
+  color: var(--sa-ink);
+}
+.sidebar--light .sidebar__item.is-active {
+  background: var(--sa-green-100);
+  color: var(--sa-green-900);
+  font-weight: 700;
+}
+.sidebar--dark {
+  background: var(--sa-ink);
+  color: #fff;
+}
+.sidebar--dark .sidebar__item {
+  color: var(--sa-green-30);
+}
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pill-admin {
+  background: var(--sa-amber);
+  color: var(--sa-ink);
+  font: 700 10px var(--sa-font-text);
+  letter-spacing: 0.14em;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.layout main {
+  padding: 28px 32px;
+}
+.layout--public main {
+  padding: 0;
+}
+@media (max-width: 800px) {
+  .layout--pharmacy,
+  .layout--admin {
+    grid-template-columns: 1fr;
+  }
+}

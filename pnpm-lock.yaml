@@ -221,6 +221,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@sanara/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@sanara/shared':
         specifier: workspace:*
         version: link:../../packages/shared
