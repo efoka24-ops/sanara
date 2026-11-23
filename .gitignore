@@ -1,0 +1,26 @@
+# Secrets : ne jamais committer
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+deploy.local.*
+
+# Dépendances et builds
+node_modules/
+vendor/
+dist/
+build/
+out/
+.vite/
+release/
+
+# Données locales
+*.sqlite
+*.db
+storage/private/
+
+# Divers
+.DS_Store
+Thumbs.db
+*.log
