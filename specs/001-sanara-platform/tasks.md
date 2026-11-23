@@ -56,7 +56,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T015 Migrations MySQL initiales (`apps/api/database/migrations/`) : countries, country_configs, tenants, users, roles, permissions, audit_logs, notifications, jobs (les « modèles Prisma » des tâches suivantes deviennent des migrations + modèles Eloquent/PDO)
 - [x] T016 **[TDD]** Test d'isolation générique `apps/api/tests/Isolation/TenantIsolationTest.php` : pour chaque modèle portant `tenant_id`, un utilisateur du tenant A ne lit/écrit rien du tenant B
 - [x] T017 Couche d'accès tenant-aware : trait/scope global qui ajoute `tenant_id` à toute lecture et écriture, interdiction par test statique des requêtes brutes sans scope (`apps/api/app/Common/Tenancy/`) ; MySQL n'a pas de RLS
-- [ ] T018 Middleware de contexte tenant : résout le tenant depuis le jeton et le place dans le contexte de requête (`apps/api/app/Common/Tenancy/TenantContext.php`) (TenantContext fait ; middleware lié au jeton à écrire avec les routes)
+- [x] T018 Middleware de contexte tenant : résout le tenant depuis le jeton et le place dans le contexte de requête (`apps/api/app/Common/Tenancy/TenantContext.php`) (TenantContext fait ; middleware lié au jeton à écrire avec les routes)
 - [ ] T019 Script de seed : pays Cameroun, rôles par défaut, super admin initial, catalogue de référence (jeu minimal) (`apps/api/prisma/seed.ts`) (Seeder rôles + Cameroun fait ; super admin initial et catalogue de référence à faire)
 
 ### Sécurité et transverse API
@@ -99,7 +99,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T039 [P] [US1] Modèles Prisma `PharmacyApplication`, `ApplicationDocument` (statuts : pending, approved, rejected) (`apps/api/prisma/schema.prisma`)
 - [x] T040 **[TDD]** [US1] Tests de contrat `POST /public/applications` (champs obligatoires, doublon email/agrément, types/tailles de fichiers) (`apps/api/test/applications.e2e-spec.ts`) (testé au niveau service ; contrat HTTP avec les routes)
 - [ ] T041 [US1] Schémas Zod du formulaire et règles par pays dans `packages/shared/src/applications/`
-- [ ] T042 [US1] Endpoint de soumission avec upload sécurisé des documents (`apps/api/src/modules/applications/applications.controller.ts`)
+- [x] T042 [US1] Endpoint de soumission avec upload sécurisé des documents (`apps/api/src/modules/applications/applications.controller.ts`)
 - [x] T043 [US1] Génération du code de suivi et endpoint `GET /public/applications/:code/status` (`apps/api/src/modules/applications/`)
 - [x] T044 [P] [US1] Email d'accusé de réception FR/EN (`apps/api/src/modules/notifications/templates/application-received.*`)
 - [ ] T045 [US1] Page « Digitaliser ma pharmacie » multi-étapes avec carte pour la position (`apps/web/src/app/(public)/inscription/`)
@@ -127,8 +127,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 ## Phase 5 : US3 - Activation et configuration initiale (P1) 🎯 MVP 1
 
 - [ ] T057 [P] [US3] Modèles `TenantSettings`, `OpeningHours`, `OnboardingProgress` (`apps/api/prisma/schema.prisma`)
-- [ ] T058 **[TDD]** [US3] Tests : jeton valide/expiré/déjà utilisé, politique de mot de passe (`apps/api/test/activation.e2e-spec.ts`)
-- [ ] T059 [US3] Endpoint d'activation (définition du mot de passe, proposition 2FA) (`apps/api/src/modules/users/activation.controller.ts`)
+- [x] T058 **[TDD]** [US3] Tests : jeton valide/expiré/déjà utilisé, politique de mot de passe (`apps/api/test/activation.e2e-spec.ts`)
+- [x] T059 [US3] Endpoint d'activation (définition du mot de passe, proposition 2FA) (`apps/api/src/modules/users/activation.controller.ts`)
 - [ ] T060 [US3] Page d'activation (`apps/web/src/app/(public)/activer/[token]/page.tsx`)
 - [ ] T061 [US3] Assistant de configuration en étapes sauvegardées : infos, logo, horaires, devise/TVA, imprimante, visibilité publique, import catalogue (`apps/web/src/app/(pharmacy)/configuration/`)
 - [ ] T062 [P] [US3] Endpoints de lecture/écriture des paramètres de l'officine (`apps/api/src/modules/tenants/settings.controller.ts`)

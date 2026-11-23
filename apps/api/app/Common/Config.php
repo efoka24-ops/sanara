@@ -15,6 +15,9 @@ final class Config
         public readonly string $dbUser,
         public readonly string $dbPassword,
         public readonly string $jwtSecret,
+        public readonly string $storageKey = '',
+        public readonly string $storageDir = '',
+        public readonly string $corsOrigin = '',
     ) {
     }
 
@@ -33,6 +36,9 @@ final class Config
             dbUser: $get('DB_USERNAME'),
             dbPassword: $get('DB_PASSWORD'),
             jwtSecret: $get('JWT_SECRET'),
+            storageKey: $get('STORAGE_KEY'),
+            storageDir: $get('STORAGE_DIR'),
+            corsOrigin: $get('CORS_ORIGIN'),
         );
     }
 }
