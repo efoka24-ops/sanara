@@ -75,8 +75,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ### Interface partagée
 
-- [ ] T031 [P] Design tokens (fait : `packages/ui/src/tokens.css`, `Logo`) puis composants de base conformes à la maquette (Button, Field, Table, Modal, Toast, Stepper, Switch, Badge) dans `packages/ui/` ; référence : `docs/design-system.md`
-- [ ] T032 [P] i18n : `packages/i18n/fr.json`, `en.json`, hook `useT`, règle ESLint interdisant les textes en dur
+- [x] T031 [P] Design tokens (fait : `packages/ui/src/tokens.css`, `Logo`) puis composants de base conformes à la maquette (Button, Field, Table, Modal, Toast, Stepper, Switch, Badge) dans `packages/ui/` ; référence : `docs/design-system.md`
+- [x] T032 [P] i18n : `packages/i18n/fr.json`, `en.json`, hook `useT`, règle ESLint interdisant les textes en dur
 - [ ] T033 [P] Layouts web : `(public)`, `(pharmacy)`, `(admin)` avec gardes d'accès (`apps/web/src/app/`)
 - [x] T034 [P] Composant de formatage monnaie/date/téléphone piloté par `CountryConfig` (`packages/shared/src/format/`)
 - [x] T035 **[TDD]** Moteur de prix/TVA/remises/arrondis pur dans `packages/shared/src/pricing/` avec tests (arrondis XAF, TVA multiple, remises plafonnées)

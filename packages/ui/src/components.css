@@ -1,0 +1,226 @@
+/* Composants Sanara : uniquement des variables de tokens.css, aucune couleur en dur. */
+.sa-btn {
+  font: 700 15px var(--sa-font-text, 'Instrument Sans', sans-serif);
+  border: 1.5px solid transparent;
+  border-radius: var(--sa-r-button, 12px);
+  padding: 14px 24px;
+  cursor: pointer;
+  background: var(--sa-green-900);
+  color: #fff;
+  transition: filter 0.15s;
+}
+.sa-btn:hover {
+  filter: brightness(1.08);
+}
+.sa-btn:focus-visible {
+  outline: 3px solid var(--sa-green-500);
+  outline-offset: 2px;
+}
+.sa-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sa-btn--secondary {
+  background: transparent;
+  color: var(--sa-ink);
+  border-color: var(--sa-line);
+}
+.sa-btn--danger {
+  background: var(--sa-red);
+}
+.sa-btn--warning {
+  background: var(--sa-amber);
+  color: var(--sa-ink);
+}
+.sa-btn--sm {
+  padding: 9px 14px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+.sa-btn--block {
+  width: 100%;
+}
+
+.sa-field {
+  display: block;
+  background: var(--sa-bg);
+  border-radius: var(--sa-r-field, 10px);
+  padding: 11px 14px;
+  border: 2px solid transparent;
+}
+.sa-field:focus-within {
+  border-color: var(--sa-green-900);
+}
+.sa-field--error {
+  border-color: var(--sa-red);
+}
+.sa-field__label {
+  display: block;
+  font: 600 11px var(--sa-font-text, 'Instrument Sans', sans-serif);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sa-muted);
+}
+.sa-field:focus-within .sa-field__label {
+  color: var(--sa-green-900);
+}
+.sa-field__input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: 15px var(--sa-font-text, 'Instrument Sans', sans-serif);
+  color: var(--sa-ink);
+  margin-top: 2px;
+  outline: none;
+}
+.sa-field__error {
+  color: var(--sa-red);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.sa-badge {
+  display: inline-block;
+  font: 600 12px var(--sa-font-text, 'Instrument Sans', sans-serif);
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--sa-gray-bg);
+  color: var(--sa-muted);
+}
+.sa-badge--ok {
+  background: var(--sa-green-100);
+  color: var(--sa-green-900);
+}
+.sa-badge--wait {
+  background: var(--sa-amber-bg);
+  color: var(--sa-amber-fg);
+}
+.sa-badge--danger {
+  background: var(--sa-red-bg);
+  color: var(--sa-red);
+}
+
+.sa-switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 99px;
+  border: 0;
+  background: var(--sa-line-3);
+  cursor: pointer;
+  padding: 0;
+}
+.sa-switch[aria-checked='true'] {
+  background: var(--sa-green-700);
+}
+.sa-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s;
+}
+.sa-switch[aria-checked='true']::after {
+  left: 21px;
+}
+.sa-switch:focus-visible {
+  outline: 3px solid var(--sa-green-500);
+  outline-offset: 2px;
+}
+
+.sa-stepper {
+  display: flex;
+  gap: 10px;
+  font: 600 13px var(--sa-font-text, 'Instrument Sans', sans-serif);
+}
+.sa-stepper__step {
+  flex: 1;
+}
+.sa-stepper__bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--sa-line);
+}
+.sa-stepper__step--done .sa-stepper__bar {
+  background: var(--sa-green-700);
+}
+.sa-stepper__step--current .sa-stepper__bar {
+  background: var(--sa-amber);
+}
+.sa-stepper__label {
+  margin-top: 8px;
+  color: var(--sa-subtle);
+}
+.sa-stepper__step--done .sa-stepper__label {
+  color: var(--sa-green-700);
+}
+.sa-stepper__step--current .sa-stepper__label {
+  color: var(--sa-ink);
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--sa-surface);
+  border-radius: var(--sa-r-card, 14px);
+  overflow: hidden;
+  font-size: 14px;
+}
+.sa-table th {
+  background: var(--sa-bg);
+  font: 600 11px var(--sa-font-text, 'Instrument Sans', sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sa-muted);
+  text-align: left;
+  padding: 12px 22px;
+}
+.sa-table td {
+  padding: 15px 22px;
+  border-top: 1px solid var(--sa-line-2);
+}
+
+.sa-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 32, 26, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.sa-modal {
+  background: var(--sa-surface);
+  border-radius: var(--sa-r-modal, 20px);
+  padding: 30px 34px;
+  width: min(600px, 92vw);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+.sa-modal__title {
+  font: 800 24px var(--sa-font-display, 'Bricolage Grotesque', sans-serif);
+  margin: 0 0 16px;
+}
+
+.sa-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 60;
+}
+.sa-toast {
+  background: var(--sa-ink);
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font: 600 14px var(--sa-font-text, 'Instrument Sans', sans-serif);
+}
+.sa-toast--error {
+  background: var(--sa-red);
+}
