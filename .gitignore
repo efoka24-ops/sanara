@@ -24,3 +24,4 @@ storage/private/
 .DS_Store
 Thumbs.db
 *.log
+.phpunit.cache/
