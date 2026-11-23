@@ -1,0 +1,86 @@
+/* Page d'accueil : reprend l'écran de connexion A7 de la maquette (panneau vert + panneau blanc). */
+.home {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--sa-surface);
+}
+.home__brand {
+  background: var(--sa-green-900);
+  color: #fff;
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.home__title {
+  margin-top: auto;
+  font-family: var(--sa-font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.home__lead {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--sa-green-50);
+  max-width: 34rem;
+}
+.home__panel {
+  padding: 64px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+  max-width: 36rem;
+  width: 100%;
+  margin: 0 auto;
+}
+.home__panel h2 {
+  font-size: 32px;
+}
+.home__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.home__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--sa-muted);
+}
+.home__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sa-line-3);
+}
+.home__dot--ok {
+  background: var(--sa-green-700);
+}
+.home__dot--bad {
+  background: var(--sa-red-dot);
+}
+.home__note {
+  margin-top: auto;
+  font-size: 14px;
+  color: var(--sa-muted);
+  text-align: center;
+}
+@media (max-width: 800px) {
+  .home {
+    grid-template-columns: 1fr;
+  }
+  .home__brand {
+    padding: 32px 24px;
+  }
+  .home__title {
+    margin-top: 24px;
+  }
+  .home__panel {
+    padding: 32px 24px;
+  }
+}

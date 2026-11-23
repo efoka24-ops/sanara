@@ -1,0 +1,18 @@
+# Reproduit Camoo : PHP 8.1 + MySQL 8.0 + MailHog (pas de Redis ni PostgreSQL).
+services:
+  api:
+    image: php:8.1-apache
+    volumes: ["../apps/api:/var/www/html"]
+    ports: ["8080:80"]
+    env_file: ../apps/api/.env
+    depends_on: [db]
+  db:
+    image: mysql:8.0
+    environment: { MYSQL_DATABASE: sanara, MYSQL_USER: sanara, MYSQL_PASSWORD: change-me, MYSQL_ROOT_PASSWORD: root }
+    command: ["--sql-mode="]
+    ports: ["3306:3306"]
+    volumes: ["dbdata:/var/lib/mysql"]
+  mailhog:
+    image: mailhog/mailhog
+    ports: ["1025:1025", "8025:8025"]
+volumes: { dbdata: {} }

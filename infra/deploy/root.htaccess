@@ -1,0 +1,22 @@
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(self), camera=(), microphone=()"
+</IfModule>
+
+# Fichiers sensibles : jamais servis
+<FilesMatch "^(\.env.*|composer\.(json|lock)|.*\.(sql|log|sqlite|bak))$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # L'API a sa propre configuration
+  RewriteRule ^api/ - [L]
+  # Application monopage : toute route inconnue retombe sur index.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>

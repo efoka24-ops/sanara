@@ -1,5 +1,5 @@
 ---
-description: "Liste de tâches Sanara, organisée user story par user story"
+description: 'Liste de tâches Sanara, organisée user story par user story'
 ---
 
 # Tasks: Sanara, plateforme de gestion de pharmacie
@@ -9,14 +9,17 @@ description: "Liste de tâches Sanara, organisée user story par user story"
 **Tests**: obligatoires (TDD) pour les domaines critiques de la constitution VII : prix/TVA, stock FEFO, caisse, synchro, autonomie, escalade, isolation tenant, autorisations. Marqués **[TDD]**. Écrire le test, le voir échouer, puis implémenter.
 
 ## Révision hébergement (2026-11-23)
+
 Hébergement imposé : **Camoo mutualisé** (`sanara.trugroup.cm`, MySQL 8.0, FTP). Conséquences sur les tâches ci-dessous : API **PHP** au lieu de NestJS, **MySQL** au lieu de PostgreSQL (pas de RLS ni PostGIS), **React/Vite statique** au lieu de Next.js, **jobs en base + cron** au lieu de BullMQ/Redis, **polling** au lieu de SSE/WebSocket. Quand une tâche cite « Prisma », « NestJS », « RLS », « BullMQ », « SSE », « Next.js » ou « PostGIS », lire l'équivalent correspondant ; les tâches T001, T009, T011, T012, T015 à T018, T026, T029, T030, T082, T137, T144, T188, T191 sont précisées ci-dessous. Les identifiants d'accès (base, FTP) ne figurent jamais dans le dépôt : ils vont dans `.env` (ignoré par git).
 
 ## Format : `[ID] [P?] [Story] Description (chemin)`
+
 - **[P]** : parallélisable (fichiers différents, pas de dépendance)
 - **[USx]** : user story concernée
 - Après chaque story : **Checkpoint** = critères d'acceptation de la story validés, audit et i18n en place, doc utilisateur mise à jour.
 
 ## Ordre de livraison
+
 MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, US26, US29 · V2 : US9, US13, US15→US17, US25, US30→US33, US35 · V3 : US14, US20, US34 étendu.
 
 ---
@@ -34,21 +37,22 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 1 : Setup
 
-- [ ] T007 Initialiser le monorepo pnpm : `package.json`, `pnpm-workspace.yaml`, `.gitignore`, `.editorconfig`, `.nvmrc`
-- [ ] T008 [P] Créer `packages/config` (tsconfig de base, ESLint, Prettier) et l'appliquer à tous les workspaces
-- [ ] T009 [P] Créer `apps/api` (PHP 8.1 : Slim 4, composer), `apps/web` (React + Vite), `apps/desktop` (Electron) avec scripts `dev`, `build`, `test`
-- [ ] T010 [P] Créer `packages/shared`, `packages/ui`, `packages/sync`, `packages/assistant`, `packages/i18n` (squelettes exportant un index typé)
-- [ ] T011 [P] Docker Compose de dev reproduisant Camoo : PHP 8.x (version alignée sur l'hébergeur) + MySQL 8.0 + MailHog dans `infra/docker-compose.dev.yml` (pas de Redis ni PostgreSQL)
-- [ ] T012 [P] CI (GitHub Actions) dans `.github/workflows/ci.yml` : lint, typecheck, tests front et PHP, build web, build desktop Windows
-- [ ] T012a [P] Script de déploiement FTP (`infra/deploy/deploy.ps1`) : publie le build web et l'API, exécute les migrations via une commande protégée, lit les identifiants dans l'environnement, jamais dans le dépôt
-- [ ] T013 [P] Husky + lint-staged + commitlint (messages conventionnels)
-- [ ] T014 [P] Fichiers `.env.example` par application, validation des variables avec Zod au démarrage
+- [x] T007 Initialiser le monorepo pnpm : `package.json`, `pnpm-workspace.yaml`, `.gitignore`, `.editorconfig`, `.nvmrc`
+- [x] T008 [P] Créer `packages/config` (tsconfig de base, ESLint, Prettier) et l'appliquer à tous les workspaces
+- [x] T009 [P] Créer `apps/api` (PHP 8.1 : Slim 4, composer), `apps/web` (React + Vite), `apps/desktop` (Electron) avec scripts `dev`, `build`, `test`
+- [x] T010 [P] Créer `packages/shared`, `packages/ui`, `packages/sync`, `packages/assistant`, `packages/i18n` (squelettes exportant un index typé)
+- [x] T011 [P] Docker Compose de dev reproduisant Camoo : PHP 8.x (version alignée sur l'hébergeur) + MySQL 8.0 + MailHog dans `infra/docker-compose.dev.yml` (pas de Redis ni PostgreSQL) (écrit, non exécuté : Docker absent de ce poste)
+- [x] T012 [P] CI (GitHub Actions) dans `.github/workflows/ci.yml` : lint, typecheck, tests front et PHP, build web, build desktop Windows (écrit, pas encore exécuté sur GitHub)
+- [x] T012a [P] Script de déploiement FTP (`infra/deploy/deploy.ps1`) : publie le build web et l'API, exécute les migrations via une commande protégée, lit les identifiants dans l'environnement, jamais dans le dépôt
+- [x] T013 [P] Husky + lint-staged + commitlint (messages conventionnels)
+- [x] T014 [P] Fichiers `.env.example` par application, validation des variables avec Zod au démarrage (API : Config.php existant ; validation Zod web/desktop à brancher avec la première variable utilisée)
 
 ## Phase 2 : Fondations (bloquantes pour toutes les stories)
 
 **⚠️ Aucune user story ne démarre avant la fin de cette phase.**
 
 ### Base de données et multi-tenant
+
 - [ ] T015 Migrations MySQL initiales (`apps/api/database/migrations/`) : countries, country_configs, tenants, users, roles, permissions, audit_logs, notifications, jobs (les « modèles Prisma » des tâches suivantes deviennent des migrations + modèles Eloquent/PDO)
 - [ ] T016 **[TDD]** Test d'isolation générique `apps/api/tests/Isolation/TenantIsolationTest.php` : pour chaque modèle portant `tenant_id`, un utilisateur du tenant A ne lit/écrit rien du tenant B
 - [ ] T017 Couche d'accès tenant-aware : trait/scope global qui ajoute `tenant_id` à toute lecture et écriture, interdiction par test statique des requêtes brutes sans scope (`apps/api/app/Common/Tenancy/`) ; MySQL n'a pas de RLS
@@ -56,6 +60,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [ ] T019 Script de seed : pays Cameroun, rôles par défaut, super admin initial, catalogue de référence (jeu minimal) (`apps/api/prisma/seed.ts`)
 
 ### Sécurité et transverse API
+
 - [ ] T020 Module d'authentification : JWT court + refresh rotatif, hachage Argon2id (`apps/api/src/common/auth/`)
 - [ ] T021 **[TDD]** Garde d'autorisation RBAC + permissions fines (décorateur `@RequirePermission`) avec tests par rôle (`apps/api/src/common/rbac/`)
 - [ ] T022 Intercepteur d'audit : écrit dans `AuditLog` append-only (qui, quoi, quand, poste, avant/après) (`apps/api/src/common/audit/`)
@@ -69,14 +74,16 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [ ] T030 [P] Génération OpenAPI et client typé partagé dans `packages/shared/src/api-client/`
 
 ### Interface partagée
-- [ ] T031 [P] Design tokens, thème clair/sombre, composants de base (Button, Input, Table, Modal, Toast, Form) dans `packages/ui/`
+
+- [ ] T031 [P] Design tokens (fait : `packages/ui/src/tokens.css`, `Logo`) puis composants de base conformes à la maquette (Button, Field, Table, Modal, Toast, Stepper, Switch, Badge) dans `packages/ui/` ; référence : `docs/design-system.md`
 - [ ] T032 [P] i18n : `packages/i18n/fr.json`, `en.json`, hook `useT`, règle ESLint interdisant les textes en dur
 - [ ] T033 [P] Layouts web : `(public)`, `(pharmacy)`, `(admin)` avec gardes d'accès (`apps/web/src/app/`)
 - [ ] T034 [P] Composant de formatage monnaie/date/téléphone piloté par `CountryConfig` (`packages/shared/src/format/`)
 - [ ] T035 **[TDD]** Moteur de prix/TVA/remises/arrondis pur dans `packages/shared/src/pricing/` avec tests (arrondis XAF, TVA multiple, remises plafonnées)
 
 ### Base de la synchronisation
-- [ ] T036 [P] Génération d'identifiants ULID côté client et serveur (`packages/shared/src/ids/`)
+
+- [x] T036 [P] Génération d'identifiants ULID côté client et serveur (`packages/shared/src/ids/`)
 - [ ] T037 **[TDD]** Spécification et tests du contrat `SyncOperation` (idempotence, ordre, versions de schéma) (`packages/sync/tests/`)
 - [ ] T038 Squelette du moteur de sync : file locale, push/pull, curseurs (`packages/sync/src/`)
 
@@ -497,3 +504,54 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 3. US27 + US28 : desktop hors-ligne → **MVP 1** validé par la pharmacie pilote.
 4. US18, US19, US21→US24, US26, US29 → **MVP 2** : visibilité publique et assistant guidé (N1).
 5. V2 puis V3, en une story à la fois, chacune validée avant la suivante.
+
+---
+
+## Annexe : tâches issues de la maquette (design de référence)
+
+Le design de la maquette s'applique **à l'identique** au web et au desktop (voir `docs/design-system.md`).
+
+- [ ] T279 [P] Composants `@sanara/ui` fidèles à la maquette : `Button` (primaire, secondaire, danger, ambre), `Field` (étiquette en capitales, focus vert), `Stepper` (4 segments), `Switch`, `Badge` (ok, attente, danger, neutre), `Table`, `Modal` (rayon 20 px), `Sidebar` pharmacie (blanche) et `Sidebar` admin (sombre avec pastille ADMIN)
+- [ ] T280 [P] Test visuel de non-régression (captures Playwright comparées) des écrans A1, A7, B1 et C1 sur web et dans la fenêtre Electron : le rendu desktop doit être identique au web
+- [ ] T281 [US1] Formulaire d'accès en 4 étapes fidèle à A1 à A3 (stepper, carte avec repère glissable, récapitulatif) et écrans A4 (confirmation `PH-AAAA-NNNN`, suivi avec complément)
+- [ ] T282 [US2] Décision « Demander un complément » (B2) : documents concernés, message au demandeur, renvoi depuis le lien de suivi ; rejet avec motifs prédéfinis et option « autoriser une nouvelle demande »
+- [ ] T283 [US2] Choix de la formule et des postes autorisés à la validation (B2)
+- [ ] T284 [US3] Activation en deux temps (A6) : mot de passe (10 caractères, majuscule, chiffre, spécial) puis code SMS à 6 chiffres, appareils de confiance
+- [ ] T285 [US5] Connexion à deux modes (A7) : e-mail et code PIN de caisse ; double vérification TOTP obligatoire pour le super admin (B0)
+- [ ] T286 [US3] Assistant de configuration en 4 étapes (A8 à A11) et tableau de bord du premier jour (A12) avec liste d'actions de démarrage
+- [ ] T287 [US32] Écrans Pharmacies, fiche et suspension (B3, B4), Formules (B5), Facturation (B6) conformes à la maquette
+- [ ] T288 [US33] Écrans Signalements (B7), Modèles d'e-mails avec variables et aperçu FR/EN (B8), Journal d'audit (B9), Paramètres globaux (B10)
+- [ ] T289 [US34] Écran Pays et zones (B11) : statuts Actif, Préparation, Fermé ; autorité de référence, documents exigés, règles de conservation
+- [ ] T290 [US19] Site public : sélecteur de pays et de langue, gardes « Ce soir / Cette semaine / Ce week-end » avec Appeler et Itinéraire (P9)
+- [x] T291 Maquette « Sanara Écrans » obtenue et intégrée à `docs/design-system.md` (2026-11-24)
+
+### Tâches issues de la maquette « Sanara Écrans » (2026-11-24)
+
+- [ ] T292 [P] Identité : logo et icônes d'application (128, 84, 48, 24 px ; version monochrome blanche à 24 px et moins), zone de protection (x = hauteur de la feuille supérieure), tailles mini (logo 120 px, symbole 16 px) dans `packages/ui`
+- [ ] T293 [US19] Site public P1 (accueil : ville, pays·région, département, « Ma position », trois étapes) et P2 (liste + carte, filtres Ouvert maintenant, De garde, Assurances, Plus proche)
+- [ ] T294 [US19] Fiche pharmacie P3 (photo, badges, services, horaires, contact, équipe de garde, Envoyer mon ordonnance, Itinéraire, Appeler)
+- [ ] T295 [US21] Assistant patient P4 : dépôt photo/PDF, choix Retrait en officine / Je gère ma livraison, états de présence (connecté, hors ligne, urgence), « C'est urgent », ajout de pages ; message fixe d'urgence médicale
+- [ ] T296 [US22] Escalade urgente : notification à 0 min, SMS à 3 min, appel de l'adjoint à 6 min (délai réglable, voir H6) avec tests de la machine d'états
+- [ ] T297 [US23] Suivi de demande P5 et P8 (Reçue, Lue, Vérifiée, Devis prêt, Prête à retirer) ; validation, modification ou refus du devis par le patient
+- [ ] T298 [US24] Réservation du stock à la validation du devis ; **libération automatique après 24 h sans réponse** (job cron) ; mouvement « Libération » tracé
+- [ ] T299 [US24] Code de retrait (ex. K7429) valable le jour même, QR code, écran P7 ; validé seulement après paiement au comptoir
+- [ ] T300 [US22] Console pharmacien H1 (tableau de bord), H2 (file des demandes avec filtres et alerte d'escalade), H3 (lecture proposée, confiance par ligne, scan zoomable) et H3b (composer le devis depuis le stock, lot FEFO proposé, alternatives jamais substituées sans choix)
+- [ ] T301 [US7] Caisse H4 : recherche/scan, F2 attente, F4 remise, F6 retour, F8 client, F10 clôture, modes de règlement (espèces, MTN MoMo, Orange Money, carte, crédit, tiers payant), rendu de monnaie, rattachement à une demande patient
+- [ ] T302 [US10] Compte caissier H7 : rôle, droits (vendre, valider un retrait par code, remise plafonnée, annulation, accès stock/finance), lien d'activation par SMS ou e-mail, **PIN à 4 chiffres choisi par le caissier**
+- [ ] T303 [US24] Vue caissier K1 (appelée C1 par erreur dans la maquette précédente) : retrait par code (pavé numérique ou scan QR), commande trouvée, encaissement puis remise des produits
+- [ ] T304 [US9] Stock H5 (références, valeur, péremptions sous 90 jours, ruptures, filtres, quarantaine, import CSV, FEFO) et H8 (journal des mouvements : achat, disponible, réservé, sortie, alerte, commande ; types Casse, Libération, Entrée, Sortie)
+- [ ] T305 [US12] Achats H9 : suggestions (stock, minimum, ventes 30 j), bon de commande, réception BL avec écart et reliquat, lot, péremption, prix d'achat
+- [ ] T306 [US25] Réglages de l'assistant H6 : niveaux N1/N2/N3, règles du niveau 2 (confiance minimale, familles autorisées, stupéfiants toujours validés, délai d'escalade), indicateurs 30 jours, corrections propres à la pharmacie, partage anonymisé sur accord
+- [ ] T307 [US11] Reçu thermique 80 mm R1 (agrément, n° de ticket, caissier, caisse, client, code de retrait, rendu) et facture A4 R2 (n° `F-AAAA-NNNNNN`, ordonnance, vérificateur, cachet) ; mentions légales par pays
+- [ ] T308 [US27] Desktop D1 : bandeau « Mode hors ligne », compteur d'opérations en attente, MoMo et demandes patients désactivés hors ligne, barre d'état (imprimante, scanner, version)
+- [ ] T309 [US28] Desktop D2 : installateur (dossier, raccourci, démarrage Windows), activation du poste (nom du poste), progression de synchronisation, **écran de conflit de stock** (« corriger » ou « plus tard »)
+- [ ] T310 [US2] Console super admin S1 (indicateurs, file de validation) et S2 (examen : vérifications cochées, aperçu des documents, formule, e-mail généré avec lien de 48 h)
+
+### Compléments issus de l'atlas des écrans (2026-11-24)
+
+- [ ] T311 [US33] Signalements B7 : fausse urgence répétée, limitation d'envoi d'urgences par numéro, classement sans suite
+- [ ] T312 [US33] Paramètres globaux B10 : validité du lien, 2FA, quota de demandes par patient et par jour (5), délai de libération (24 h), mode maintenance, version desktop
+- [ ] T313 [US14] Conventions de tiers payant : part assureur en pourcentage, facturation groupée de fin de mois
+- [ ] T314 [US30] Rapports C5 : prévision saisonnière de la demande, produits dormants (90 jours), export PDF/Excel, envoi planifié par e-mail
+- [ ] T315 [US17] Alerte à la délivrance : comparaison des allergies du patient avec les produits de l'ordonnance (C2)
+- [ ] T316 [P] Matrice rôle → écrans de l'atlas appliquée aux autorisations (titulaire, adjoint, magasinier, caissier, super admin) avec tests d'accès
