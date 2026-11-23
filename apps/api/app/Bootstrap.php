@@ -52,34 +52,6 @@ final class Bootstrap
         $app->get('/health', function (Request $req, Response $res) use ($json, $config) {
             $db = ['ok' => false];
             try {
-                $pdo = Database::pdo();
-                $db = [
-                    'ok' => true,
-                    'version' => (string) $pdo->query('SELECT VERSION()')->fetchColumn(),
-                    'sql_mode' => (string) $pdo->query('SELECT @@SESSION.sql_mode')->fetchColumn(),
-                ];
-            } catch (\Throwable $e) {
-                $db['error'] = $config->debug ? $e->getMessage() : 'unavailable';
-                $db['code'] = (string) $e->getCode(); // code SQLSTATE/MySQL, sans donnée sensible
-            }
-            return $json($res, [
-                'app' => 'Sanara',
-                'status' => $db['ok'] ? 'ok' : 'degraded',
-                'php' => PHP_VERSION,
-                'env' => $config->env,
-                'time' => gmdate('c'),
-                'limits' => [
-                    'upload_max_filesize' => ini_get('upload_max_filesize'),
-                    'post_max_size' => ini_get('post_max_size'),
-                ],
-                'database' => $db,
-            ], $db['ok'] ? 200 : 503);
-        });
+                $handle = Database::db();
+                $db = ['ok' => $handle->ping(), 'version' => $handle->version()];
 
-        // Test de non-régression du pare-feu (apostrophes, accents) : renvoie ce qu'il reçoit.
-        $app->post('/echo', function (Request $req, Response $res) use ($json) {
-            $body = (array) $req->getParsedBody();
-            return $json($res, ['received' => $body, 'length' => mb_strlen((string) ($body['text'] ?? ''))]);
-        });
-    }
-}

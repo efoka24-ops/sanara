@@ -19,6 +19,11 @@ final class Database
         self::$pdo = null;
     }
 
+    public static function db(): SanaraCommonPersistenceDb
+    {
+        return new SanaraCommonPersistenceDb(self::pdo());
+    }
+
     public static function pdo(): PDO
     {
         if (self::$pdo !== null) {

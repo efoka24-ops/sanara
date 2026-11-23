@@ -53,24 +53,24 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ### Base de données et multi-tenant
 
-- [ ] T015 Migrations MySQL initiales (`apps/api/database/migrations/`) : countries, country_configs, tenants, users, roles, permissions, audit_logs, notifications, jobs (les « modèles Prisma » des tâches suivantes deviennent des migrations + modèles Eloquent/PDO)
-- [ ] T016 **[TDD]** Test d'isolation générique `apps/api/tests/Isolation/TenantIsolationTest.php` : pour chaque modèle portant `tenant_id`, un utilisateur du tenant A ne lit/écrit rien du tenant B
-- [ ] T017 Couche d'accès tenant-aware : trait/scope global qui ajoute `tenant_id` à toute lecture et écriture, interdiction par test statique des requêtes brutes sans scope (`apps/api/app/Common/Tenancy/`) ; MySQL n'a pas de RLS
-- [ ] T018 Middleware de contexte tenant : résout le tenant depuis le jeton et le place dans le contexte de requête (`apps/api/app/Common/Tenancy/TenantContext.php`)
-- [ ] T019 Script de seed : pays Cameroun, rôles par défaut, super admin initial, catalogue de référence (jeu minimal) (`apps/api/prisma/seed.ts`)
+- [x] T015 Migrations MySQL initiales (`apps/api/database/migrations/`) : countries, country_configs, tenants, users, roles, permissions, audit_logs, notifications, jobs (les « modèles Prisma » des tâches suivantes deviennent des migrations + modèles Eloquent/PDO)
+- [x] T016 **[TDD]** Test d'isolation générique `apps/api/tests/Isolation/TenantIsolationTest.php` : pour chaque modèle portant `tenant_id`, un utilisateur du tenant A ne lit/écrit rien du tenant B
+- [x] T017 Couche d'accès tenant-aware : trait/scope global qui ajoute `tenant_id` à toute lecture et écriture, interdiction par test statique des requêtes brutes sans scope (`apps/api/app/Common/Tenancy/`) ; MySQL n'a pas de RLS
+- [ ] T018 Middleware de contexte tenant : résout le tenant depuis le jeton et le place dans le contexte de requête (`apps/api/app/Common/Tenancy/TenantContext.php`) (TenantContext fait ; middleware lié au jeton à écrire avec les routes)
+- [ ] T019 Script de seed : pays Cameroun, rôles par défaut, super admin initial, catalogue de référence (jeu minimal) (`apps/api/prisma/seed.ts`) (Seeder rôles + Cameroun fait ; super admin initial et catalogue de référence à faire)
 
 ### Sécurité et transverse API
 
-- [ ] T020 Module d'authentification : JWT court + refresh rotatif, hachage Argon2id (`apps/api/src/common/auth/`)
-- [ ] T021 **[TDD]** Garde d'autorisation RBAC + permissions fines (décorateur `@RequirePermission`) avec tests par rôle (`apps/api/src/common/rbac/`)
-- [ ] T022 Intercepteur d'audit : écrit dans `AuditLog` append-only (qui, quoi, quand, poste, avant/après) (`apps/api/src/common/audit/`)
+- [x] T020 Module d'authentification : JWT court + refresh rotatif, hachage Argon2id (`apps/api/src/common/auth/`)
+- [x] T021 **[TDD]** Garde d'autorisation RBAC + permissions fines (décorateur `@RequirePermission`) avec tests par rôle (`apps/api/src/common/rbac/`)
+- [x] T022 Intercepteur d'audit : écrit dans `AuditLog` append-only (qui, quoi, quand, poste, avant/après) (`apps/api/src/common/audit/`)
 - [ ] T023 [P] Filtre d'erreurs uniforme et codes d'erreur i18n (`apps/api/src/common/errors/`)
-- [ ] T024 [P] Rate limiting par IP et par identifiant (`apps/api/src/common/rate-limit/`)
+- [x] T024 [P] Rate limiting par IP et par identifiant (`apps/api/src/common/rate-limit/`)
 - [ ] T025 [P] Journalisation structurée sans donnée personnelle (pino + masquage) (`apps/api/src/common/logging/`)
 - [ ] T026 [P] Service de stockage de fichiers chiffrés hors racine web, accès via l'API avec URL signée courte, contrôle de type/taille (et scan antivirus si disponible) à l'upload (`apps/api/src/common/storage/`)
 - [ ] T027 [P] Service d'email transactionnel + gabarits FR/EN (`apps/api/src/modules/notifications/email/`)
 - [ ] T028 [P] Interface `SmsProvider` + implémentation « console » de dev (`apps/api/src/modules/notifications/sms/`)
-- [ ] T029 [P] File de jobs en base (table `jobs`, verrou, reprise, délais) exécutée par un cron chaque minute pour relances, emails, rapports, escalades (`apps/api/src/common/jobs/`) ; tester la reprise après arrêt
+- [x] T029 [P] File de jobs en base (table `jobs`, verrou, reprise, délais) exécutée par un cron chaque minute pour relances, emails, rapports, escalades (`apps/api/src/common/jobs/`) ; tester la reprise après arrêt
 - [ ] T030 [P] Génération OpenAPI et client typé partagé dans `packages/shared/src/api-client/`
 
 ### Interface partagée
