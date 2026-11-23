@@ -96,12 +96,12 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 **Goal**: un visiteur soumet une demande complète et reçoit un accusé et un lien de suivi.
 **Independent Test**: soumettre une demande, la voir « En attente » dans la base et recevoir l'email.
 
-- [ ] T039 [P] [US1] Modèles Prisma `PharmacyApplication`, `ApplicationDocument` (statuts : pending, approved, rejected) (`apps/api/prisma/schema.prisma`)
-- [ ] T040 **[TDD]** [US1] Tests de contrat `POST /public/applications` (champs obligatoires, doublon email/agrément, types/tailles de fichiers) (`apps/api/test/applications.e2e-spec.ts`)
+- [x] T039 [P] [US1] Modèles Prisma `PharmacyApplication`, `ApplicationDocument` (statuts : pending, approved, rejected) (`apps/api/prisma/schema.prisma`)
+- [x] T040 **[TDD]** [US1] Tests de contrat `POST /public/applications` (champs obligatoires, doublon email/agrément, types/tailles de fichiers) (`apps/api/test/applications.e2e-spec.ts`) (testé au niveau service ; contrat HTTP avec les routes)
 - [ ] T041 [US1] Schémas Zod du formulaire et règles par pays dans `packages/shared/src/applications/`
 - [ ] T042 [US1] Endpoint de soumission avec upload sécurisé des documents (`apps/api/src/modules/applications/applications.controller.ts`)
-- [ ] T043 [US1] Génération du code de suivi et endpoint `GET /public/applications/:code/status` (`apps/api/src/modules/applications/`)
-- [ ] T044 [P] [US1] Email d'accusé de réception FR/EN (`apps/api/src/modules/notifications/templates/application-received.*`)
+- [x] T043 [US1] Génération du code de suivi et endpoint `GET /public/applications/:code/status` (`apps/api/src/modules/applications/`)
+- [x] T044 [P] [US1] Email d'accusé de réception FR/EN (`apps/api/src/modules/notifications/templates/application-received.*`)
 - [ ] T045 [US1] Page « Digitaliser ma pharmacie » multi-étapes avec carte pour la position (`apps/web/src/app/(public)/inscription/`)
 - [ ] T046 [P] [US1] Page de suivi de demande (`apps/web/src/app/(public)/inscription/suivi/[code]/page.tsx`)
 - [ ] T047 [US1] Anti-spam : limite de débit et captcha sur la soumission
@@ -113,13 +113,13 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 **Goal**: valider/rejeter une demande ; création du tenant et email d'activation.
 
-- [ ] T049 **[TDD]** [US2] Tests : validation crée tenant + propriétaire, rejet exige un motif, pas de double traitement (transaction + verrou) (`apps/api/test/application-review.e2e-spec.ts`)
-- [ ] T050 [US2] Service de validation transactionnelle (création Tenant, User propriétaire, jeton d'activation à durée limitée) (`apps/api/src/modules/applications/review.service.ts`)
-- [ ] T051 [P] [US2] Emails d'activation et de rejet avec motif FR/EN (`apps/api/src/modules/notifications/templates/`)
+- [x] T049 **[TDD]** [US2] Tests : validation crée tenant + propriétaire, rejet exige un motif, pas de double traitement (transaction + verrou) (`apps/api/test/application-review.e2e-spec.ts`)
+- [x] T050 [US2] Service de validation transactionnelle (création Tenant, User propriétaire, jeton d'activation à durée limitée) (`apps/api/src/modules/applications/review.service.ts`)
+- [x] T051 [P] [US2] Emails d'activation et de rejet avec motif FR/EN (`apps/api/src/modules/notifications/templates/`)
 - [ ] T052 [US2] Console super admin : liste des demandes avec filtres et statuts (`apps/web/src/app/(admin)/applications/page.tsx`)
 - [ ] T053 [US2] Vue détail : prévisualisation sécurisée des documents, carte, historique, boutons valider/rejeter (`apps/web/src/app/(admin)/applications/[id]/page.tsx`)
 - [ ] T054 [P] [US2] Renvoi d'un lien d'activation expiré (`apps/api/src/modules/applications/resend-activation.ts`)
-- [ ] T055 [US2] Audit de toutes les décisions et notification interne aux super admins pour les nouvelles demandes
+- [x] T055 [US2] Audit de toutes les décisions et notification interne aux super admins pour les nouvelles demandes
 - [ ] T056 [US2] Test E2E : soumission → validation → réception de l'email (MailHog) (`tests/e2e/us2-review.spec.ts`)
 
 **Checkpoint US2** ✅
