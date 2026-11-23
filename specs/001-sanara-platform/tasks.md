@@ -64,10 +64,10 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T020 Module d'authentification : JWT court + refresh rotatif, hachage Argon2id (`apps/api/src/common/auth/`)
 - [x] T021 **[TDD]** Garde d'autorisation RBAC + permissions fines (décorateur `@RequirePermission`) avec tests par rôle (`apps/api/src/common/rbac/`)
 - [x] T022 Intercepteur d'audit : écrit dans `AuditLog` append-only (qui, quoi, quand, poste, avant/après) (`apps/api/src/common/audit/`)
-- [ ] T023 [P] Filtre d'erreurs uniforme et codes d'erreur i18n (`apps/api/src/common/errors/`)
+- [x] T023 [P] Filtre d'erreurs uniforme et codes d'erreur i18n (`apps/api/src/common/errors/`)
 - [x] T024 [P] Rate limiting par IP et par identifiant (`apps/api/src/common/rate-limit/`)
-- [ ] T025 [P] Journalisation structurée sans donnée personnelle (pino + masquage) (`apps/api/src/common/logging/`)
-- [ ] T026 [P] Service de stockage de fichiers chiffrés hors racine web, accès via l'API avec URL signée courte, contrôle de type/taille (et scan antivirus si disponible) à l'upload (`apps/api/src/common/storage/`)
+- [x] T025 [P] Journalisation structurée sans donnée personnelle (pino + masquage) (`apps/api/src/common/logging/`)
+- [x] T026 [P] Service de stockage de fichiers chiffrés hors racine web, accès via l'API avec URL signée courte, contrôle de type/taille (et scan antivirus si disponible) à l'upload (`apps/api/src/common/storage/`)
 - [x] T027 [P] Service d'email transactionnel + gabarits FR/EN (`apps/api/src/modules/notifications/email/`) (SMTP noreply@trugroup.cm vérifié sur 587/TLS et 465/SSL ; gabarit « accès validé » ; autres gabarits avec leurs stories)
 - [x] T028 [P] Interface `SmsProvider` + implémentation « console » de dev (`apps/api/src/modules/notifications/sms/`) (+ fournisseur teeeotp, clé de test)
 - [x] T029 [P] File de jobs en base (table `jobs`, verrou, reprise, délais) exécutée par un cron chaque minute pour relances, emails, rapports, escalades (`apps/api/src/common/jobs/`) ; tester la reprise après arrêt
