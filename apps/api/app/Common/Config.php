@@ -18,6 +18,13 @@ final class Config
         public readonly string $storageKey = '',
         public readonly string $storageDir = '',
         public readonly string $corsOrigin = '',
+        public readonly string $cronKey = '',
+        public readonly string $mailHost = '',
+        public readonly int $mailPort = 587,
+        public readonly string $mailEncryption = 'tls',
+        public readonly string $mailUser = '',
+        public readonly string $mailPassword = '',
+        public readonly string $mailFromName = 'Sanara',
     ) {
     }
 
@@ -39,6 +46,13 @@ final class Config
             storageKey: $get('STORAGE_KEY'),
             storageDir: $get('STORAGE_DIR'),
             corsOrigin: $get('CORS_ORIGIN'),
+            cronKey: $get('CRON_KEY'),
+            mailHost: $get('MAIL_HOST'),
+            mailPort: (int) $get('MAIL_PORT', '587'),
+            mailEncryption: $get('MAIL_ENCRYPTION', 'tls'),
+            mailUser: $get('MAIL_USERNAME'),
+            mailPassword: $get('MAIL_PASSWORD'),
+            mailFromName: $get('MAIL_FROM_NAME', 'Sanara'),
         );
     }
 }

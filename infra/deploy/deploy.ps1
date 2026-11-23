@@ -38,7 +38,7 @@ function Read-DotEnv([string]$path) {
 }
 
 $cfg = Read-DotEnv $EnvFile
-foreach ($k in 'FTP_HOST', 'FTP_PORT', 'FTP_USER', 'FTP_PASSWORD', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD', 'JWT_SECRET', 'APP_URL') {
+foreach ($k in 'FTP_HOST', 'FTP_PORT', 'FTP_USER', 'FTP_PASSWORD', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD', 'JWT_SECRET', 'APP_URL', 'STORAGE_KEY', 'CRON_KEY', 'SUPERADMIN_EMAIL', 'SUPERADMIN_PASSWORD', 'MAIL_HOST', 'MAIL_USERNAME', 'MAIL_PASSWORD') {
   if (-not $cfg.ContainsKey($k) -or [string]::IsNullOrWhiteSpace($cfg[$k])) { throw "Variable manquante dans .env : $k" }
 }
 $base = $cfg['APP_URL'].TrimEnd('/')
@@ -81,6 +81,16 @@ DB_DATABASE='$($cfg['DB_DATABASE'] -replace "'", "\'")'
 DB_USERNAME='$($cfg['DB_USERNAME'] -replace "'", "\'")'
 DB_PASSWORD='$($cfg['DB_PASSWORD'] -replace "'", "\'")'
 JWT_SECRET='$($cfg['JWT_SECRET'])'
+STORAGE_KEY='$($cfg['STORAGE_KEY'])'
+CRON_KEY='$($cfg['CRON_KEY'])'
+SUPERADMIN_EMAIL='$($cfg['SUPERADMIN_EMAIL'])'
+SUPERADMIN_PASSWORD='$($cfg['SUPERADMIN_PASSWORD'])'
+MAIL_HOST='$($cfg['MAIL_HOST'])'
+MAIL_PORT=$(if ($cfg['MAIL_PORT']) { $cfg['MAIL_PORT'] } else { 587 })
+MAIL_ENCRYPTION=tls
+MAIL_USERNAME='$($cfg['MAIL_USERNAME'])'
+MAIL_PASSWORD='$($cfg['MAIL_PASSWORD'] -replace "'", "\x27")'
+MAIL_FROM_NAME=Sanara
 "@
 [IO.File]::WriteAllText("$stage\api-core\.env", ($envServer -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding($false)))
 
@@ -106,6 +116,14 @@ try {
   rrmdir(`$root . '/api-core/vendor'); rrmdir(`$root . '/api-core/app'); rrmdir(`$root . '/assets');
   `$ok = `$z->extractTo(`$root); `$out['files'] = `$z->numFiles; `$z->close();
   `$out['ok'] = `$ok;
+  try {
+    require `$root . '/api-core/vendor/autoload.php';
+    DotenvDotenv::createImmutable(`$root . '/api-core')->load();
+    `$cfg = SanaraCommonConfig::fromEnv(`$_ENV);
+    SanaraCommonDatabase::configure(`$cfg);
+    `$p = new SanaraCommonPersistenceProvisioner(SanaraCommonDatabase::db(), new SanaraCommonClock(), `$root . '/api-core/database/migrations');
+    `$out['provision'] = `$p->run((string)`$_ENV['SUPERADMIN_EMAIL'], (string)`$_ENV['SUPERADMIN_PASSWORD']);
+  } catch (Throwable `$e) { `$out['provision_error'] = get_class(`$e) . ': ' . `$e->getMessage(); }
 } catch (Throwable `$e) { `$out['error'] = `$e->getMessage(); }
 @unlink(`$zipPath); `$out['self_deleted'] = @unlink(__FILE__);
 echo json_encode(`$out);

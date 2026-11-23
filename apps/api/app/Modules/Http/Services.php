@@ -19,6 +19,10 @@ use Sanara\Common\Tenancy\TenantContext;
 use Sanara\Modules\Applications\ActivationService;
 use Sanara\Modules\Applications\ApplicationService;
 use Sanara\Modules\Applications\ReviewService;
+use Sanara\Modules\Notifications\Email\EmailTemplates;
+use Sanara\Modules\Notifications\Email\LogMailer;
+use Sanara\Modules\Notifications\Email\SmtpMailer;
+use Sanara\Modules\Notifications\MailJobHandler;
 
 /** Composition des services d'une requête. Les tests la construisent avec une base SQLite et une horloge figée. */
 final class Services
@@ -33,6 +37,7 @@ final class Services
     public readonly ReviewService $review;
     public readonly ActivationService $activation;
     public readonly TenantContext $tenant;
+    public readonly MailJobHandler $mail;
 
     public function __construct(public readonly Db $db, public readonly Clock $clock, public readonly Config $config, ?EncryptedStorage $storage = null)
     {
@@ -45,12 +50,16 @@ final class Services
         $this->jobs = new JobQueue($db, $clock);
         $this->tenant = new TenantContext();
         $this->storage = $storage ?? new EncryptedStorage(
-            $config->storageDir !== '' ? $config->storageDir : dirname(__DIR__, 3) . '/storage-private',
+            $config->storageDir !== '' ? $config->storageDir : dirname(__DIR__, 4) . '/storage-private',
             (string) base64_decode($config->storageKey, true),
             hash_hmac('sha256', 'storage-url', $config->jwtSecret),
         );
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
         $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
         $this->activation = new ActivationService($db, $clock, $hasher);
+        $mailer = $config->mailHost !== ''
+            ? new SmtpMailer($config->mailHost, $config->mailPort, $config->mailEncryption, $config->mailUser, $config->mailPassword, $config->mailFromName)
+            : new LogMailer();
+        $this->mail = new MailJobHandler($this->jobs, $mailer, new EmailTemplates());
     }
 }

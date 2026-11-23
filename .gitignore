@@ -25,3 +25,5 @@ storage/private/
 Thumbs.db
 *.log
 .phpunit.cache/
+storage-private/
+apps/storage-private/

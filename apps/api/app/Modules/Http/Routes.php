@@ -12,6 +12,23 @@ use Slim\Routing\RouteCollectorProxy;
 
 final class Routes
 {
+    /** Envoie les e-mails en attente après la réponse : filet de sécurité si le cron n'est pas encore configuré. */
+    private static function drainLater(Services $s): void
+    {
+        if ($s->config->env === 'testing') {
+            return;
+        }
+        register_shutdown_function(static function () use ($s): void {
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+            try {
+                $s->mail->drain(3);
+            } catch (\Throwable) {
+            }
+        });
+    }
+
     public static function register(App $app, Services $s): void
     {
         $rf = $app->getResponseFactory();
@@ -27,6 +44,15 @@ final class Routes
             }
         };
         $body = static fn (Request $r): array => (array) ($r->getParsedBody() ?? []);
+
+        // Déclencheur des tâches de fond pour le cron Camoo (URL appelée chaque minute) ; clé secrète obligatoire.
+        $app->get('/internal/run-jobs', function (Request $req, Response $res) use ($s, $json) {
+            $key = (string) ($req->getQueryParams()['key'] ?? '');
+            if ($s->config->cronKey === '' || !hash_equals($s->config->cronKey, $key)) {
+                throw new ApiException('forbidden', 403);
+            }
+            return $json($res, ['mails_sent' => $s->mail->drain(20)]);
+        });
 
         // --- Authentification ---
         $app->post('/auth/login', function (Request $req, Response $res) use ($s, $json, $limit, $body) {
@@ -76,7 +102,9 @@ final class Routes
         };
         $app->post('/public/applications', function (Request $req, Response $res) use ($s, $json, $limit, $body, $docs) {
             $limit($req, 'application', 5, 3600);
-            return $json($res, $s->applications->submit($body($req), $docs($req)), 201);
+            $out = $s->applications->submit($body($req), $docs($req));
+            self::drainLater($s);
+            return $json($res, $out, 201);
         });
         $app->get('/public/applications/{code}/status', function (Request $req, Response $res, array $a) use ($s, $json) {
             return $json($res, $s->applications->status($a['code']));
@@ -112,6 +140,7 @@ final class Routes
             $g->post('/applications/{id}/approve', function (Request $req, Response $res, array $a) use ($s, $json, $body) {
                 $b = $body($req);
                 $r = $s->review->approve($a['id'], (string) $req->getAttribute('userId'), (string) ($b['plan'] ?? 'trial'), (int) ($b['pos_count'] ?? 1));
+                self::drainLater($s);
                 return $json($res, ['tenant_id' => $r['tenant_id']]);
             })->add($perm('applications.review'));
             $g->post('/applications/{id}/reject', function (Request $req, Response $res, array $a) use ($s, $body) {
