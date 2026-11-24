@@ -178,62 +178,62 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 ## Phase 9 : US7 - Stock par lot, FEFO et alertes (P1) 🎯 MVP 1
 
 - [x] T088 [P] [US7] Modèles `Lot`, `StockMovement`, `StockAlert`, `Quarantine`, `Destruction` (`apps/api/database/migrations/0006_stock.sql`)
-- [x] T089 **[TDD]** [US7] Tests de la logique pure : FEFO multi-lots, stock insuffisant, stock négatif désactivé, corrections par écriture inverse (`packages/shared/src/stock/fefo.spec.ts`)
+- [x] T089 **[TDD]** [US7] Tests de la logique pure : FEFO multi-lots, stock insuffisant, stock négatif désactivé, corrections par écriture inverse (`packages/shared/src/stock/fefo.spec.ts`) (tests PHP et TS sur les mêmes cas)
 - [x] T090 [US7] Implémentation FEFO et calcul du stock courant par journal de mouvements (`packages/shared/src/stock/index.ts`)
 - [x] T091 [US7] API de réception de stock (lot, péremption, quantité) et de consultation (`apps/api/app/Modules/Stock/StockService.php`, routes `/app/stock/*`, tests `apps/api/tests/Stock/StockHttpTest.php`)
-- [ ] T092 [US7] Job quotidien : alertes péremption 30/60/90 jours et blocage des lots périmés (`apps/api/src/modules/stock/jobs/expiry.job.ts`)
-- [ ] T093 [US7] Alertes de stock minimum/rupture et centre de notifications (`apps/api/src/modules/notifications/stock-alerts.ts`)
-- [ ] T094 [US7] Quarantaine et destruction avec procès-verbal PDF (`apps/api/src/modules/stock/destruction.service.ts`)
-- [ ] T095 [US7] Pages stock : vue par produit/lot, alertes, quarantaine, destruction (`apps/web/src/app/(pharmacy)/stock/`)
-- [ ] T096 [P] [US7] Paramètres de seuils par produit et alerte de péremption courte à la réception
+- [x] T092 [US7] Job quotidien : alertes péremption 30/60/90 jours et blocage des lots périmés (`apps/api/src/modules/stock/jobs/expiry.job.ts`)
+- [x] T093 [US7] Alertes de stock minimum/rupture et centre de notifications (`apps/api/src/modules/notifications/stock-alerts.ts`)
+- [x] T094 [US7] Quarantaine et destruction avec procès-verbal PDF (`apps/api/src/modules/stock/destruction.service.ts`) (procès-verbal HTML imprimable, PDF via l’impression du navigateur)
+- [x] T095 [US7] Pages stock : vue par produit/lot, alertes, quarantaine, destruction (`apps/web/src/app/(pharmacy)/stock/`)
+- [x] T096 [P] [US7] Paramètres de seuils par produit et alerte de péremption courte à la réception
 
 **Checkpoint US7** ✅
 
 ## Phase 10 : US8 - Inventaire (P1) 🎯 MVP 1
 
-- [ ] T097 [P] [US8] Modèles `Inventory`, `InventoryLine` (`apps/api/prisma/schema.prisma`)
-- [ ] T098 **[TDD]** [US8] Tests : écarts calculés à l'instant du comptage, fusion de comptages hors-ligne, validation par pharmacien (`packages/shared/src/stock/inventory.spec.ts`)
-- [ ] T099 [US8] Service d'inventaire complet/tournant, comptage à l'aveugle, ajustements valorisés (`apps/api/src/modules/stock/inventory.service.ts`)
-- [ ] T100 [US8] Interface de comptage par scan (clavier/scanner) avec mode aveugle (`apps/web/src/app/(pharmacy)/stock/inventaire/`)
-- [ ] T101 [P] [US8] Rapport d'écarts valorisé, export PDF/Excel
-- [ ] T102 [US8] Validation par un pharmacien avec audit
+- [x] T097 [P] [US8] Modèles `Inventory`, `InventoryLine` (`apps/api/prisma/schema.prisma`)
+- [x] T098 **[TDD]** [US8] Tests : écarts calculés à l'instant du comptage, fusion de comptages hors-ligne, validation par pharmacien (`packages/shared/src/stock/inventory.spec.ts`) (logique en PHP ; miroir TypeScript non fait)
+- [x] T099 [US8] Service d'inventaire complet/tournant, comptage à l'aveugle, ajustements valorisés (`apps/api/src/modules/stock/inventory.service.ts`)
+- [x] T100 [US8] Interface de comptage par scan (clavier/scanner) avec mode aveugle (`apps/web/src/app/(pharmacy)/stock/inventaire/`)
+- [x] T101 [P] [US8] Rapport d'écarts valorisé, export PDF/Excel (export CSV ; PDF via impression)
+- [x] T102 [US8] Validation par un pharmacien avec audit
 
 **Checkpoint US8** ✅
 
 ## Phase 11 : US10 - Caisse rapide (P1) 🎯 MVP 1
 
-- [ ] T103 [P] [US10] Modèles `Sale`, `SaleLine`, `HeldCart`, `DocumentSequence` (`apps/api/prisma/schema.prisma`)
-- [ ] T104 **[TDD]** [US10] Tests : total avec remises plafonnées, validation responsable au-delà du plafond, produit sous ordonnance, FEFO à la vente (`packages/shared/src/sales/sale.spec.ts`)
-- [ ] T105 [US10] Logique de vente pure partagée (lignes, remises, TVA, statuts réglementés) (`packages/shared/src/sales/`)
-- [ ] T106 [US10] API de création de vente et sortie de stock transactionnelle (`apps/api/src/modules/sales/`)
-- [ ] T107 [US10] Écran de caisse : scan, recherche DCI/nom, quantités, raccourcis clavier, paniers en attente (`apps/web/src/app/(pharmacy)/caisse/`)
-- [ ] T108 [US10] Contrôle des produits réglementés : saisie/rattachement d'ordonnance et pharmacien délivrant
-- [ ] T109 [US10] Suggestions de génériques en rupture
-- [ ] T110 [US10] Numérotation par poste sans collision (`packages/shared/src/sales/numbering.ts`) avec tests de collision
-- [ ] T111 [US10] Budget de performance : test automatique « ajout article < 200 ms » (`tests/perf/pos.spec.ts`)
+- [x] T103 [P] [US10] Modèles `Sale`, `SaleLine`, `HeldCart`, `DocumentSequence` (`apps/api/prisma/schema.prisma`)
+- [x] T104 **[TDD]** [US10] Tests : total avec remises plafonnées, validation responsable au-delà du plafond, produit sous ordonnance, FEFO à la vente (`packages/shared/src/sales/sale.spec.ts`) (PHP et TypeScript, fixtures communes)
+- [x] T105 [US10] Logique de vente pure partagée (lignes, remises, TVA, statuts réglementés) (`packages/shared/src/sales/`)
+- [x] T106 [US10] API de création de vente et sortie de stock transactionnelle (`apps/api/src/modules/sales/`)
+- [x] T107 [US10] Écran de caisse : scan, recherche DCI/nom, quantités, raccourcis clavier, paniers en attente (`apps/web/src/app/(pharmacy)/caisse/`)
+- [x] T108 [US10] Contrôle des produits réglementés : saisie/rattachement d'ordonnance et pharmacien délivrant
+- [x] T109 [US10] Suggestions de génériques en rupture
+- [x] T110 [US10] Numérotation par poste sans collision (`packages/shared/src/sales/numbering.ts`) avec tests de collision
+- [ ] T111 [US10] Budget de performance : test automatique « ajout article < 200 ms » (`tests/perf/pos.spec.ts`) (non fait)
 
 **Checkpoint US10** ✅
 
 ## Phase 12 : US11 - Paiements, tickets, clôture (P1) 🎯 MVP 1
 
-- [ ] T112 [P] [US11] Modèles `Payment`, `CashSession`, `CashCount` (`apps/api/prisma/schema.prisma`)
-- [ ] T113 **[TDD]** [US11] Tests : paiements mixtes, rendu monnaie, clôture avec écart, rapport Z, ré-impression « DUPLICATA » (`packages/shared/src/cash/cash.spec.ts`)
-- [ ] T114 [US11] Paiements multiples (espèces, Mobile Money par référence, carte, crédit) (`apps/api/src/modules/sales/payments.service.ts`)
-- [ ] T115 [US11] Ouverture avec fond de caisse, clôture avec comptage et écart motivé (`apps/api/src/modules/sales/cash-session.service.ts`)
-- [ ] T116 [US11] Gabarits ticket 58/80 mm et facture A4 (PDF) pilotés par `TenantSettings` (`packages/shared/src/documents/`)
-- [ ] T117 [US11] UI paiement mixte et rendu monnaie dans la caisse
-- [ ] T118 [US11] Rapport Z et obligation de clôturer la caisse précédente à la connexion
-- [ ] T119 [US11] Gestion de l'imprimante absente : vente enregistrée, ré-impression ultérieure
+- [x] T112 [P] [US11] Modèles `Payment`, `CashSession`, `CashCount` (`apps/api/prisma/schema.prisma`)
+- [x] T113 **[TDD]** [US11] Tests : paiements mixtes, rendu monnaie, clôture avec écart, rapport Z, ré-impression « DUPLICATA » (`packages/shared/src/cash/cash.spec.ts`) (PHP ; miroir TypeScript non fait)
+- [x] T114 [US11] Paiements multiples (espèces, Mobile Money par référence, carte, crédit) (`apps/api/src/modules/sales/payments.service.ts`)
+- [x] T115 [US11] Ouverture avec fond de caisse, clôture avec comptage et écart motivé (`apps/api/src/modules/sales/cash-session.service.ts`)
+- [x] T116 [US11] Gabarits ticket 58/80 mm et facture A4 (PDF) pilotés par `TenantSettings` (`packages/shared/src/documents/`) (gabarits HTML côté API, ticket 58/80 et A4)
+- [x] T117 [US11] UI paiement mixte et rendu monnaie dans la caisse
+- [x] T118 [US11] Rapport Z et obligation de clôturer la caisse précédente à la connexion
+- [x] T119 [US11] Gestion de l'imprimante absente : vente enregistrée, ré-impression ultérieure
 
 **Checkpoint US11** ✅
 
 ## Phase 13 : US12 - Retours, annulations, avoirs (P1) 🎯 MVP 1
 
-- [ ] T120 [P] [US12] Modèles `SaleReturn`, `CreditNote` (`apps/api/prisma/schema.prisma`)
-- [ ] T121 **[TDD]** [US12] Tests : retour partiel, remise en stock conditionnelle, délai de retour, approbation (`packages/shared/src/sales/returns.spec.ts`)
-- [ ] T122 [US12] API retours/annulations, motif obligatoire, écritures inverses de stock et de caisse (`apps/api/src/modules/sales/returns.service.ts`)
-- [ ] T123 [US12] Écran de retour depuis l'historique des ventes, avoir imprimable
-- [ ] T124 [US12] Règle de décision de remise en stock par le pharmacien (défaut : non)
+- [x] T120 [P] [US12] Modèles `SaleReturn`, `CreditNote` (`apps/api/prisma/schema.prisma`)
+- [x] T121 **[TDD]** [US12] Tests : retour partiel, remise en stock conditionnelle, délai de retour, approbation (`packages/shared/src/sales/returns.spec.ts`) (PHP ; miroir TypeScript non fait)
+- [x] T122 [US12] API retours/annulations, motif obligatoire, écritures inverses de stock et de caisse (`apps/api/src/modules/sales/returns.service.ts`)
+- [x] T123 [US12] Écran de retour depuis l'historique des ventes, avoir imprimable
+- [x] T124 [US12] Règle de décision de remise en stock par le pharmacien (défaut : non)
 
 **Checkpoint US12** ✅
 

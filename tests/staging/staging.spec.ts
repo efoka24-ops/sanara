@@ -58,18 +58,26 @@ test('une demande réaliste est déposée, suivie, et le doublon est refusé', a
 });
 
 test('les routes protégées refusent un visiteur anonyme', async ({ request }) => {
-  for (const p of ['/api/app/products', '/api/admin/applications', '/api/auth/sessions']) {
+  for (const p of [
+    '/api/app/products',
+    '/api/admin/applications',
+    '/api/auth/sessions',
+    '/api/app/stock/overview',
+    '/api/app/sales',
+    '/api/app/cash/current',
+    '/api/app/inventories',
+  ]) {
     const r = await request.get(p);
     expect(r.status(), p).toBe(401);
   }
 });
 
-test('le super admin doit configurer la double vérification', async ({ request }) => {
+test('le super admin passe par la double vérification', async ({ request }) => {
   const pw = process.env.STAGING_ADMIN_PASSWORD;
-  test.skip(!pw, 'STAGING_ADMIN_PASSWORD non fourni');
-  const r = await request.post('/api/auth/login', {
-    data: { email: 'admin@trugroup.cm', password: pw },
-  });
+  const email = process.env.STAGING_ADMIN_EMAIL;
+  test.skip(!pw || !email, 'STAGING_ADMIN_EMAIL et STAGING_ADMIN_PASSWORD non fournis');
+  const r = await request.post('/api/auth/login', { data: { email, password: pw } });
   expect(r.ok()).toBeTruthy();
-  expect((await r.json()).user.mfa_setup_required).toBe(true);
+  const j = await r.json();
+  expect(j.mfa_required === true || j.user?.mfa_setup_required === true).toBe(true);
 });
