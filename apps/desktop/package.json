@@ -5,12 +5,13 @@
   "type": "module",
   "main": "src/main.ts",
   "scripts": {
-    "dev": "echo \"desktop: Electron arrive en US27\"",
+    "dev": "echo \"desktop: shell bootstrap disponible\"",
     "build": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "electron": "^37.5.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }

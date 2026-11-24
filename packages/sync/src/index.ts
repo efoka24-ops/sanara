@@ -55,6 +55,19 @@ export interface BatchResult {
   failed: { id: string; reason: string }[];
 }
 
+export interface VersionedEntity<T = unknown> {
+  id: string;
+  version: number;
+  data: T;
+}
+
+export function resolveServerWins<T>(
+  local: VersionedEntity<T>,
+  server: VersionedEntity<T>,
+): VersionedEntity<T> {
+  return server.version >= local.version ? server : local;
+}
+
 export async function applyBatch(
   batch: SyncOperation[],
   store: AppliedStore,
