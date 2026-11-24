@@ -21,7 +21,7 @@ if ($db->one('SELECT id FROM tenants WHERE id = ?', [$tid]) === null) {
 }
 $users = new Sanara\Common\Persistence\UserRepository($db, $clock);
 $hasher = new Sanara\Common\Auth\PasswordHasher();
-foreach ([['owner', 'owner@demo.test'], ['cashier', 'cashier@demo.test'], ['storekeeper', 'storekeeper@demo.test']] as [$role, $email]) {
+foreach ([['owner', 'owner@demo.test'], ['cashier', 'cashier@demo.test'], ['storekeeper', 'storekeeper@demo.test'], ['pharmacist', 'pharmacist@demo.test']] as [$role, $email]) {
     if ($users->findByEmail($email) === null) {
         $users->create(['email' => $email, 'role_code' => $role, 'tenant_id' => $tid, 'password_hash' => $hasher->hash((string) ($env['DEMO_PASSWORD'] ?? 'Demo#Motdepasse1'))]);
     }

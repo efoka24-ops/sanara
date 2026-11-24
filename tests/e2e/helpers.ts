@@ -59,3 +59,33 @@ export async function mailFor(
   }
   throw new Error(`Aucun e-mail « ${subject} » pour ${to}`);
 }
+
+const API = 'http://127.0.0.1:8081';
+export const DEMO_PW = 'Demo#Motdepasse1';
+
+/** Appels API directs pour préparer des données (le navigateur garde son jeton en mémoire seulement). */
+export async function apiAs(request: APIRequestContext, email: string) {
+  const login = await request.post(`${API}/auth/login`, { data: { email, password: DEMO_PW } });
+  const token = ((await login.json()) as { access: string }).access;
+  return async <T = Record<string, unknown>>(
+    method: string,
+    path: string,
+    data?: unknown,
+  ): Promise<T> => {
+    const r = await request.fetch(`${API}${path}`, {
+      method,
+      data,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (r.status() === 204) return {} as T;
+    return (await r.json()) as T;
+  };
+}
+
+export async function loginAs(page: Page, email: string): Promise<void> {
+  await page.goto('/connexion');
+  await page.getByLabel('E-mail').fill(email);
+  await page.getByLabel('Mot de passe').fill(DEMO_PW);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
+}

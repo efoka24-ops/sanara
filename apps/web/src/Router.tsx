@@ -4,6 +4,10 @@ import { ToastProvider } from '@sanara/ui';
 import { Home } from './App';
 import { DashboardPage } from './pages/DashboardPage';
 import { CatalogPage } from './pages/CatalogPage';
+import { StockPage } from './pages/StockPage';
+import { InventoryPage } from './pages/InventoryPage';
+import { PosPage } from './pages/PosPage';
+import { SalesPage } from './pages/SalesPage';
 import { SetupPage } from './pages/SetupPage';
 import { TeamPage } from './pages/TeamPage';
 import { ForgotPage, ResetPage, SecurityPage } from './pages/SecurityPages';
@@ -14,8 +18,6 @@ import { AdminApplicationPage, AdminApplicationsPage } from './pages/AdminPages'
 import { AdminLayout, PharmacyLayout, PublicLayout } from './app/layouts';
 import { RequireArea, RequireSession } from './app/guards';
 import { SessionProvider } from './app/session';
-
-const Placeholder = ({ name }: { name: string }) => <h1>{name}</h1>;
 
 export function Router() {
   return (
@@ -43,6 +45,10 @@ export function Router() {
                   <Route path="configuration" element={<SetupPage />} />
                   <Route path="equipe" element={<TeamPage />} />
                   <Route path="produits" element={<CatalogPage />} />
+                  <Route path="stock" element={<StockPage />} />
+                  <Route path="stock/inventaire" element={<InventoryPage />} />
+                  <Route path="caisse" element={<PosPage />} />
+                  <Route path="ventes" element={<SalesPage />} />
                 </Route>
               </Route>
               <Route path="admin" element={<RequireArea area="admin" />}>

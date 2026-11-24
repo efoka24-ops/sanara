@@ -429,6 +429,20 @@ final class Routes
                 $s->sales->resume($actor($q), $a['id']);
                 return $r->withStatus(204);
             })->add($perm('sales.create'));
+            // Collègues pouvant valider une action sensible (remise, ordonnance, retour) par PIN.
+            $g->get('/approvers', function (Request $q, Response $r) use ($s, $json) {
+                $perm = (string) ($q->getQueryParams()['permission'] ?? '');
+                if (!in_array($perm, ['sales.discount_override', 'narcotics.dispense', 'sales.cancel'], true)) {
+                    throw new ApiException('validation_failed', 422, ['fields' => ['permission' => 'invalid']]);
+                }
+                $out = [];
+                foreach ($s->db->all("SELECT id, email, role_code FROM users WHERE tenant_id = ? AND status = 'active' ORDER BY email", [(string) $q->getAttribute('tenantId')]) as $u) {
+                    if ($s->authz->can((string) $u['id'], $perm)) {
+                        $out[] = ['id' => $u['id'], 'email' => $u['email'], 'role' => $u['role_code']];
+                    }
+                }
+                return $json($r, ['items' => $out]);
+            })->add($perm('sales.create'));
 
 
             $g->get('/families', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->families()]))->add($perm('products.read'));

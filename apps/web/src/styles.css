@@ -485,3 +485,93 @@ a.sa-btn {
   margin: 0;
   font-weight: 600;
 }
+
+/* Caisse, stock, inventaire */
+.picker {
+  position: relative;
+  flex: 1;
+}
+.picker .search {
+  width: 100%;
+}
+.picker__list {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-line);
+  border-radius: var(--sa-r-card);
+  box-shadow: var(--sa-shadow-card);
+}
+.picker__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: var(--sa-r-field);
+  font: inherit;
+  cursor: pointer;
+}
+.picker__item:hover,
+.picker__item:focus-visible {
+  background: var(--sa-green-100);
+}
+.picker__item .muted {
+  grid-column: 1;
+}
+.pos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+.pos__side {
+  position: sticky;
+  top: 16px;
+}
+.pos__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.pos__total b {
+  font-family: var(--sa-font-display);
+  font-size: 28px;
+  color: var(--sa-green-900);
+}
+.qty {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--sa-line-3);
+  border-radius: var(--sa-r-field);
+  background: var(--sa-bg);
+  font: inherit;
+}
+.qty:focus {
+  outline: 2px solid var(--sa-green-700);
+  outline-offset: 1px;
+}
+.link-strong.is-sel {
+  text-decoration: underline;
+}
+fieldset.panel {
+  border: 1px solid var(--sa-line);
+}
+@media (max-width: 900px) {
+  .pos {
+    grid-template-columns: 1fr;
+  }
+  .pos__side {
+    position: static;
+  }
+}

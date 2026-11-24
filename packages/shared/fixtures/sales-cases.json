@@ -1,0 +1,49 @@
+{
+  "lines": [
+    {
+      "qty": 3,
+      "unitPrice": 1000,
+      "discountBp": 1000,
+      "vatBp": 1925,
+      "expect": { "gross": 3000, "discount": 300, "total": 2700, "vat": 436 }
+    },
+    {
+      "qty": 1,
+      "unitPrice": 2800,
+      "discountBp": 0,
+      "vatBp": 0,
+      "expect": { "gross": 2800, "discount": 0, "total": 2800, "vat": 0 }
+    },
+    {
+      "qty": 3,
+      "unitPrice": 1000,
+      "discountBp": 0,
+      "vatBp": 1925,
+      "expect": { "gross": 3000, "discount": 0, "total": 3000, "vat": 484 }
+    }
+  ],
+  "settle": [
+    {
+      "total": 5000,
+      "payments": [
+        { "method": "momo_mtn", "amount": 2000 },
+        { "method": "cash", "amount": 5000 }
+      ],
+      "expect": {
+        "change": 2000,
+        "applied": [
+          { "method": "momo_mtn", "amount": 2000, "tendered": 2000 },
+          { "method": "cash", "amount": 3000, "tendered": 5000 }
+        ]
+      }
+    },
+    { "total": 5000, "payments": [{ "method": "cash", "amount": 4999 }], "expect": null },
+    { "total": 5000, "payments": [{ "method": "card", "amount": 6000 }], "expect": null },
+    { "total": 5000, "payments": [{ "method": "cash", "amount": 0 }], "expect": null },
+    {
+      "total": 5000,
+      "payments": [{ "method": "card", "amount": 5000 }],
+      "expect": { "change": 0, "applied": [{ "method": "card", "amount": 5000, "tendered": 5000 }] }
+    }
+  ]
+}

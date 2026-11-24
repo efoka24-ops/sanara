@@ -36,4 +36,16 @@ final class SaleMathTest extends TestCase
         $this->assertNull(SaleMath::settle(5000, [['method' => 'cash', 'amount' => 0]]));
         $this->assertSame(0, SaleMath::settle(5000, [['method' => 'card', 'amount' => 5000]])['change']);
     }
+
+    /** Mêmes cas que les tests TypeScript : packages/shared/fixtures/sales-cases.json. */
+    public function testSharedFixturesGiveTheSameResultsAsTypeScript(): void
+    {
+        $cases = json_decode((string) file_get_contents(dirname(__DIR__, 4) . '/packages/shared/fixtures/sales-cases.json'), true);
+        foreach ($cases['lines'] as $c) {
+            $this->assertSame($c['expect'], SaleMath::line($c['qty'], $c['unitPrice'], $c['discountBp'], $c['vatBp']));
+        }
+        foreach ($cases['settle'] as $c) {
+            $this->assertEquals($c['expect'], SaleMath::settle($c['total'], $c['payments']));
+        }
+    }
 }

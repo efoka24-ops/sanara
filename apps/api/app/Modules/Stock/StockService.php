@@ -296,7 +296,7 @@ final class StockService
         $u = $this->db->one('SELECT email FROM users WHERE id = ?', [$d['user_id']]);
         $t = $this->db->one('SELECT name, license_number FROM tenants WHERE id = ?', [$this->ctx->require()]);
         return [
-            'number' => $d['number'], 'date' => $d['created_at'], 'pharmacy' => $t['name'] ?? '', 'license' => $t['license_number'] ?? '',
+            'id' => $d['id'], 'number' => $d['number'], 'date' => $d['created_at'], 'pharmacy' => $t['name'] ?? '', 'license' => $t['license_number'] ?? '',
             'product' => $p['name'] ?? '', 'lot' => $l['lot_number'] ?? '', 'expiry' => $l['expiry'] ?? '', 'qty' => (int) $d['qty'],
             'unit_cost' => (int) ($l['unit_cost'] ?? 0), 'value' => (int) $d['qty'] * (int) ($l['unit_cost'] ?? 0),
             'reason' => $d['reason'], 'method' => $d['method'], 'witness' => $d['witness'], 'user' => $u['email'] ?? '',
