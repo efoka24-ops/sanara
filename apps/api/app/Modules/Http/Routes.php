@@ -233,6 +233,94 @@ final class Routes
                 $s->review->requestInfo($a['id'], (string) $req->getAttribute('userId'), (array) ($b['docs'] ?? []), (string) ($b['message'] ?? ''));
                 return $res->withStatus(204);
             })->add($perm('applications.review'));
+
+            // --- Console : tableau de bord, pharmacies, formules, facturation, signalements, modèles, audit, paramètres, pays ---
+            $admin = static fn (Request $q): string => (string) $q->getAttribute('userId');
+            $qs = static fn (Request $q, string $k): ?string => isset($q->getQueryParams()[$k]) ? (string) $q->getQueryParams()[$k] : null;
+            $audit = static fn (Request $q, string $action, array $extra = []) => $s->audit->record($action, ['user_id' => (string) $q->getAttribute('userId')] + $extra);
+            $g->get('/dashboard', fn (Request $q, Response $r) => $json($r, $s->admin->dashboard()))->add($perm('platform.manage'));
+            $g->get('/pharmacies', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->pharmacies($qs($q, 'q'), $qs($q, 'status'))]))->add($perm('platform.manage'));
+            $g->get('/pharmacies/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->admin->pharmacy($a['id'])))->add($perm('platform.manage'));
+            $g->post('/pharmacies/{id}/suspend', function (Request $q, Response $r, array $a) use ($s, $body, $admin, $audit) {
+                $s->admin->suspend($a['id'], (string) ($body($q)['reason'] ?? ''), $admin($q));
+                $audit($q, 'pharmacy.suspend', ['tenant_id' => $a['id'], 'reason' => (string) ($body($q)['reason'] ?? '')]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->post('/pharmacies/{id}/reactivate', function (Request $q, Response $r, array $a) use ($s, $audit) {
+                $s->admin->reactivate($a['id']);
+                $audit($q, 'pharmacy.reactivate', ['tenant_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->put('/pharmacies/{id}/subscription', function (Request $q, Response $r, array $a) use ($s, $body, $audit) {
+                $b = $body($q);
+                $s->admin->setSubscription($a['id'], (string) ($b['plan_id'] ?? ''), (int) ($b['stations'] ?? 1), (string) ($b['status'] ?? 'trial'));
+                $audit($q, 'subscription.set', ['tenant_id' => $a['id'], 'plan_id' => (string) ($b['plan_id'] ?? '')]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->get('/plans', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->plans()]))->add($perm('platform.manage'));
+            $g->post('/plans', fn (Request $q, Response $r) => $json($r, ['id' => $s->admin->savePlan(null, $body($q))], 201))->add($perm('platform.manage'));
+            $g->put('/plans/{id}', function (Request $q, Response $r, array $a) use ($s, $body, $audit) {
+                $s->admin->savePlan($a['id'], $body($q));
+                $audit($q, 'plan.update', ['plan_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->get('/invoices', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->invoices($qs($q, 'status'))]))->add($perm('platform.manage'));
+            $g->post('/invoices', function (Request $q, Response $r) use ($s, $json, $body, $audit) {
+                $b = $body($q);
+                $id = $s->admin->createInvoice((string) ($b['pharmacy_id'] ?? ''), (int) ($b['amount'] ?? 0), (int) ($b['due_days'] ?? 15));
+                $audit($q, 'invoice.create', ['invoice_id' => $id]);
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('platform.manage'));
+            $g->post('/invoices/{id}/paid', function (Request $q, Response $r, array $a) use ($s, $body, $audit) {
+                $s->admin->markPaid($a['id'], (string) ($body($q)['method'] ?? ''), (string) ($body($q)['reference'] ?? ''));
+                $audit($q, 'invoice.paid', ['invoice_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->post('/invoices/{id}/void', function (Request $q, Response $r, array $a) use ($s, $audit) {
+                $s->admin->voidInvoice($a['id']);
+                $audit($q, 'invoice.void', ['invoice_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->get('/reports', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->reports($qs($q, 'status'))]))->add($perm('platform.manage'));
+            $g->post('/reports', function (Request $q, Response $r) use ($s, $json, $body) {
+                $b = $body($q);
+                return $json($r, ['id' => $s->admin->createReport((string) ($b['kind'] ?? 'other'), isset($b['pharmacy_id']) ? (string) $b['pharmacy_id'] : null, (string) ($b['subject'] ?? ''), isset($b['details']) ? (string) $b['details'] : null)], 201);
+            })->add($perm('platform.manage'));
+            $g->post('/reports/{id}/handle', function (Request $q, Response $r, array $a) use ($s, $body, $admin, $audit) {
+                $b = $body($q);
+                $s->admin->handleReport($a['id'], (string) ($b['decision'] ?? ''), isset($b['note']) ? (string) $b['note'] : null, $admin($q));
+                $audit($q, 'report.handle', ['report_id' => $a['id'], 'decision' => (string) ($b['decision'] ?? '')]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->get('/templates', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->templates()]))->add($perm('platform.manage'));
+            $g->put('/templates/{code}/{locale}', function (Request $q, Response $r, array $a) use ($s, $body, $admin, $audit) {
+                $b = $body($q);
+                $s->admin->saveTemplate($a['code'], $a['locale'], (string) ($b['subject'] ?? ''), (string) ($b['body'] ?? ''), $admin($q));
+                $audit($q, 'template.update', ['entity' => $a['code'] . '/' . $a['locale']]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->delete('/templates/{code}/{locale}', function (Request $q, Response $r, array $a) use ($s, $audit) {
+                $s->admin->resetTemplate($a['code'], $a['locale']);
+                $audit($q, 'template.reset', ['entity' => $a['code'] . '/' . $a['locale']]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->post('/templates/{code}/{locale}/preview', function (Request $q, Response $r, array $a) use ($s, $json, $body) {
+                $b = $body($q);
+                return $json($r, $s->admin->previewTemplate($a['code'], $a['locale'], isset($b['subject']) ? (string) $b['subject'] : null, isset($b['body']) ? (string) $b['body'] : null));
+            })->add($perm('platform.manage'));
+            $g->get('/audit', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->audit($qs($q, 'action'), $qs($q, 'tenant_id'), $qs($q, 'from'), $qs($q, 'to'), (int) ($qs($q, 'limit') ?? 100))]))->add($perm('platform.manage'));
+            $g->get('/settings', fn (Request $q, Response $r) => $json($r, ['settings' => $s->admin->settings()]))->add($perm('platform.manage'));
+            $g->put('/settings', function (Request $q, Response $r) use ($s, $body, $audit) {
+                $s->admin->setSettings((array) ($body($q)['settings'] ?? []));
+                $audit($q, 'platform.settings', []);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
+            $g->get('/countries', fn (Request $q, Response $r) => $json($r, ['items' => $s->admin->countries()]))->add($perm('platform.manage'));
+            $g->put('/countries/{code}', function (Request $q, Response $r, array $a) use ($s, $body, $audit) {
+                $s->admin->updateCountry(strtoupper($a['code']), $body($q));
+                $audit($q, 'country.update', ['entity' => strtoupper($a['code'])]);
+                return $r->withStatus(204);
+            })->add($perm('platform.manage'));
         })->add(new AuthMiddleware($s->jwt, $s->tenant));
 
         // --- Espace pharmacie : paramètres, configuration initiale, équipe (US3, US4) ---

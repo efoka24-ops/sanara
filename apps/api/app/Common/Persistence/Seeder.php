@@ -36,4 +36,25 @@ final class Seeder
             ]);
         }
     }
+
+    /** Configuration du Cameroun (autorité, pièces exigées, conservation) et formules de départ, modifiables ensuite par le super admin. */
+    public static function platformDefaults(Db $db): void
+    {
+        $cfg = [
+            'authority' => 'Ordre National des Pharmaciens du Cameroun',
+            'required_documents' => ['Agrément de l’officine', 'Diplôme de pharmacien', 'Carte de l’Ordre', 'Pièce d’identité'],
+            'retention_years' => 10,
+        ];
+        foreach ($cfg as $k => $v) {
+            if ($db->one('SELECT id FROM country_configs WHERE country_code = ? AND config_key = ?', ['CM', $k]) === null) {
+                $db->insert('country_configs', ['id' => \Sanara\Common\Ulid::generate(), 'country_code' => 'CM', 'config_key' => $k, 'config_value' => json_encode($v, JSON_UNESCAPED_UNICODE)]);
+            }
+        }
+        $now = gmdate('Y-m-d H:i:s') . '.000';
+        foreach ([['essentiel', 'Essentiel', 15000, 1, 'Caisse, stock, catalogue'], ['standard', 'Standard', 35000, 3, 'Essentiel + postes multiples, achats, rapports'], ['pro', 'Pro', 75000, 10, 'Standard + assistant d’ordonnances et site public']] as [$code, $name, $price, $stations, $features]) {
+            if ($db->one('SELECT id FROM plans WHERE code = ?', [$code]) === null) {
+                $db->insert('plans', ['id' => \Sanara\Common\Ulid::generate(), 'code' => $code, 'name' => $name, 'price_month' => $price, 'max_stations' => $stations, 'features' => $features, 'active' => 1, 'created_at' => $now]);
+            }
+        }
+    }
 }

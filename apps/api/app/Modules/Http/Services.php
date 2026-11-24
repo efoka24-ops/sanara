@@ -53,6 +53,8 @@ final class Services
     public readonly \Sanara\Modules\Sales\SalesService $sales;
     public readonly \Sanara\Modules\Sales\CashService $cash;
     public readonly \Sanara\Modules\Sales\ReturnsService $returns;
+    public readonly EmailTemplates $templates;
+    public readonly \Sanara\Modules\Admin\AdminService $admin;
     public readonly \Sanara\Modules\Security\MfaService $mfa;
     public readonly \Sanara\Modules\Security\PasswordResetService $passwordReset;
     public readonly \Sanara\Modules\Security\SessionService $sessions;
@@ -99,7 +101,9 @@ final class Services
             $config->mailHost !== '' => new SmtpMailer($config->mailHost, $config->mailPort, $config->mailEncryption, $config->mailUser, $config->mailPassword, $config->mailFromName),
             default => new LogMailer(),
         };
-        $this->mail = new MailJobHandler($this->jobs, $mailer, new EmailTemplates());
+        $this->templates = new EmailTemplates($db);
+        $this->mail = new MailJobHandler($this->jobs, $mailer, $this->templates);
+        $this->admin = new \Sanara\Modules\Admin\AdminService($db, $clock, $this->templates);
         $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl);
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
         $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $this->tenant, $clock);

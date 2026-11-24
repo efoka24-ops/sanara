@@ -57,18 +57,48 @@ final class EmailTemplates
         ],
     ];
 
+    public function __construct(private readonly ?\Sanara\Common\Persistence\Db $db = null)
+    {
+    }
+
+    /** @return list<string> codes de gabarits */
+    public static function codes(): array
+    {
+        return array_keys(self::T);
+    }
+
+    /** @return array{subject: string, body: string} gabarit d'origine */
+    public static function defaults(string $code, string $locale): array
+    {
+        return self::T[$code][$locale] ?? throw new \InvalidArgumentException("Gabarit inconnu : $code/$locale");
+    }
+
+    /** @return list<string> variables {{nom}} d'un texte */
+    public static function variables(string $text): array
+    {
+        preg_match_all('/\{\{(\w+)\}\}/', $text, $m);
+        return array_values(array_unique($m[1]));
+    }
+
+    /** Gabarit en vigueur : modification enregistrée par le super admin, sinon texte d'origine. @return array{subject: string, body: string} */
+    public function effective(string $code, string $locale): array
+    {
+        $o = $this->db?->one('SELECT subject, body FROM message_templates WHERE code = ? AND locale = ?', [$code, $locale]);
+        return $o !== null ? ['subject' => (string) $o['subject'], 'body' => (string) $o['body']] : self::defaults($code, $locale);
+    }
+
     /** @param array<string, string> $vars @return array{subject: string, text: string, html: string} */
     public function render(string $template, string $locale, array $vars): array
     {
-        $t = self::T[$template][$locale] ?? throw new \InvalidArgumentException("Gabarit inconnu : $template/$locale");
-        preg_match_all('/\{\{(\w+)\}\}/', $t['body'], $m);
-        foreach ($m[1] as $k) {
+        $t = $this->effective($template, $locale);
+        foreach (self::variables($t['body']) as $k) {
             if (!array_key_exists($k, $vars)) {
                 throw new \InvalidArgumentException("Variable manquante : $k");
             }
         }
         $text = preg_replace_callback('/\{\{(\w+)\}\}/', static fn ($x) => $vars[$x[1]], $t['body']);
         $html = preg_replace_callback('/\{\{(\w+)\}\}/', static fn ($x) => htmlspecialchars($vars[$x[1]], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $t['body']);
-        return ['subject' => $t['subject'], 'text' => $text, 'html' => nl2br((string) $html)];
+        $subject = preg_replace_callback('/\{\{(\w+)\}\}/', static fn ($x) => $vars[$x[1]] ?? '', $t['subject']);
+        return ['subject' => (string) $subject, 'text' => (string) $text, 'html' => nl2br((string) $html)];
     }
 }

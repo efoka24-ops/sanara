@@ -42,6 +42,9 @@ final class AuthService
             $this->fail($user);
             throw new AuthException('invalid_credentials');
         }
+        if ($this->users->tenantSuspended($user['tenant_id'] ?? null)) {
+            throw new AuthException('tenant_suspended', 403);
+        }
         if ($this->mfa !== null && (int) ($user['totp_enabled'] ?? 0) === 1) {
             return ['mfa_required' => true, 'mfa_token' => $this->jwt->issueMfa((string) $user['id'], $deviceId, $label)];
         }
@@ -72,7 +75,7 @@ final class AuthService
     {
         $new = $this->refresh->rotate($token);
         $user = $this->users->findById($new['user_id']);
-        if ($user === null || $user['status'] !== 'active') {
+        if ($user === null || $user['status'] !== 'active' || $this->users->tenantSuspended($user['tenant_id'] ?? null)) {
             $this->refresh->revokeToken($new['token']);
             throw new AuthException('invalid_refresh_token');
         }

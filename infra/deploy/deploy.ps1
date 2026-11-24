@@ -15,6 +15,7 @@
 param(
   [switch]$SkipBuild,
   [switch]$UnlockAccounts,
+  [switch]$SeedDemo,
   [string]$EnvFile = (Join-Path $PSScriptRoot '..\..\.env')
 )
 
@@ -92,6 +93,7 @@ MAIL_ENCRYPTION=tls
 MAIL_USERNAME='$($cfg['MAIL_USERNAME'])'
 MAIL_PASSWORD='$($cfg['MAIL_PASSWORD'] -replace "'", "\x27")'
 MAIL_FROM_NAME=Sanara
+$(if ($SeedDemo) { "STAGING_DEMO_PASSWORD='" + $cfg['STAGING_DEMO_PASSWORD'] + "'" })
 "@
 [IO.File]::WriteAllText("$stage\api-core\.env", ($envServer -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding($false)))
 
@@ -106,6 +108,7 @@ Write-Host ("   archive : {0:N1} Mo" -f ((Get-Item $zip).Length / 1MB))
 $token = -join ((1..24) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
 $name = "_deploy_$token.php"
 $unlockPhp = if ($UnlockAccounts) { "`$out['unlocked'] = `$p->unlockAccounts();" } else { '' }
+$demoPhp = if ($SeedDemo) { "`$out['demo'] = `$p->seedDemo((string)`$_ENV['STAGING_DEMO_PASSWORD'], (string)(`$_ENV['APP_ENV'] ?? 'production'));" } else { '' }
 $extractor = @"
 <?php
 header('Content-Type: application/json');
@@ -124,7 +127,7 @@ try {
     `$cfg = Sanara\Common\Config::fromEnv(`$_ENV);
     Sanara\Common\Database::configure(`$cfg);
     `$p = new Sanara\Common\Persistence\Provisioner(Sanara\Common\Database::db(), new Sanara\Common\Clock(), `$root . '/api-core/database/migrations');
-    `$out['provision'] = `$p->run((string)`$_ENV['SUPERADMIN_EMAIL'], (string)`$_ENV['SUPERADMIN_PASSWORD']); $unlockPhp
+    `$out['provision'] = `$p->run((string)`$_ENV['SUPERADMIN_EMAIL'], (string)`$_ENV['SUPERADMIN_PASSWORD']); $unlockPhp $demoPhp
   } catch (Throwable `$e) { `$out['provision_error'] = get_class(`$e) . ': ' . `$e->getMessage(); }
 } catch (Throwable `$e) { `$out['error'] = `$e->getMessage(); }
 @unlink(`$zipPath); `$out['self_deleted'] = @unlink(__FILE__);

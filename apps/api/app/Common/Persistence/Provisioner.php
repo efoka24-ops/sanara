@@ -23,6 +23,7 @@ final class Provisioner
         $applied = (new Migrator($this->db, $this->migrationsDir))->migrate();
         Seeder::roles($this->db);
         Seeder::cameroon($this->db);
+        Seeder::platformDefaults($this->db);
         (new \Sanara\Modules\Catalog\ReferenceCatalog($this->db))->seed('CM');
         $users = new UserRepository($this->db, $this->clock);
         $created = false;
@@ -48,5 +49,35 @@ final class Provisioner
         $n = $this->db->execute('UPDATE users SET failed_attempts = 0, locked_until = NULL, pin_failures = 0 WHERE failed_attempts > 0 OR locked_until IS NOT NULL OR pin_failures > 0');
         $this->db->execute('DELETE FROM rate_limits');
         return $n;
+    }
+
+    /**
+     * Pharmacie de démonstration pour la préproduction (données fictives). Refusé en production.
+     *
+     * @return array{tenant: string, users: int}
+     */
+    public function seedDemo(string $password, string $env): array
+    {
+        if ($env === 'production') {
+            throw new \RuntimeException('Refusé en production');
+        }
+        $hasher = new PasswordHasher();
+        if (!$hasher->meetsPolicy($password)) {
+            throw new \InvalidArgumentException('Mot de passe de démonstration trop faible');
+        }
+        $now = $this->clock->stamp();
+        $tid = 'DEMO' . str_repeat('0', 22);
+        if ($this->db->one('SELECT id FROM tenants WHERE id = ?', [$tid]) === null) {
+            $this->db->insert('tenants', ['id' => $tid, 'country_code' => 'CM', 'name' => 'Pharmacie Démo', 'slug' => 'demo', 'status' => 'active', 'public_visible' => 0, 'currency' => 'XAF', 'autonomy_level' => 1, 'license_number' => 'DEMO-0001', 'created_at' => $now, 'updated_at' => $now]);
+        }
+        $users = new UserRepository($this->db, $this->clock);
+        $created = 0;
+        foreach (['owner', 'pharmacist', 'cashier', 'storekeeper'] as $role) {
+            if ($users->findByEmail("$role@demo.sanara.test") === null) {
+                $users->create(['email' => "$role@demo.sanara.test", 'role_code' => $role, 'tenant_id' => $tid, 'password_hash' => $hasher->hash($password)]);
+                $created++;
+            }
+        }
+        return ['tenant' => $tid, 'users' => $created];
     }
 }

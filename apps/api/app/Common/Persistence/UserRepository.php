@@ -55,4 +55,14 @@ final class UserRepository
     {
         $this->db->execute('UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?', [$id]);
     }
+
+    /** Une pharmacie suspendue ne peut plus ouvrir de session. */
+    public function tenantSuspended(?string $tenantId): bool
+    {
+        if ($tenantId === null || $tenantId === '') {
+            return false;
+        }
+        $t = $this->db->one('SELECT status FROM tenants WHERE id = ?', [$tenantId]);
+        return $t !== null && $t['status'] === 'suspended';
+    }
 }

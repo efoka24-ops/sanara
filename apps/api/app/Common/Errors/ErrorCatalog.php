@@ -20,6 +20,7 @@ final class ErrorCatalog
         'cash_session_stale' => ['Clôturez la caisse du jour précédent avant de vendre.', 'Close the previous day cash session before selling.'],
         'cash_session_open' => ['Une caisse est déjà ouverte pour vous.', 'A cash session is already open for you.'],
         'payment_insufficient' => ['Le règlement ne couvre pas le total.', 'The payment does not cover the total.'],
+        'tenant_suspended' => ['Cette pharmacie est suspendue. Contactez le support Sanara.', 'This pharmacy is suspended. Contact Sanara support.'],
         'conflict' => ['Cette opération entre en conflit avec une donnée existante.', 'This conflicts with existing data.'],
         'too_many_requests' => ['Trop de tentatives, réessayez plus tard.', 'Too many attempts, try again later.'],
         'invalid_credentials' => ['Identifiants incorrects.', 'Invalid credentials.'],
