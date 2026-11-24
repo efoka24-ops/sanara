@@ -23,6 +23,7 @@ final class Provisioner
         $applied = (new Migrator($this->db, $this->migrationsDir))->migrate();
         Seeder::roles($this->db);
         Seeder::cameroon($this->db);
+        (new \Sanara\Modules\Catalog\ReferenceCatalog($this->db))->seed('CM');
         $users = new UserRepository($this->db, $this->clock);
         $created = false;
         if ($users->findByEmail($adminEmail) === null) {

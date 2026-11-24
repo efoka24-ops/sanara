@@ -6,7 +6,7 @@ namespace Sanara\Common\Tenancy;
 /** Registre des tables métier filtrées par tenant_id. Un test échoue si une table portant tenant_id n'y figure pas. */
 final class TenantTables
 {
-    private const SCOPED = ['tenant_settings', 'devices', 'opening_hours', 'onboarding_progress'];
+    private const SCOPED = ['tenant_settings', 'devices', 'opening_hours', 'onboarding_progress', 'product_families', 'generic_groups', 'products', 'product_barcodes', 'price_history'];
 
     public static function isScoped(string $table): bool
     {

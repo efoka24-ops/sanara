@@ -30,6 +30,31 @@ final class TenantDb
         return $this->db->all($q, $params);
     }
 
+    /**
+     * Recherche paginée : égalités + groupe de LIKE combinés en OU. Le filtre tenant_id reste imposé.
+     *
+     * @param array<string, mixed> $where
+     * @param array<string, string> $likes colonne => motif déjà échappé
+     * @return list<array<string, mixed>>
+     */
+    public function query(string $table, array $where = [], array $likes = [], ?string $orderBy = null, int $limit = 50, int $offset = 0): array
+    {
+        [$sql, $params] = $this->where($table, $where);
+        if ($likes !== []) {
+            $parts = [];
+            foreach ($likes as $col => $pattern) {
+                $parts[] = Ident::check((string) $col) . " LIKE ? ESCAPE '!'";
+                $params[] = $pattern;
+            }
+            $sql .= ' AND (' . implode(' OR ', $parts) . ')';
+        }
+        $q = 'SELECT * FROM ' . $table . $sql;
+        if ($orderBy !== null) {
+            $q .= ' ORDER BY ' . Ident::check($orderBy);
+        }
+        return $this->db->all($q . ' LIMIT ' . max(1, min(200, $limit)) . ' OFFSET ' . max(0, $offset), $params);
+    }
+
     /** @param array<string, mixed> $row */
     public function insert(string $table, array $row): void
     {

@@ -246,6 +246,34 @@ final class Routes
                 return $json($r, $s->setup->onboarding());
             })->add($perm('settings.write'));
 
+            // --- Catalogue (US6) ---
+            $g->get('/products', fn (Request $q, Response $r) => $json($r, $s->catalog->search((string) ($q->getQueryParams()['q'] ?? ''), array_map('strval', $q->getQueryParams()))))->add($perm('products.read'));
+            $g->get('/products/export', function (Request $q, Response $r) use ($s) {
+                $r->getBody()->write($s->catalogTransfer->export());
+                return $r->withHeader('Content-Type', 'text/csv; charset=utf-8')->withHeader('Content-Disposition', 'attachment; filename="catalogue.csv"');
+            })->add($perm('products.read'));
+            $g->post('/products/import', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $s->audit->record('catalog.import', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId')]);
+                return $json($r, $s->catalogTransfer->import((string) ($body($q)['csv'] ?? ''), $actor($q)));
+            })->add($perm('products.write'));
+            $g->post('/products/reference', function (Request $q, Response $r) use ($s, $json, $actor) {
+                return $json($r, ['added' => $s->reference->importInto('CM', $actor($q))]);
+            })->add($perm('products.write'));
+            $g->get('/products/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->catalog->get($a['id'])))->add($perm('products.read'));
+            $g->post('/products', fn (Request $q, Response $r) => $json($r, ['id' => $s->catalog->create($body($q), (string) $q->getAttribute('userId'))], 201))->add($perm('products.write'));
+            $g->put('/products/{id}', function (Request $q, Response $r, array $a) use ($s, $body, $actor) {
+                $s->catalog->update($a['id'], $body($q), $actor($q));
+                return $r->withStatus(204);
+            })->add($perm('products.write'));
+            $g->post('/products/{id}/active', function (Request $q, Response $r, array $a) use ($s, $body, $actor) {
+                $s->catalog->setActive($a['id'], !empty($body($q)['active']), $actor($q));
+                return $r->withStatus(204);
+            })->add($perm('products.write'));
+            $g->get('/families', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->families()]))->add($perm('products.read'));
+            $g->post('/families', fn (Request $q, Response $r) => $json($r, ['id' => $s->catalog->createFamily((string) ($body($q)['name'] ?? ''))], 201))->add($perm('products.write'));
+            $g->get('/generic-groups', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->groups()]))->add($perm('products.read'));
+            $g->post('/generic-groups', fn (Request $q, Response $r) => $json($r, ['id' => $s->catalog->createGroup((string) ($body($q)['name'] ?? ''))], 201))->add($perm('products.write'));
+
             $g->get('/team', fn (Request $q, Response $r) => $json($r, ['members' => $s->team->members($tenantId($q))]))->add($perm('team.manage'));
             $g->post('/team', function (Request $q, Response $r) use ($s, $body, $json, $tenantId, $actor) {
                 return $json($r, ['id' => $s->team->invite($tenantId($q), $actor($q), $body($q))], 201);

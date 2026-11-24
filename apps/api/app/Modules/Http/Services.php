@@ -42,6 +42,9 @@ final class Services
     public readonly \Sanara\Modules\Tenants\TenantSetupService $setup;
     public readonly \Sanara\Modules\Team\TeamService $team;
     public readonly \Sanara\Modules\Applications\ActivationResendService $activationResend;
+    public readonly \Sanara\Modules\Catalog\CatalogService $catalog;
+    public readonly \Sanara\Modules\Catalog\CatalogTransfer $catalogTransfer;
+    public readonly \Sanara\Modules\Catalog\ReferenceCatalog $reference;
     public readonly \Sanara\Modules\Security\MfaService $mfa;
     public readonly \Sanara\Modules\Security\PasswordResetService $passwordReset;
     public readonly \Sanara\Modules\Security\SessionService $sessions;
@@ -88,6 +91,9 @@ final class Services
         $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl);
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
         $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $this->tenant, $clock);
+        $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
+        $this->catalogTransfer = new \Sanara\Modules\Catalog\CatalogTransfer($this->catalog);
+        $this->reference = new \Sanara\Modules\Catalog\ReferenceCatalog($db, $this->catalog);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);
     }
 }

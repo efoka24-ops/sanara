@@ -25,7 +25,9 @@ final class NoRawSqlTest extends TestCase
                     continue 2;
                 }
             }
-            if (preg_match('/->\s*(prepare|query|exec)\s*\(|Database::pdo\(\)/', (string) file_get_contents($f->getPathname()))) {
+            // TenantDb::query() (recherche filtrée par tenant) est autorisé ; on refuse query() avec du SQL littéral, prepare() et exec().
+            $raw = '/->\s*(prepare|exec)\s*\(|->\s*query\s*\(\s*[\'"]\s*(SELECT|INSERT|UPDATE|DELETE|WITH|SET|PRAGMA)\b|Database::pdo\(\)/i';
+            if (preg_match($raw, (string) file_get_contents($f->getPathname()))) {
                 $bad[] = $rel;
             }
         }

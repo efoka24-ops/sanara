@@ -15,7 +15,11 @@ final class Migrator
     {
         $this->db->exec('CREATE TABLE IF NOT EXISTS schema_migrations (name VARCHAR(190) NOT NULL PRIMARY KEY, applied_at VARCHAR(32) NOT NULL)');
         $done = array_column($this->db->all('SELECT name FROM schema_migrations'), 'name');
-        $files = glob($this->dir . '/*.sql') ?: [];
+        $driver = $this->db->driver();
+        // « nom.mysql.sql » et « nom.sqlite.sql » ne s'appliquent qu'à leur moteur (ex. index FULLTEXT).
+        $files = array_filter(glob($this->dir . '/*.sql') ?: [], static function (string $f) use ($driver): bool {
+            return preg_match('/\.(mysql|sqlite)\.sql$/', $f, $m) !== 1 || $m[1] === $driver;
+        });
         sort($files);
         $applied = [];
         foreach ($files as $file) {

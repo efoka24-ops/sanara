@@ -163,13 +163,13 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 8 : US6 - Catalogue produits (P1) 🎯 MVP 1
 
-- [ ] T079 [P] [US6] Modèles `Product`, `ProductBarcode`, `PriceHistory`, `GenericGroup`, `ProductFamily`, `RegulatoryStatus` (`apps/api/prisma/schema.prisma`)
-- [ ] T080 **[TDD]** [US6] Tests : statut réglementaire obligatoire, historique de prix, désactivation vs suppression, recherche < 200 ms sur 20 000 produits (`apps/api/test/catalog.e2e-spec.ts`)
-- [ ] T081 [US6] CRUD produits et codes-barres multiples (`apps/api/src/modules/catalog/`)
-- [ ] T082 [US6] Recherche (nom, DCI, code-barres) avec index FULLTEXT MySQL + préfixe sur code-barres ; vérifier le budget de 200 ms sur 20 000 produits
-- [ ] T083 [US6] Import CSV/Excel : validation, rapport créés/mis à jour/rejetés par ligne (`apps/api/src/modules/catalog/import.service.ts`)
-- [ ] T084 [P] [US6] Export CSV/Excel du catalogue
-- [ ] T085 [P] [US6] Catalogue de référence pré-chargé (DCI, formes, familles) et import à l'inscription (`apps/api/prisma/reference/`)
+- [x] T079 [P] [US6] Modèles `Product`, `ProductBarcode`, `PriceHistory`, `GenericGroup`, `ProductFamily`, `RegulatoryStatus` (`apps/api/prisma/schema.prisma`)
+- [x] T080 **[TDD]** [US6] Tests : statut réglementaire obligatoire, historique de prix, désactivation vs suppression, recherche < 200 ms sur 20 000 produits (`apps/api/test/catalog.e2e-spec.ts`)
+- [x] T081 [US6] CRUD produits et codes-barres multiples (`apps/api/src/modules/catalog/`)
+- [x] T082 [US6] Recherche (nom, DCI, code-barres) avec index FULLTEXT MySQL + préfixe sur code-barres ; vérifier le budget de 200 ms sur 20 000 produits (LIKE préfixe + index ; FULLTEXT MySQL ajouté, budget mesuré sur SQLite seulement)
+- [x] T083 [US6] Import CSV/Excel : validation, rapport créés/mis à jour/rejetés par ligne (`apps/api/src/modules/catalog/import.service.ts`) (CSV ; Excel via enregistrement CSV)
+- [x] T084 [P] [US6] Export CSV/Excel du catalogue
+- [x] T085 [P] [US6] Catalogue de référence pré-chargé (DCI, formes, familles) et import à l'inscription (`apps/api/prisma/reference/`)
 - [ ] T086 [US6] Pages catalogue : liste, fiche produit, génériques équivalents, historique de prix (`apps/web/src/app/(pharmacy)/catalogue/`)
 - [ ] T087 [P] [US6] Gestion des familles, laboratoires, taux de TVA
 
