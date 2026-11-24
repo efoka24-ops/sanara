@@ -13,16 +13,18 @@
     "lint": "eslint \"{apps,packages}/*/src/**/*.{ts,tsx}\"",
     "typecheck": "pnpm -r --if-present typecheck",
     "prepare": "husky",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "eslint": "^9.15.0",
-    "typescript-eslint": "^8.15.0",
-    "prettier": "^3.3.0",
-    "husky": "^9.1.0",
-    "lint-staged": "^15.2.0",
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
-    "typescript": "^5.6.0"
+    "@playwright/test": "^1.65.1",
+    "eslint": "^9.15.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.15.0"
   }
 }

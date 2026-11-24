@@ -61,9 +61,11 @@ final class Services
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
         $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
         $this->activation = new ActivationService($db, $clock, $hasher);
-        $mailer = $config->mailHost !== ''
-            ? new SmtpMailer($config->mailHost, $config->mailPort, $config->mailEncryption, $config->mailUser, $config->mailPassword, $config->mailFromName)
-            : new LogMailer();
+        $mailer = match (true) {
+            $config->mailDir !== '' && $config->env !== 'production' => new \Sanara\Modules\Notifications\Email\FileMailer($config->mailDir),
+            $config->mailHost !== '' => new SmtpMailer($config->mailHost, $config->mailPort, $config->mailEncryption, $config->mailUser, $config->mailPassword, $config->mailFromName),
+            default => new LogMailer(),
+        };
         $this->mail = new MailJobHandler($this->jobs, $mailer, new EmailTemplates());
         $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl);
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);

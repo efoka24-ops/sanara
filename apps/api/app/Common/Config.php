@@ -25,6 +25,8 @@ final class Config
         public readonly string $mailUser = '',
         public readonly string $mailPassword = '',
         public readonly string $mailFromName = 'Sanara',
+        public readonly string $dbDriver = 'mysql',
+        public readonly string $mailDir = '',
     ) {
     }
 
@@ -53,6 +55,8 @@ final class Config
             mailUser: $get('MAIL_USERNAME'),
             mailPassword: $get('MAIL_PASSWORD'),
             mailFromName: $get('MAIL_FROM_NAME', 'Sanara'),
+            dbDriver: $get('DB_DRIVER', 'mysql') === 'sqlite' ? 'sqlite' : 'mysql',
+            mailDir: $get('MAIL_DIR'),
         );
     }
 }

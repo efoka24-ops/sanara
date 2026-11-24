@@ -25,7 +25,8 @@ final class Bootstrap
             if (is_file($coreDir . '/.env')) {
                 Dotenv::createImmutable($coreDir)->safeLoad();
             }
-            $config = Config::fromEnv($_ENV);
+            // $_ENV peut être vide (variables_order sans « E ») : on lit aussi l'environnement du processus.
+            $config = Config::fromEnv(array_merge(getenv(), $_ENV));
             Database::configure($config);
             $services = new Services(Database::db(), new Clock(), $config);
         }

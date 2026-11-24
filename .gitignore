@@ -27,3 +27,6 @@ Thumbs.db
 .phpunit.cache/
 storage-private/
 apps/storage-private/
+.e2e/
+test-results/
+playwright-report/

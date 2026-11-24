@@ -30,6 +30,13 @@ final class Database
             return self::$pdo;
         }
         $c = self::$config ?? throw new \LogicException('Database non configurée');
+        if ($c->dbDriver === 'sqlite') { // développement et tests de bout en bout sans MySQL
+            $dir = dirname($c->dbName);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+            return self::$pdo = new PDO('sqlite:' . $c->dbName, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
+        }
         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $c->dbHost, $c->dbPort, $c->dbName);
         $pdo = new PDO($dsn, $c->dbUser, $c->dbPassword, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
