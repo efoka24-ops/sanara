@@ -5,6 +5,7 @@ export type Role =
 export interface Session {
   role: Role;
   permissions: string[];
+  mfaSetupRequired?: boolean;
 }
 
 interface Ctx {

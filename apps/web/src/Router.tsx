@@ -5,12 +5,13 @@ import { Home } from './App';
 import { DashboardPage } from './pages/DashboardPage';
 import { SetupPage } from './pages/SetupPage';
 import { TeamPage } from './pages/TeamPage';
+import { ForgotPage, ResetPage, SecurityPage } from './pages/SecurityPages';
 import { LoginPage } from './pages/LoginPage';
 import { ApplyPage } from './pages/ApplyPage';
 import { ActivatePage, SentPage, TrackPage } from './pages/TrackPages';
 import { AdminApplicationPage, AdminApplicationsPage } from './pages/AdminPages';
 import { AdminLayout, PharmacyLayout, PublicLayout } from './app/layouts';
-import { RequireArea } from './app/guards';
+import { RequireArea, RequireSession } from './app/guards';
 import { SessionProvider } from './app/session';
 
 const Placeholder = ({ name }: { name: string }) => <h1>{name}</h1>;
@@ -29,6 +30,11 @@ export function Router() {
                 <Route path="inscription/envoyee" element={<SentPage />} />
                 <Route path="inscription/suivi/:code" element={<TrackPage />} />
                 <Route path="activer/:token" element={<ActivatePage />} />
+                <Route path="mot-de-passe-oublie" element={<ForgotPage />} />
+                <Route path="reinitialiser/:token" element={<ResetPage />} />
+                <Route element={<RequireSession />}>
+                  <Route path="securite" element={<SecurityPage />} />
+                </Route>
               </Route>
               <Route path="app" element={<RequireArea area="pharmacy" />}>
                 <Route element={<PharmacyLayout />}>

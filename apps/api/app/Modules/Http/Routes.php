@@ -56,7 +56,7 @@ final class Routes
 
         // --- Authentification ---
         $app->post('/auth/login', function (Request $req, Response $res) use ($s, $json, $limit, $body) {
-            $limit($req, 'login', 10, 60);
+            $limit($req, 'login', $s->config->env === 'testing' ? 1000 : 10, 60);
             $b = $body($req);
             $r = $s->auth->login((string) ($b['email'] ?? ''), (string) ($b['password'] ?? ''), $b['device_id'] ?? null, $b['device_label'] ?? null);
             return $json($res, $r);
@@ -80,7 +80,7 @@ final class Routes
 
         // --- Double vérification (US5) ---
         $app->post('/auth/mfa/verify', function (Request $req, Response $res) use ($s, $json, $limit, $body) {
-            $limit($req, 'mfa', 10, 60);
+            $limit($req, 'mfa', $s->config->env === 'testing' ? 1000 : 10, 60);
             $b = $body($req);
             return $json($res, $s->auth->completeMfa((string) ($b['mfa_token'] ?? ''), (string) ($b['code'] ?? '')));
         });

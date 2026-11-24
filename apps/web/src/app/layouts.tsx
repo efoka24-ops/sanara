@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { Logo } from '@sanara/ui';
 import { useT } from '@sanara/i18n';
 import { useSession } from './session';
+import { IdleLock } from './IdleLock';
 
 const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
   { to: '/app', key: 'nav.dashboard' },
@@ -17,6 +18,7 @@ const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
   { to: '/app/assistant', key: 'nav.assistant', permission: 'assistant.configure' },
   { to: '/app/equipe', key: 'nav.team', permission: 'team.manage' },
   { to: '/app/parametres', key: 'nav.settings', permission: 'settings.write' },
+  { to: '/securite', key: 'nav.security' },
 ];
 
 const ADMIN_MENU = [
@@ -80,6 +82,7 @@ export function PharmacyLayout() {
       <main>
         <Outlet />
       </main>
+      <IdleLock />
     </div>
   );
 }
@@ -99,6 +102,9 @@ export function AdminLayout() {
               {m}
             </span>
           ))}
+          <NavLink to="/securite" className="sidebar__item">
+            Sécurité
+          </NavLink>
         </nav>
       </aside>
       <main>

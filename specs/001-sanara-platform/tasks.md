@@ -156,8 +156,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T074 [US5] Réinitialisation de mot de passe, politique et historique (`apps/api/src/modules/users/password-reset.ts`)
 - [x] T075 [US5] Verrouillage temporaire, notification au titulaire (`apps/api/src/common/auth/lockout.ts`)
 - [x] T076 [US5] Gestion des sessions et des postes autorisés (`Device`), révocation à distance (`apps/api/src/modules/users/devices.controller.ts`) (sessions par appareil faites ; table devices par poste avec le desktop)
-- [ ] T077 [US5] Pages connexion, 2FA, reset, sessions/postes (`apps/web/src/app/(auth)/`)
-- [ ] T078 [US5] Verrouillage d'écran par inactivité avec PIN (`packages/ui/src/auth/idle-lock.tsx`)
+- [x] T077 [US5] Pages connexion, 2FA, reset, sessions/postes (`apps/web/src/app/(auth)/`)
+- [x] T078 [US5] Verrouillage d'écran par inactivité avec PIN (`packages/ui/src/auth/idle-lock.tsx`)
 
 **Checkpoint US5** ✅
 
