@@ -39,7 +39,7 @@ final class Migrator
     /** @return list<string> */
     private function statements(string $sql): array
     {
-        return array_values(array_filter(array_map('trim', explode(";\n", $sql . "\n")), static fn ($s) => $s !== ''));
+        return array_values(array_filter(array_map('trim', explode(";\n", str_replace("\r\n", "\n", $sql) . "\n")), static fn ($s) => $s !== ''));
     }
 
     private function adapt(string $sql): string
