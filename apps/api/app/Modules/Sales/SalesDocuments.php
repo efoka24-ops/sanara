@@ -94,4 +94,19 @@ final class SalesDocuments
         }
         return P::wrap('Rapport Z', $b . '</table>', '80');
     }
+
+    /**
+     * @param array<string, mixed> $c SalesService / ReturnsService::creditNote()
+     * @param array<string, mixed> $t
+     */
+    public static function creditNote(array $c, array $t): string
+    {
+        $cur = (string) ($t['currency'] ?? 'XAF');
+        $b = '<h1>Avoir ' . P::e($c['number']) . '</h1><p class="muted">' . P::e($t['name'] ?? '') . ' · agrément ' . P::e($t['license_number'] ?? '') . '</p><p>Date ' . P::e(substr((string) $c['date'], 0, 10)) . ' · vente ' . P::e($c['sale']) . '<br>Motif : ' . P::e($c['reason']) . '</p><table><tr><th>Désignation</th><th class="n">Qté</th><th class="n">Montant</th></tr>';
+        foreach ($c['lines'] as $l) {
+            $b .= '<tr><td>' . P::e($l['name']) . '</td><td class="n">' . P::e($l['qty']) . '</td><td class="n">' . P::money((int) $l['amount'], $cur) . '</td></tr>';
+        }
+        $b .= '</table><div class="sep"></div><table class="tot"><tr><td>Total de l’avoir</td><td class="n">' . P::money((int) $c['amount'], $cur) . '</td></tr></table>';
+        return P::wrap('Avoir ' . (string) $c['number'], $b . '<div class="sep"></div><p>Signature du client</p><p style="height:50px"></p>', 'a4');
+    }
 }

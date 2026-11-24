@@ -414,6 +414,13 @@ final class Routes
                 $dup = $s->sales->markPrinted($a['id']) > 1;
                 return $html($r, \Sanara\Modules\Sales\SalesDocuments::invoice($s->sales->get($a['id']), $tenantInfo($q), $s->setup->settings(), $num, $emailOf((string) $sale['cashier_id']), $dup));
             })->add($perm('sales.create'));
+            $g->post('/sales/{id}/returns', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $ret = $s->returns->create($a['id'], $body($q), $actor($q));
+                $s->audit->record('sale.return', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'sale_id' => $a['id'], 'return_id' => $ret['id'], 'amount' => $ret['refund_amount'], 'restock' => $ret['restock']]);
+                return $json($r, $ret, 201);
+            })->add($perm('sales.create'));
+            $g->get('/sales/{id}/returns', fn (Request $q, Response $r, array $a) => $json($r, ['items' => $s->returns->forSale($a['id'])]))->add($perm('sales.create'));
+            $g->get('/returns/{id}/credit-note', fn (Request $q, Response $r, array $a) => $html($r, \Sanara\Modules\Sales\SalesDocuments::creditNote($s->returns->creditNote($a['id']), $tenantInfo($q))))->add($perm('sales.create'));
             $g->get('/pos/held', fn (Request $q, Response $r) => $json($r, ['items' => $s->sales->held($actor($q))]))->add($perm('sales.create'));
             $g->post('/pos/held', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
                 return $json($r, ['id' => $s->sales->hold($actor($q), (string) ($body($q)['label'] ?? ''), $body($q)['cart'] ?? null)], 201);

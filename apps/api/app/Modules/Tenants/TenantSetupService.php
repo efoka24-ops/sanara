@@ -14,7 +14,7 @@ use Sanara\Common\Ulid;
 final class TenantSetupService
 {
     public const STEPS = ['hours', 'team', 'catalog', 'visibility'];
-    private const SETTING_KEYS = ['ticket_footer', 'vat_default_bp', 'rounding', 'printer', 'logo_storage_id', 'locale', 'urgent_escalation_minutes', 'pickup_hold_hours', 'max_discount_bp', 'allow_negative_stock', 'ticket_width', 'invoice_header', 'station_code', 'expiry_alert_days'];
+    private const SETTING_KEYS = ['ticket_footer', 'vat_default_bp', 'rounding', 'printer', 'logo_storage_id', 'locale', 'urgent_escalation_minutes', 'pickup_hold_hours', 'max_discount_bp', 'allow_negative_stock', 'ticket_width', 'invoice_header', 'station_code', 'expiry_alert_days', 'return_days'];
 
     public function __construct(private readonly Db $db, private readonly TenantDb $tdb, private readonly TenantContext $ctx, private readonly Clock $clock)
     {

@@ -52,6 +52,7 @@ final class Services
     public readonly \Sanara\Modules\Stock\InventoryService $inventory;
     public readonly \Sanara\Modules\Sales\SalesService $sales;
     public readonly \Sanara\Modules\Sales\CashService $cash;
+    public readonly \Sanara\Modules\Sales\ReturnsService $returns;
     public readonly \Sanara\Modules\Security\MfaService $mfa;
     public readonly \Sanara\Modules\Security\PasswordResetService $passwordReset;
     public readonly \Sanara\Modules\Security\SessionService $sessions;
@@ -110,6 +111,7 @@ final class Services
         $seq = new \Sanara\Modules\Sales\Sequences($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant));
         $this->cash = new \Sanara\Modules\Sales\CashService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $seq);
         $this->sales = new \Sanara\Modules\Sales\SalesService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant);
+        $this->returns = new \Sanara\Modules\Sales\ReturnsService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->sales, $this->cash, $seq, $this->authz, $this->pin, $this->tenant);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);
     }
 

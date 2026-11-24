@@ -73,7 +73,7 @@ final class CashService
         foreach ($this->tdb->select('payments', ['session_id' => $sessionId]) as $p) {
             $by[(string) $p['method']] = ($by[(string) $p['method']] ?? 0) + (int) $p['amount'];
         }
-        $sales = array_filter($this->tdb->select('sales', ['session_id' => $sessionId]), static fn ($x) => $x['status'] === 'completed');
+        $sales = $this->tdb->select('sales', ['session_id' => $sessionId]);
         $refunds = 0;
         foreach ($this->tdb->select('cash_movements', ['session_id' => $sessionId]) as $m) {
             $refunds += (int) $m['amount'];
