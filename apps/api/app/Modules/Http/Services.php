@@ -49,6 +49,7 @@ final class Services
     public readonly \Sanara\Modules\Catalog\CatalogTransfer $catalogTransfer;
     public readonly \Sanara\Modules\Catalog\ReferenceCatalog $reference;
     public readonly StockService $stock;
+    public readonly \Sanara\Modules\Stock\InventoryService $inventory;
     public readonly \Sanara\Modules\Security\MfaService $mfa;
     public readonly \Sanara\Modules\Security\PasswordResetService $passwordReset;
     public readonly \Sanara\Modules\Security\SessionService $sessions;
@@ -102,7 +103,24 @@ final class Services
         $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
         $this->catalogTransfer = new \Sanara\Modules\Catalog\CatalogTransfer($this->catalog);
         $this->reference = new \Sanara\Modules\Catalog\ReferenceCatalog($db, $this->catalog);
-        $this->stock = new StockService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
+        $this->stock = new StockService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->tenant);
+        $this->inventory = new \Sanara\Modules\Stock\InventoryService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);
+    }
+
+    /** Contrôles quotidiens (péremptions, ruptures) de chaque pharmacie active ; sans effet répété grâce aux clés de dédoublonnage. */
+    public function runDaily(): int
+    {
+        $n = 0;
+        foreach ($this->db->all("SELECT id FROM tenants WHERE status = 'active'") as $t) {
+            $this->tenant->set((string) $t['id']);
+            try {
+                $r = $this->stock->runDailyChecks();
+                $n += $r['expiry_alerts'] + $r['stock_alerts'] + $r['expired_blocked'];
+            } finally {
+                $this->tenant->clear();
+            }
+        }
+        return $n;
     }
 }

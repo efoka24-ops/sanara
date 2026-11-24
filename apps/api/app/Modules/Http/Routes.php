@@ -51,7 +51,8 @@ final class Routes
             if ($s->config->cronKey === '' || !hash_equals($s->config->cronKey, $key)) {
                 throw new ApiException('forbidden', 403);
             }
-            return $json($res, ['mails_sent' => $s->mail->drain(20)]);
+            $daily = $s->limiter->hit('daily-stock', 1, 3600)['allowed'] ? $s->runDaily() : 0;
+            return $json($res, ['mails_sent' => $s->mail->drain(20), 'daily_alerts' => $daily]);
         });
 
         // --- Authentification ---
@@ -287,10 +288,81 @@ final class Routes
             $g->post('/stock/receipts', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
                 $id = $s->stock->receive($body($q), $actor($q));
                 $s->audit->record('stock.receipt', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'movement_id' => $id]);
-                return $json($r, ['movement_id' => $id], 201);
+                return $json($r, ['movement_id' => $id, 'short_dated' => $s->stock->shortDated((string) ($body($q)['expiry'] ?? '9999-12-31'))], 201);
             })->add($perm('stock.write'));
             $g->get('/stock/products/{id}/lots', fn (Request $q, Response $r, array $a) => $json($r, ['items' => $s->stock->listLots($a['id'])]))->add($perm('stock.read'));
             $g->get('/stock/products/{id}/on-hand', fn (Request $q, Response $r, array $a) => $json($r, $s->stock->onHand($a['id'])))->add($perm('stock.read'));
+            $g->get('/stock/overview', fn (Request $q, Response $r) => $json($r, ['items' => $s->stock->overview()]))->add($perm('stock.read'));
+            $g->get('/stock/alerts', fn (Request $q, Response $r) => $json($r, ['items' => $s->stock->alerts(($q->getQueryParams()['unread'] ?? '') === '1')]))->add($perm('stock.read'));
+            $g->post('/stock/alerts/read', function (Request $q, Response $r) use ($s) {
+                $s->stock->markAlertsRead();
+                return $r->withStatus(204);
+            })->add($perm('stock.read'));
+            $g->get('/stock/products/{id}/movements', fn (Request $q, Response $r, array $a) => $json($r, ['items' => $s->stock->movements($a['id'])]))->add($perm('stock.read'));
+            $g->post('/stock/adjustments', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $b = $body($q);
+                $id = $s->stock->adjust((string) ($b['product_id'] ?? ''), (string) ($b['lot_id'] ?? ''), (int) ($b['delta'] ?? 0), (string) ($b['reason'] ?? ''), $actor($q), in_array($b['kind'] ?? '', ['breakage', 'loss', 'adjustment'], true) ? (string) $b['kind'] : 'adjustment');
+                $s->audit->record('stock.adjust', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'movement_id' => $id]);
+                return $json($r, ['movement_id' => $id], 201);
+            })->add($perm('stock.write'));
+            $g->post('/stock/movements/{id}/reverse', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $id = $s->stock->reverse($a['id'], (string) ($body($q)['reason'] ?? ''), $actor($q));
+                $s->audit->record('stock.reverse', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'movement_id' => $id, 'reversal_of' => $a['id']]);
+                return $json($r, ['movement_id' => $id], 201);
+            })->add($perm('stock.write'));
+            $g->post('/stock/lots/{id}/quarantine', function (Request $q, Response $r, array $a) use ($s, $body, $actor) {
+                $s->stock->quarantine($a['id'], (string) ($body($q)['reason'] ?? ''), $actor($q));
+                $s->audit->record('stock.quarantine', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'lot_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('stock.write'));
+            $g->post('/stock/lots/{id}/release', function (Request $q, Response $r, array $a) use ($s, $actor) {
+                $s->stock->release($a['id']);
+                $s->audit->record('stock.release', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'lot_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('stock.write'));
+            $g->post('/stock/lots/{id}/destroy', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $b = $body($q);
+                $id = $s->stock->destroy($a['id'], (int) ($b['quantity'] ?? 0), (string) ($b['reason'] ?? ''), $b['method'] ?? null, $b['witness'] ?? null, $actor($q));
+                $s->audit->record('stock.destroy', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'destruction_id' => $id]);
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('stock.destroy'));
+            $g->get('/stock/destructions', fn (Request $q, Response $r) => $json($r, ['items' => $s->stock->destructions()]))->add($perm('stock.read'));
+            $g->get('/stock/destructions/{id}/document', function (Request $q, Response $r, array $a) use ($s) {
+                $r->getBody()->write(\Sanara\Modules\Stock\StockDocuments::destruction($s->stock->destruction($a['id'])));
+                return $r->withHeader('Content-Type', 'text/html; charset=utf-8');
+            })->add($perm('stock.read'));
+            // --- Inventaire (US8) ---
+            $g->get('/inventories', fn (Request $q, Response $r) => $json($r, ['items' => $s->inventory->all()]))->add($perm('stock.read'));
+            $g->post('/inventories', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $b = $body($q);
+                $id = $s->inventory->create((string) ($b['kind'] ?? 'full'), !empty($b['blind']), isset($b['family_id']) ? (string) $b['family_id'] : null, $actor($q));
+                $s->audit->record('inventory.create', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'inventory_id' => $id]);
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('stock.write'));
+            $g->get('/inventories/{id}', fn (Request $q, Response $r, array $a) => $json($r, ['inventory' => $s->inventory->get($a['id']), 'lines' => $s->inventory->lines($a['id'])]))->add($perm('stock.read'));
+            $g->post('/inventories/{id}/counts', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $b = $body($q);
+                return $json($r, ['recorded' => $s->inventory->count($a['id'], (string) ($b['device_id'] ?? 'web'), (array) ($b['counts'] ?? []), $actor($q))]);
+            })->add($perm('stock.write'));
+            $g->post('/inventories/{id}/submit', function (Request $q, Response $r, array $a) use ($s) {
+                $s->inventory->submit($a['id']);
+                return $r->withStatus(204);
+            })->add($perm('stock.write'));
+            $g->post('/inventories/{id}/cancel', function (Request $q, Response $r, array $a) use ($s) {
+                $s->inventory->cancel($a['id']);
+                return $r->withStatus(204);
+            })->add($perm('stock.write'));
+            $g->get('/inventories/{id}/report', fn (Request $q, Response $r, array $a) => $json($r, $s->inventory->report($a['id'])))->add($perm('stock.read'));
+            $g->get('/inventories/{id}/report.csv', function (Request $q, Response $r, array $a) use ($s) {
+                $r->getBody()->write($s->inventory->reportCsv($a['id']));
+                return $r->withHeader('Content-Type', 'text/csv; charset=utf-8')->withHeader('Content-Disposition', 'attachment; filename="ecarts-inventaire.csv"');
+            })->add($perm('stock.read'));
+            $g->post('/inventories/{id}/validate', function (Request $q, Response $r, array $a) use ($s, $json, $actor) {
+                $rep = $s->inventory->validate($a['id'], $actor($q), $s->stock);
+                $s->audit->record('inventory.validate', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'inventory_id' => $a['id'], 'gap_value' => $rep['gap_value']]);
+                return $json($r, $rep);
+            })->add($perm('inventory.validate'));
+
 
             $g->get('/families', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->families()]))->add($perm('products.read'));
             $g->post('/families', fn (Request $q, Response $r) => $json($r, ['id' => $s->catalog->createFamily((string) ($body($q)['name'] ?? ''))], 201))->add($perm('products.write'));

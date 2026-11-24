@@ -13,6 +13,7 @@ final class ErrorCatalog
         'forbidden' => ['Vous n\'avez pas le droit d\'effectuer cette action.', 'You are not allowed to do this.'],
         'not_found' => ['Ressource introuvable.', 'Resource not found.'],
         'method_not_allowed' => ['Méthode non autorisée.', 'Method not allowed.'],
+        'insufficient_stock' => ['Stock insuffisant.', 'Insufficient stock.'],
         'conflict' => ['Cette opération entre en conflit avec une donnée existante.', 'This conflicts with existing data.'],
         'too_many_requests' => ['Trop de tentatives, réessayez plus tard.', 'Too many attempts, try again later.'],
         'invalid_credentials' => ['Identifiants incorrects.', 'Invalid credentials.'],

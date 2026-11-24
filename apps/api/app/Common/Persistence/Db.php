@@ -63,6 +63,9 @@ final class Db
     /** @param callable():mixed $fn */
     public function transaction(callable $fn): mixed
     {
+        if ($this->pdo->inTransaction()) {
+            return $fn(); // imbriquée : la transaction englobante décide du commit ou du rollback
+        }
         $this->pdo->beginTransaction();
         try {
             $r = $fn();
