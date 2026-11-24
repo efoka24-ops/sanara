@@ -89,6 +89,39 @@ export function TrackPage() {
   );
 }
 
+function ResendActivation() {
+  const { t } = useT();
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  async function send() {
+    await api('POST', '/public/activation-resend', { email }).catch(() => undefined);
+    setSent(true);
+  }
+  return (
+    <div className="card-form">
+      <p role="alert">{t('activate.invalid')}</p>
+      <h2>{t('activate.resendTitle')}</h2>
+      <label className="sa-field">
+        <span className="sa-field__label">{t('auth.email')}</span>
+        <input
+          className="sa-field__input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </label>
+      {sent && (
+        <div role="status" className="notice">
+          {t('activate.resent')}
+        </div>
+      )}
+      <Button type="button" block onClick={send} disabled={!email}>
+        {t('activate.resend')}
+      </Button>
+    </div>
+  );
+}
+
 export function ActivatePage() {
   const { t } = useT();
   const { token = '' } = useParams();
@@ -122,12 +155,7 @@ export function ActivatePage() {
   }
 
   if (usable === null) return <div className="card-form">{t('common.loading')}</div>;
-  if (!usable && !done)
-    return (
-      <div className="card-form">
-        <p role="alert">{t('activate.invalid')}</p>
-      </div>
-    );
+  if (!usable && !done) return <ResendActivation />;
   if (done)
     return (
       <div className="card-form">

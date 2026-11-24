@@ -84,6 +84,13 @@ final class Routes
             return $res->withStatus(204);
         });
 
+        $app->post('/public/activation-resend', function (Request $req, Response $res) use ($s, $limit, $body) {
+            $limit($req, 'resend-activation', 5, 3600);
+            $s->activationResend->resend((string) ($body($req)['email'] ?? ''));
+            self::drainLater($s);
+            return $res->withStatus(204); // même réponse que le compte existe ou non
+        });
+
         // --- Demandes d'accès (US1) ---
         $docs = static function (Request $req): array {
             $out = [];

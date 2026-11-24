@@ -31,6 +31,12 @@ final class EmailTemplates
             'en' => ['subject' => 'A document needs to be resent',
                 'body' => "Hello {{responsable}},\n\n{{message}}\n\nResend the document from your tracking page. Tracking code: {{code_suivi}}"],
         ],
+        'activation_resend' => [
+            'fr' => ['subject' => 'Votre nouveau lien d\'activation Sanara',
+                'body' => "Bonjour,\n\nVoici un nouveau lien pour activer votre compte, valable {{duree_lien}} :\n\n{{lien_activation}}\n\nLes liens précédents ne fonctionnent plus."],
+            'en' => ['subject' => 'Your new Sanara activation link',
+                'body' => "Hello,\n\nHere is a new link to activate your account, valid for {{duree_lien}}:\n\n{{lien_activation}}\n\nPrevious links no longer work."],
+        ],
         'member_invited' => [
             'fr' => ['subject' => 'Vous êtes invité sur Sanara',
                 'body' => "Bonjour {{nom}},\n\nVous avez été invité(e) à rejoindre votre pharmacie sur Sanara avec le rôle : {{role}}.\n\nActivez votre compte : {{lien_activation}}"],

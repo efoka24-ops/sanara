@@ -41,6 +41,7 @@ final class Services
     public readonly \Sanara\Common\Audit\AuditLogger $audit;
     public readonly \Sanara\Modules\Tenants\TenantSetupService $setup;
     public readonly \Sanara\Modules\Team\TeamService $team;
+    public readonly \Sanara\Modules\Applications\ActivationResendService $activationResend;
 
     public function __construct(public readonly Db $db, public readonly Clock $clock, public readonly Config $config, ?EncryptedStorage $storage = null)
     {
@@ -64,6 +65,7 @@ final class Services
             ? new SmtpMailer($config->mailHost, $config->mailPort, $config->mailEncryption, $config->mailUser, $config->mailPassword, $config->mailFromName)
             : new LogMailer();
         $this->mail = new MailJobHandler($this->jobs, $mailer, new EmailTemplates());
+        $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl);
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
         $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $this->tenant, $clock);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);

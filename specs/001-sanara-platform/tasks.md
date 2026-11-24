@@ -118,7 +118,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T051 [P] [US2] Emails d'activation et de rejet avec motif FR/EN (`apps/api/src/modules/notifications/templates/`)
 - [x] T052 [US2] Console super admin : liste des demandes avec filtres et statuts (`apps/web/src/app/(admin)/applications/page.tsx`)
 - [x] T053 [US2] Vue détail : prévisualisation sécurisée des documents, carte, historique, boutons valider/rejeter (`apps/web/src/app/(admin)/applications/[id]/page.tsx`)
-- [ ] T054 [P] [US2] Renvoi d'un lien d'activation expiré (`apps/api/src/modules/applications/resend-activation.ts`)
+- [x] T054 [P] [US2] Renvoi d'un lien d'activation expiré (`apps/api/src/modules/applications/resend-activation.ts`)
 - [x] T055 [US2] Audit de toutes les décisions et notification interne aux super admins pour les nouvelles demandes
 - [ ] T056 [US2] Test E2E : soumission → validation → réception de l'email (MailHog) (`tests/e2e/us2-review.spec.ts`)
 

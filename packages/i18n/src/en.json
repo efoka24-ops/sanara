@@ -164,5 +164,8 @@
   "perm.sales.cancel": "Cancel a sale",
   "perm.narcotics.dispense": "Regulated products",
   "perm.finance.read": "Finance",
-  "perm.sales.discount": "Discounts"
+  "perm.sales.discount": "Discounts",
+  "activate.resendTitle": "Get a new link",
+  "activate.resend": "Send a new link",
+  "activate.resent": "If an account is awaiting activation, a new link has just been sent."
 }
