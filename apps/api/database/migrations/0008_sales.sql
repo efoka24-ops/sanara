@@ -2,7 +2,7 @@ CREATE TABLE document_sequences (
   id CHAR(26) NOT NULL PRIMARY KEY,
   tenant_id CHAR(26) NOT NULL,
   scope VARCHAR(60) NOT NULL,
-  last_value INT NOT NULL,
+  seq_value INT NOT NULL,
   UNIQUE (tenant_id, scope)
 );
 CREATE TABLE cash_sessions (
