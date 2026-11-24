@@ -53,7 +53,11 @@ async function raw(method: string, path: string, body?: unknown, retry = true): 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await raw(method, path, body);
   if (res.status === 204) return undefined as T;
-  const data = (await res.json().catch(() => ({}))) as {
+  const parsed: unknown = await res.json().catch(() => null);
+  // Une réponse qui n'est pas du JSON (page d'erreur PHP, proxy) ne doit jamais passer pour un succès.
+  if (parsed === null || typeof parsed !== 'object')
+    throw new ApiError(res.status || 500, 'server_error');
+  const data = parsed as {
     error?: { code: string; details?: Record<string, unknown> };
   } & T;
   if (!res.ok)

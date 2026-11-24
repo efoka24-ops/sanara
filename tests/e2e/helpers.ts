@@ -5,7 +5,11 @@ import { E2E } from '../../playwright.config';
 export const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF');
 
 /** Remplit le formulaire d'accès en 4 étapes (US1) et retourne le numéro de demande. */
-export async function submitApplication(page: Page, suffix: string): Promise<string> {
+export async function submitApplication(
+  page: Page,
+  suffix: string,
+  opts: { stopBeforeSubmit?: boolean } = {},
+): Promise<string> {
   await page.goto('/inscription');
   await page.getByLabel(/Nom de l’officine/).fill(`Pharmacie E2E ${suffix}`);
   await page.getByLabel(/N° d’agrément/).fill(`E2E-${suffix}`);
@@ -30,6 +34,7 @@ export async function submitApplication(page: Page, suffix: string): Promise<str
   await page.getByLabel(/Téléphone mobile/).fill('+237 6 00 00 00 02');
   await page.getByLabel(/E-mail de connexion/).fill(`owner-${suffix}@e2e.test`);
   for (const box of await page.getByRole('checkbox').all()) await box.check();
+  if (opts.stopBeforeSubmit) return '';
   await page.getByRole('button', { name: 'Envoyer ma demande' }).click();
   await expect(page.getByRole('heading', { name: 'Demande envoyée' })).toBeVisible();
   return (await page.locator('.big-number b').innerText()).trim();

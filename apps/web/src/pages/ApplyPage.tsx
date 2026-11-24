@@ -98,6 +98,7 @@ export function ApplyPage() {
           documents: docs,
         },
       );
+      if (!r?.number || !r?.tracking_code) throw new ApiError(500, 'server_error');
       nav('/inscription/envoyee', { state: r });
     } catch (e) {
       if (e instanceof ApiError) {
