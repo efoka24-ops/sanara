@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useT } from '@sanara/i18n';
+import { isTeamPermissionChecked } from '@sanara/shared';
 import { Badge, Button, Field, Modal, Switch, Table, useToast } from '@sanara/ui';
 import { api, ApiError } from '../api/client';
 
@@ -9,8 +10,11 @@ interface Member {
   phone: string | null;
   role_code: string;
   status: string;
+  permissions?: string[];
+  permission_overrides?: Array<{ permission_code: string; granted: boolean }>;
 }
-const ROLES = ['pharmacist', 'storekeeper', 'cashier', 'accountant'];
+const ROLES = ['pharmacist', 'storekeeper', 'preparateur', 'cashier', 'accountant'];
+const TEAM_TOGGLES = ['sales.cancel', 'sales.discount', 'narcotics.dispense', 'finance.read'];
 const TONE: Record<string, 'ok' | 'wait' | 'neutral'> = {
   active: 'ok',
   pending_activation: 'wait',
@@ -56,6 +60,7 @@ export function TeamPage() {
       if (e instanceof ApiError && e.code === 'conflict') setErr({ email: 'conflict' });
     }
   }
+
   return (
     <div>
       <div className="row">
@@ -96,20 +101,18 @@ export function TeamPage() {
                 ''
               ) : (
                 <span className="perms">
-                  {['sales.cancel', 'sales.discount', 'narcotics.dispense', 'finance.read'].map(
-                    (p) => (
-                      <label key={p}>
-                        {t(`perm.${p}`)}{' '}
-                        <Switch
-                          checked={false}
-                          onChange={(v) =>
-                            run(api('PUT', `/app/team/${m.id}/permissions/${p}`, { granted: v }))
-                          }
-                          label={t(`perm.${p}`)}
-                        />
-                      </label>
-                    ),
-                  )}
+                  {TEAM_TOGGLES.map((p) => (
+                    <label key={p}>
+                      {t(`perm.${p}`)}{' '}
+                      <Switch
+                        checked={isTeamPermissionChecked(m, p)}
+                        onChange={(v) =>
+                          run(api('PUT', `/app/team/${m.id}/permissions/${p}`, { granted: v }))
+                        }
+                        label={t(`perm.${p}`)}
+                      />
+                    </label>
+                  ))}
                 </span>
               ),
           },

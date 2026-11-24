@@ -159,6 +159,7 @@
   "role.owner": "Owner pharmacist",
   "role.pharmacist": "Deputy pharmacist",
   "role.storekeeper": "Storekeeper",
+  "role.preparateur": "Pharmacy technician",
   "role.cashier": "Cashier",
   "role.accountant": "Accountant",
   "perm.sales.cancel": "Cancel a sale",

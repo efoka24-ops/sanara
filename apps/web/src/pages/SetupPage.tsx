@@ -148,11 +148,13 @@ export function SetupPage() {
                   value={invite.role}
                   onChange={(e) => setInvite({ ...invite, role: e.target.value })}
                 >
-                  {['pharmacist', 'cashier', 'storekeeper', 'accountant'].map((r) => (
-                    <option key={r} value={r}>
-                      {t(`role.${r}`)}
-                    </option>
-                  ))}
+                  {['pharmacist', 'storekeeper', 'preparateur', 'cashier', 'accountant'].map(
+                    (r) => (
+                      <option key={r} value={r}>
+                        {t(`role.${r}`)}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
             </div>

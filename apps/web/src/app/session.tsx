@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 export type Role =
-  'super_admin' | 'owner' | 'pharmacist' | 'storekeeper' | 'cashier' | 'accountant';
+  'super_admin' | 'owner' | 'pharmacist' | 'storekeeper' | 'preparateur' | 'cashier' | 'accountant';
 export interface Session {
   role: Role;
   permissions: string[];

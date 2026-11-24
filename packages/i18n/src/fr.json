@@ -159,6 +159,7 @@
   "role.owner": "Pharmacien titulaire",
   "role.pharmacist": "Pharmacien adjoint",
   "role.storekeeper": "Magasinier",
+  "role.preparateur": "Préparateur",
   "role.cashier": "Caissier",
   "role.accountant": "Comptable",
   "perm.sales.cancel": "Annuler une vente",
