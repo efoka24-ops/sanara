@@ -104,7 +104,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T044 [P] [US1] Email d'accusé de réception FR/EN (`apps/api/src/modules/notifications/templates/application-received.*`)
 - [x] T045 [US1] Page « Digitaliser ma pharmacie » multi-étapes avec carte pour la position (`apps/web/src/app/(public)/inscription/`) (carte Leaflet : à brancher ; position par géolocalisation ou saisie)
 - [x] T046 [P] [US1] Page de suivi de demande (`apps/web/src/app/(public)/inscription/suivi/[code]/page.tsx`)
-- [x] T047 [US1] Anti-spam : limite de débit et captcha sur la soumission (limitation de débit faite ; captcha à ajouter)
+- [x] T047 [US1] Anti-spam : limite de débit et captcha sur la soumission (limitation de débit faite ; vérificateur captcha backend ajouté et branché sur `POST /public/applications`, `CAPTCHA_ENABLED` désactivé en dev/testing ; widget captcha front à ajouter)
 - [x] T048 [US1] Test E2E Playwright du parcours complet (`tests/e2e/us1-application.spec.ts`)
 
 **Checkpoint US1** ✅
@@ -141,7 +141,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 - [x] T065 [P] [US4] Modèles `Invitation`, `RolePermission`, `UserPermissionOverride` (`apps/api/prisma/schema.prisma`)
 - [x] T066 **[TDD]** [US4] Tests : invitation, rôles par défaut, refus hors droits consigné, dernier titulaire non désactivable, effet immédiat d'un changement de rôle (`apps/api/test/team.e2e-spec.ts`)
-- [x] T067 [US4] Matrice de permissions par défaut (adjoint, préparateur, caissier, magasinier, comptable) dans `packages/shared/src/permissions/`
+- [x] T067 [US4] Matrice de permissions par défaut (adjoint, préparateur, caissier, magasinier, comptable) dans `apps/api/app/Common/Rbac/DefaultRoles.php`
 - [x] T068 [US4] API d'invitation, acceptation, changement de rôle, désactivation (`apps/api/src/modules/users/team.controller.ts`)
 - [x] T069 [US4] Page « Équipe » : liste, invitation, rôle, permissions fines (remise max, annulation, stupéfiants, finances) (`apps/web/src/app/(pharmacy)/equipe/`)
 - [x] T070 [US4] Masquage des menus et actions selon permissions côté interface (hook `useCan`) dans `packages/ui/src/auth/`
@@ -177,10 +177,10 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 9 : US7 - Stock par lot, FEFO et alertes (P1) 🎯 MVP 1
 
-- [ ] T088 [P] [US7] Modèles `Lot`, `StockMovement`, `StockAlert`, `Quarantine`, `Destruction` (`apps/api/prisma/schema.prisma`)
-- [ ] T089 **[TDD]** [US7] Tests de la logique pure : FEFO multi-lots, stock insuffisant, stock négatif désactivé, corrections par écriture inverse (`packages/shared/src/stock/fefo.spec.ts`)
-- [ ] T090 [US7] Implémentation FEFO et calcul du stock courant par journal de mouvements (`packages/shared/src/stock/`)
-- [ ] T091 [US7] API de réception de stock (lot, péremption, quantité) et de consultation (`apps/api/src/modules/stock/`)
+- [x] T088 [P] [US7] Modèles `Lot`, `StockMovement`, `StockAlert`, `Quarantine`, `Destruction` (`apps/api/database/migrations/0006_stock.sql`)
+- [x] T089 **[TDD]** [US7] Tests de la logique pure : FEFO multi-lots, stock insuffisant, stock négatif désactivé, corrections par écriture inverse (`packages/shared/src/stock/fefo.spec.ts`)
+- [x] T090 [US7] Implémentation FEFO et calcul du stock courant par journal de mouvements (`packages/shared/src/stock/index.ts`)
+- [x] T091 [US7] API de réception de stock (lot, péremption, quantité) et de consultation (`apps/api/app/Modules/Stock/StockService.php`, routes `/app/stock/*`, tests `apps/api/tests/Stock/StockHttpTest.php`)
 - [ ] T092 [US7] Job quotidien : alertes péremption 30/60/90 jours et blocage des lots périmés (`apps/api/src/modules/stock/jobs/expiry.job.ts`)
 - [ ] T093 [US7] Alertes de stock minimum/rupture et centre de notifications (`apps/api/src/modules/notifications/stock-alerts.ts`)
 - [ ] T094 [US7] Quarantaine et destruction avec procès-verbal PDF (`apps/api/src/modules/stock/destruction.service.ts`)
@@ -239,7 +239,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 14 : US27 - Application desktop installable (P1) 🎯 MVP 1
 
-- [ ] T125 [US27] Coque Electron sécurisée (contextIsolation, sandbox, CSP, IPC typé) (`apps/desktop/src/main/`)
+- [ ] T125 [US27] Coque Electron sécurisée (contextIsolation, sandbox, CSP, IPC typé) (`apps/desktop/src/main/`) (base écrite dans `apps/desktop/src/main.ts` + `apps/desktop/src/preload.ts` : contextIsolation/sandbox activés, navigation externe bloquée ; CSP stricte et déplacement dans `src/main/` restants)
 - [ ] T126 [US27] Chargement de l'interface partagée (build Next.js export ou serveur local) et fenêtre de connexion
 - [ ] T127 [US27] Configuration electron-builder : installateur NSIS `Sanara-Setup.exe` sans droits admin, raccourcis, lancement au démarrage optionnel (`apps/desktop/electron-builder.yml`)
 - [ ] T128 [US27] Mises à jour automatiques signées (electron-updater), installation différée, retour arrière (`apps/desktop/src/updater/`)
@@ -252,8 +252,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 15 : US28 - Mode hors-ligne et synchronisation (P1) 🎯 MVP 1
 
-- [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`)
-- [ ] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`)
+- [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (squelette SQL `0001_init.sql` pour la file d'opérations écrit ; persistance SQLite réelle (better-sqlite3) encore en mémoire seulement)
+- [ ] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (2 scénarios de base écrits et verts : idempotence sur reprise, serveur gagnant sur référentiel ; scénario « deux postes vendent le même produit » encore à écrire)
 - [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`)
 - [ ] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`)
 - [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`)
@@ -270,9 +270,9 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 16 : US18 - Recherche de pharmacies et carte (P1) 🎯 MVP 2
 
-- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/`)
-- [ ] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/test/public-search.e2e-spec.ts`)
-- [ ] T146 [US18] Endpoints `GET /public/pharmacies` (filtres, bbox, distance) avec cache et pagination (`apps/api/src/modules/public/`)
+- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table + index région/ville/nom créés ; point GPS, garde, et alimentation automatique depuis les changements de tenant restent à faire)
+- [ ] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/tests/Applications/PublicPharmaciesHttpTest.php`) (visibilité et filtre texte/ville testés et verts ; tri par distance et hiérarchie département/quartier restants)
+- [ ] T146 [US18] Endpoints `GET /public/pharmacies` (filtres, bbox, distance) avec cache et pagination (`apps/api/app/Modules/Applications/PublicPharmacyService.php`, route dans `Routes.php`) (filtres q/région/ville + pagination faits ; bbox, distance et cache restants)
 - [ ] T147 [US18] Référentiel géographique (régions, départements, villes, quartiers) dans `CountryConfig` + sélecteurs en cascade
 - [ ] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`)
 - [ ] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde
