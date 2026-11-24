@@ -453,3 +453,35 @@ a.sa-btn {
   align-items: center;
   gap: 12px;
 }
+
+.search {
+  flex: 1;
+  min-width: 220px;
+  border: 1px solid var(--sa-line);
+  border-radius: var(--sa-r-field);
+  padding: 11px 14px;
+  font: 15px var(--sa-font-text);
+  background: var(--sa-surface);
+}
+.link-strong {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: 700 14px var(--sa-font-text);
+  color: var(--sa-green-900);
+  cursor: pointer;
+  text-align: left;
+}
+.panel-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0 0 12px;
+}
+.panel-dl dt {
+  color: var(--sa-muted);
+}
+.panel-dl dd {
+  margin: 0;
+  font-weight: 600;
+}

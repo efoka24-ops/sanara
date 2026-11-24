@@ -3,6 +3,7 @@ import { I18nProvider } from '@sanara/i18n';
 import { ToastProvider } from '@sanara/ui';
 import { Home } from './App';
 import { DashboardPage } from './pages/DashboardPage';
+import { CatalogPage } from './pages/CatalogPage';
 import { SetupPage } from './pages/SetupPage';
 import { TeamPage } from './pages/TeamPage';
 import { ForgotPage, ResetPage, SecurityPage } from './pages/SecurityPages';
@@ -41,6 +42,7 @@ export function Router() {
                   <Route index element={<DashboardPage />} />
                   <Route path="configuration" element={<SetupPage />} />
                   <Route path="equipe" element={<TeamPage />} />
+                  <Route path="produits" element={<CatalogPage />} />
                 </Route>
               </Route>
               <Route path="admin" element={<RequireArea area="admin" />}>

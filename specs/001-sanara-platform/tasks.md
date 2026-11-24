@@ -170,8 +170,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T083 [US6] Import CSV/Excel : validation, rapport créés/mis à jour/rejetés par ligne (`apps/api/src/modules/catalog/import.service.ts`) (CSV ; Excel via enregistrement CSV)
 - [x] T084 [P] [US6] Export CSV/Excel du catalogue
 - [x] T085 [P] [US6] Catalogue de référence pré-chargé (DCI, formes, familles) et import à l'inscription (`apps/api/prisma/reference/`)
-- [ ] T086 [US6] Pages catalogue : liste, fiche produit, génériques équivalents, historique de prix (`apps/web/src/app/(pharmacy)/catalogue/`)
-- [ ] T087 [P] [US6] Gestion des familles, laboratoires, taux de TVA
+- [x] T086 [US6] Pages catalogue : liste, fiche produit, génériques équivalents, historique de prix (`apps/web/src/app/(pharmacy)/catalogue/`)
+- [x] T087 [P] [US6] Gestion des familles, laboratoires, taux de TVA
 
 **Checkpoint US6** ✅
 

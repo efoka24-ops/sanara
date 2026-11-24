@@ -19,4 +19,15 @@ export default function globalSetup() {
     },
     stdio: 'inherit',
   });
+  execFileSync('php', [path.join('apps', 'api', 'bin', 'seed-demo.php')], {
+    cwd: path.join(__dirname, '..', '..'),
+    env: {
+      ...process.env,
+      APP_ENV: 'testing',
+      DB_DRIVER: 'sqlite',
+      DB_DATABASE: path.join(dir, 'db.sqlite'),
+      JWT_SECRET: 'e2e-secret-with-at-least-32-characters!!',
+    },
+    stdio: 'inherit',
+  });
 }

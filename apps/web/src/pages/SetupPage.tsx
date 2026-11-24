@@ -33,6 +33,7 @@ export function SetupPage() {
   const [step, setStep] = useState<Step>('hours');
   const [days, setDays] = useState<Day[]>(defaults());
   const [visible, setVisible] = useState(false);
+  const [refDone, setRefDone] = useState(false);
   const [invite, setInvite] = useState({ name: '', email: '', role: 'cashier' });
   const [error, setError] = useState<string | null>(null);
 
@@ -161,6 +162,23 @@ export function SetupPage() {
           <>
             <h1>{t('setup.catalogTitle')}</h1>
             <p className="muted">{t('setup.catalogHint')}</p>
+            <div className="panel">
+              <b>Catalogue Sanara</b>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  await api('POST', '/app/products/reference');
+                  setRefDone(true);
+                }}
+              >
+                {t('cat.reference')}
+              </Button>
+              {refDone && (
+                <div role="status" className="notice">
+                  ✓ {t('cat.reference')}
+                </div>
+              )}
+            </div>
           </>
         )}
         {step === 'visibility' && (

@@ -72,3 +72,7 @@ export const readAsBase64 = (file: File): Promise<string> =>
     r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
   });
+
+/** En-tête d'autorisation pour les téléchargements (fetch direct). */
+export const accessHeader = (): Record<string, string> =>
+  accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
