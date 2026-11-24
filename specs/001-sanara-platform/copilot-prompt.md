@@ -1,6 +1,18 @@
 # Prompt pour GitHub Copilot : implémenter les tâches restantes de Sanara
 
-Copie le bloc ci-dessous dans Copilot (mode agent). Il lui demande de répartir le travail entre 4 agents.
+> ## Mise à jour du 2026-11-24 (à lire avant tout le reste)
+>
+> **Déjà fait par Claude, déployé et testé : ne pas refaire.** Phases 9 à 13 côté API : T088 à T124 (stock par lot, FEFO, alertes, quarantaine, destruction, inventaire, caisse, paiements, rapport Z, tickets, retours, avoirs), migrations `0006` à `0009`. Claude fait aussi les **écrans web** correspondants (`apps/web/src/pages/{Stock,Inventory,Pos,Returns}*`) : n'y touche pas.
+>
+> **À toi maintenant (les 3 premiers agents, en parallèle)** :
+>
+> 1. **Agent 2** : desktop et synchronisation hors-ligne (T125 à T143, T200 à T204, T308, T309). Réimplémente en TypeScript, dans `packages/shared`, la logique pure de `apps/api/app/Modules/Sales/SaleMath.php` (remise, TVA incluse, règlement mixte, arrondi demi-supérieur sur entiers) et du plan FEFO de `StockService::plan`, avec des jeux de cas JSON communs lus par les tests PHP et TS.
+> 2. **Agent 3** : site public et assistant (T144 à T153 recherche et carte, T154 à T159 fiche et gardes, T160 à T199 ordonnances, devis, retrait, escalade, suivi, T290 à T300). La recherche publique de base existe déjà (`PublicPharmacyService`).
+> 3. **Agent 4** : restes des phases 0 à 8, annexe maquette, V2 (T251 à T266) et V3 non-assurance. Ne touche ni à `infra/deploy/` ni au `.env`.
+> 4. **Agent 1 (V2/V3 officine)** : T216 à T250 (mouvements/transferts, clients et crédit, fournisseurs et achats, patients et registre des stupéfiants, rapports, finances), T267, T268, T313 à T315. Les écrans de ces stories sont à toi aussi.
+>
+> **Règles de livraison inchangées** : un commit conventionnel (sujet en minuscule, en-tête ≤ 100 caractères, lignes du corps ≤ 100) poussé par modification ; les tests PHP (`composer test`), Vitest et Playwright restent verts ; ne pas déployer. Claude relit, corrige, fusionne et déploie. Les noms de classes PHP avec antislashs sont fragiles dans les commandes shell : utilise un éditeur de fichiers, pas `sed`.
+> Copie le bloc ci-dessous dans Copilot (mode agent). Il lui demande de répartir le travail entre 4 agents.
 
 ---
 

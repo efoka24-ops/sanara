@@ -14,6 +14,7 @@
 #>
 param(
   [switch]$SkipBuild,
+  [switch]$UnlockAccounts,
   [string]$EnvFile = (Join-Path $PSScriptRoot '..\..\.env')
 )
 
@@ -104,6 +105,7 @@ Write-Host ("   archive : {0:N1} Mo" -f ((Get-Item $zip).Length / 1MB))
 # 4. Extracteur a usage unique
 $token = -join ((1..24) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
 $name = "_deploy_$token.php"
+$unlockPhp = if ($UnlockAccounts) { "`$out['unlocked'] = `$p->unlockAccounts();" } else { '' }
 $extractor = @"
 <?php
 header('Content-Type: application/json');
@@ -122,7 +124,7 @@ try {
     `$cfg = Sanara\Common\Config::fromEnv(`$_ENV);
     Sanara\Common\Database::configure(`$cfg);
     `$p = new Sanara\Common\Persistence\Provisioner(Sanara\Common\Database::db(), new Sanara\Common\Clock(), `$root . '/api-core/database/migrations');
-    `$out['provision'] = `$p->run((string)`$_ENV['SUPERADMIN_EMAIL'], (string)`$_ENV['SUPERADMIN_PASSWORD']);
+    `$out['provision'] = `$p->run((string)`$_ENV['SUPERADMIN_EMAIL'], (string)`$_ENV['SUPERADMIN_PASSWORD']); $unlockPhp
   } catch (Throwable `$e) { `$out['provision_error'] = get_class(`$e) . ': ' . `$e->getMessage(); }
 } catch (Throwable `$e) { `$out['error'] = `$e->getMessage(); }
 @unlink(`$zipPath); `$out['self_deleted'] = @unlink(__FILE__);

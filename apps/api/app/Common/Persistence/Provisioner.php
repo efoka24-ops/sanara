@@ -41,4 +41,12 @@ final class Provisioner
         }
         return ['migrations' => $applied, 'admin_created' => $created, 'admin_renamed' => $renamed];
     }
+
+    /** Lève les verrouillages de comptes et remet les limites de débit à zéro (demande explicite du propriétaire, au déploiement). */
+    public function unlockAccounts(): int
+    {
+        $n = $this->db->execute('UPDATE users SET failed_attempts = 0, locked_until = NULL, pin_failures = 0 WHERE failed_attempts > 0 OR locked_until IS NOT NULL OR pin_failures > 0');
+        $this->db->execute('DELETE FROM rate_limits');
+        return $n;
+    }
 }
