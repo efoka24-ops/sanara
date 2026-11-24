@@ -31,6 +31,12 @@ final class EmailTemplates
             'en' => ['subject' => 'A document needs to be resent',
                 'body' => "Hello {{responsable}},\n\n{{message}}\n\nResend the document from your tracking page. Tracking code: {{code_suivi}}"],
         ],
+        'member_invited' => [
+            'fr' => ['subject' => 'Vous êtes invité sur Sanara',
+                'body' => "Bonjour {{nom}},\n\nVous avez été invité(e) à rejoindre votre pharmacie sur Sanara avec le rôle : {{role}}.\n\nActivez votre compte : {{lien_activation}}"],
+            'en' => ['subject' => 'You have been invited to Sanara',
+                'body' => "Hello {{nom}},\n\nYou have been invited to join your pharmacy on Sanara as: {{role}}.\n\nActivate your account: {{lien_activation}}"],
+        ],
     ];
 
     /** @param array<string, string> $vars @return array{subject: string, text: string, html: string} */

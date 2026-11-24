@@ -119,7 +119,7 @@ final class Routes
 
         // --- Console super admin (US2) ---
         $app->group('/admin', function (RouteCollectorProxy $g) use ($s, $json, $body, $rf) {
-            $perm = fn (string $p) => new RequirePermission($s->authz, $p, $rf);
+            $perm = fn (string $p) => new RequirePermission($s->authz, $p, $rf, $s->audit);
             $g->get('/applications', function (Request $req, Response $res) use ($s, $json) {
                 $status = (string) ($req->getQueryParams()['status'] ?? '');
                 $rows = $status !== ''
@@ -153,6 +153,53 @@ final class Routes
                 $s->review->requestInfo($a['id'], (string) $req->getAttribute('userId'), (array) ($b['docs'] ?? []), (string) ($b['message'] ?? ''));
                 return $res->withStatus(204);
             })->add($perm('applications.review'));
+        })->add(new AuthMiddleware($s->jwt, $s->tenant));
+
+        // --- Espace pharmacie : paramètres, configuration initiale, équipe (US3, US4) ---
+        $app->group('/app', function (RouteCollectorProxy $g) use ($s, $json, $body, $rf) {
+            $perm = fn (string $p) => new RequirePermission($s->authz, $p, $rf, $s->audit);
+            $tenantId = static fn (Request $r): string => (string) ($r->getAttribute('tenantId') ?? throw new ApiException('forbidden', 403));
+            $actor = static fn (Request $r): string => (string) $r->getAttribute('userId');
+
+            $g->get('/settings', fn (Request $q, Response $r) => $json($r, ['settings' => $s->setup->settings(), 'opening_hours' => $s->setup->openingHours()]))->add($perm('settings.write'));
+            $g->put('/settings', function (Request $q, Response $r) use ($s, $body) {
+                $s->setup->setSettings((array) ($body($q)['settings'] ?? []));
+                return $r->withStatus(204);
+            })->add($perm('settings.write'));
+            $g->put('/opening-hours', function (Request $q, Response $r) use ($s, $body) {
+                $s->setup->setOpeningHours((array) ($body($q)['days'] ?? []));
+                return $r->withStatus(204);
+            })->add($perm('settings.write'));
+            $g->put('/visibility', function (Request $q, Response $r) use ($s, $body) {
+                $s->setup->setVisibility(!empty($body($q)['visible']));
+                return $r->withStatus(204);
+            })->add($perm('settings.write'));
+            $g->get('/onboarding', fn (Request $q, Response $r) => $json($r, $s->setup->onboarding()))->add($perm('settings.write'));
+            $g->post('/onboarding/{step}', function (Request $q, Response $r, array $a) use ($s, $body, $json) {
+                !empty($body($q)['skip']) ? $s->setup->skipStep($a['step']) : $s->setup->completeStep($a['step']);
+                return $json($r, $s->setup->onboarding());
+            })->add($perm('settings.write'));
+
+            $g->get('/team', fn (Request $q, Response $r) => $json($r, ['members' => $s->team->members($tenantId($q))]))->add($perm('team.manage'));
+            $g->post('/team', function (Request $q, Response $r) use ($s, $body, $json, $tenantId, $actor) {
+                return $json($r, ['id' => $s->team->invite($tenantId($q), $actor($q), $body($q))], 201);
+            })->add($perm('team.manage'));
+            $g->put('/team/{id}/role', function (Request $q, Response $r, array $a) use ($s, $body, $tenantId, $actor) {
+                $s->team->changeRole($tenantId($q), $actor($q), $a['id'], (string) ($body($q)['role'] ?? ''));
+                return $r->withStatus(204);
+            })->add($perm('team.manage'));
+            $g->post('/team/{id}/deactivate', function (Request $q, Response $r, array $a) use ($s, $tenantId, $actor) {
+                $s->team->deactivate($tenantId($q), $actor($q), $a['id']);
+                return $r->withStatus(204);
+            })->add($perm('team.manage'));
+            $g->post('/team/{id}/reactivate', function (Request $q, Response $r, array $a) use ($s, $tenantId, $actor) {
+                $s->team->reactivate($tenantId($q), $actor($q), $a['id']);
+                return $r->withStatus(204);
+            })->add($perm('team.manage'));
+            $g->put('/team/{id}/permissions/{code}', function (Request $q, Response $r, array $a) use ($s, $body, $tenantId, $actor) {
+                $s->team->setOverride($tenantId($q), $actor($q), $a['id'], $a['code'], !empty($body($q)['granted']));
+                return $r->withStatus(204);
+            })->add($perm('team.manage'));
         })->add(new AuthMiddleware($s->jwt, $s->tenant));
 
         // Document chiffré : accès uniquement par URL signée à durée courte.

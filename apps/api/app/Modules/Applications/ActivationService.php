@@ -16,6 +16,17 @@ final class ActivationService
     {
     }
 
+    /** Émet un jeton à usage unique ; seul son hachage est stocké. */
+    public function issueToken(string $userId, int $hours): string
+    {
+        $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $this->db->insert('activation_tokens', [
+            'id' => \Sanara\Common\Ulid::generate(), 'user_id' => $userId, 'token_hash' => hash('sha256', $token),
+            'expires_at' => $this->clock->stamp($this->clock->now()->modify("+$hours hours")), 'created_at' => $this->clock->stamp(),
+        ]);
+        return $token;
+    }
+
     public function isUsable(string $token): bool
     {
         return $this->find($token) !== null;

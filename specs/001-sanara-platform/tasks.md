@@ -126,26 +126,26 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 5 : US3 - Activation et configuration initiale (P1) 🎯 MVP 1
 
-- [ ] T057 [P] [US3] Modèles `TenantSettings`, `OpeningHours`, `OnboardingProgress` (`apps/api/prisma/schema.prisma`)
+- [x] T057 [P] [US3] Modèles `TenantSettings`, `OpeningHours`, `OnboardingProgress` (`apps/api/prisma/schema.prisma`)
 - [x] T058 **[TDD]** [US3] Tests : jeton valide/expiré/déjà utilisé, politique de mot de passe (`apps/api/test/activation.e2e-spec.ts`)
 - [x] T059 [US3] Endpoint d'activation (définition du mot de passe, proposition 2FA) (`apps/api/src/modules/users/activation.controller.ts`)
 - [x] T060 [US3] Page d'activation (`apps/web/src/app/(public)/activer/[token]/page.tsx`)
 - [ ] T061 [US3] Assistant de configuration en étapes sauvegardées : infos, logo, horaires, devise/TVA, imprimante, visibilité publique, import catalogue (`apps/web/src/app/(pharmacy)/configuration/`)
-- [ ] T062 [P] [US3] Endpoints de lecture/écriture des paramètres de l'officine (`apps/api/src/modules/tenants/settings.controller.ts`)
+- [x] T062 [P] [US3] Endpoints de lecture/écriture des paramètres de l'officine (`apps/api/src/modules/tenants/settings.controller.ts`)
 - [ ] T063 [US3] Reprise de l'assistant à l'étape interrompue ; indicateur de progression sur le tableau de bord
-- [ ] T064 [US3] Publication/dépublication de la fiche publique (indicateur `public_visible`) (`apps/api/src/modules/tenants/visibility.service.ts`)
+- [x] T064 [US3] Publication/dépublication de la fiche publique (indicateur `public_visible`) (`apps/api/src/modules/tenants/visibility.service.ts`)
 
 **Checkpoint US3** ✅
 
 ## Phase 6 : US4 - Équipe, rôles et permissions (P1) 🎯 MVP 1
 
-- [ ] T065 [P] [US4] Modèles `Invitation`, `RolePermission`, `UserPermissionOverride` (`apps/api/prisma/schema.prisma`)
-- [ ] T066 **[TDD]** [US4] Tests : invitation, rôles par défaut, refus hors droits consigné, dernier titulaire non désactivable, effet immédiat d'un changement de rôle (`apps/api/test/team.e2e-spec.ts`)
-- [ ] T067 [US4] Matrice de permissions par défaut (adjoint, préparateur, caissier, magasinier, comptable) dans `packages/shared/src/permissions/`
-- [ ] T068 [US4] API d'invitation, acceptation, changement de rôle, désactivation (`apps/api/src/modules/users/team.controller.ts`)
+- [x] T065 [P] [US4] Modèles `Invitation`, `RolePermission`, `UserPermissionOverride` (`apps/api/prisma/schema.prisma`)
+- [x] T066 **[TDD]** [US4] Tests : invitation, rôles par défaut, refus hors droits consigné, dernier titulaire non désactivable, effet immédiat d'un changement de rôle (`apps/api/test/team.e2e-spec.ts`)
+- [x] T067 [US4] Matrice de permissions par défaut (adjoint, préparateur, caissier, magasinier, comptable) dans `packages/shared/src/permissions/`
+- [x] T068 [US4] API d'invitation, acceptation, changement de rôle, désactivation (`apps/api/src/modules/users/team.controller.ts`)
 - [ ] T069 [US4] Page « Équipe » : liste, invitation, rôle, permissions fines (remise max, annulation, stupéfiants, finances) (`apps/web/src/app/(pharmacy)/equipe/`)
 - [ ] T070 [US4] Masquage des menus et actions selon permissions côté interface (hook `useCan`) dans `packages/ui/src/auth/`
-- [ ] T071 [P] [US4] Email d'invitation FR/EN
+- [x] T071 [P] [US4] Email d'invitation FR/EN
 
 **Checkpoint US4** ✅
 
