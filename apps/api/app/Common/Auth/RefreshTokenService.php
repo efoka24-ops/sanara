@@ -15,12 +15,13 @@ final class RefreshTokenService
     }
 
     /** @return array{token: string, user_id: string} */
-    public function issue(string $userId, ?string $deviceId = null, ?string $familyId = null): array
+    public function issue(string $userId, ?string $deviceId = null, ?string $familyId = null, ?string $label = null): array
     {
         $token = rtrim(strtr(base64_encode(random_bytes(48)), '+/', '-_'), '=');
         $id = Ulid::generate();
         $this->db->insert('refresh_tokens', [
             'id' => $id, 'user_id' => $userId, 'device_id' => $deviceId, 'family_id' => $familyId ?? Ulid::generate(),
+            'label' => $label !== null ? mb_substr($label, 0, 80) : null,
             'token_hash' => hash('sha256', $token),
             'expires_at' => $this->clock->stamp($this->clock->now()->modify("+{$this->ttlDays} days")),
             'created_at' => $this->clock->stamp(),
@@ -43,7 +44,7 @@ final class RefreshTokenService
         if ($row['expires_at'] <= $now) {
             throw new AuthException('invalid_refresh_token');
         }
-        $new = $this->issue((string) $row['user_id'], $row['device_id'], (string) $row['family_id']);
+        $new = $this->issue((string) $row['user_id'], $row['device_id'], (string) $row['family_id'], $row['label'] ?? null);
         $this->db->execute('UPDATE refresh_tokens SET revoked_at = ? WHERE id = ?', [$now, $row['id']]);
         return $new;
     }

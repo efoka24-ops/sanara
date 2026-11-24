@@ -58,7 +58,7 @@ final class Routes
         $app->post('/auth/login', function (Request $req, Response $res) use ($s, $json, $limit, $body) {
             $limit($req, 'login', 10, 60);
             $b = $body($req);
-            $r = $s->auth->login((string) ($b['email'] ?? ''), (string) ($b['password'] ?? ''), $b['device_id'] ?? null);
+            $r = $s->auth->login((string) ($b['email'] ?? ''), (string) ($b['password'] ?? ''), $b['device_id'] ?? null, $b['device_label'] ?? null);
             return $json($res, $r);
         });
         $app->post('/auth/refresh', function (Request $req, Response $res) use ($s, $json, $limit, $body) {
@@ -71,7 +71,66 @@ final class Routes
         });
         $app->get('/auth/me', function (Request $req, Response $res) use ($s, $json) {
             $id = (string) $req->getAttribute('userId');
-            return $json($res, ['id' => $id, 'role' => $req->getAttribute('role'), 'tenant_id' => $req->getAttribute('tenantId'), 'permissions' => $s->authz->permissionsFor($id)]);
+            $setup = $req->getAttribute('scope') === 'setup';
+            return $json($res, [
+                'id' => $id, 'role' => $req->getAttribute('role'), 'tenant_id' => $req->getAttribute('tenantId'),
+                'permissions' => $setup ? [] : $s->authz->permissionsFor($id), 'mfa_setup_required' => $setup, 'mfa_enabled' => $s->mfa->isEnabled($id),
+            ]);
+        })->add(new AuthMiddleware($s->jwt, $s->tenant, true));
+
+        // --- Double vérification (US5) ---
+        $app->post('/auth/mfa/verify', function (Request $req, Response $res) use ($s, $json, $limit, $body) {
+            $limit($req, 'mfa', 10, 60);
+            $b = $body($req);
+            return $json($res, $s->auth->completeMfa((string) ($b['mfa_token'] ?? ''), (string) ($b['code'] ?? '')));
+        });
+        $app->group('/auth/mfa', function (RouteCollectorProxy $g) use ($s, $json, $body) {
+            $g->post('/begin', fn (Request $q, Response $r) => $json($r, $s->mfa->begin((string) $q->getAttribute('userId'))));
+            $g->post('/confirm', function (Request $q, Response $r) use ($s, $json, $body) {
+                $codes = $s->mfa->confirm((string) $q->getAttribute('userId'), (string) ($body($q)['code'] ?? ''));
+                $s->audit->record('mfa.enable', ['user_id' => (string) $q->getAttribute('userId'), 'tenant_id' => $q->getAttribute('tenantId')]);
+                return $json($r, ['backup_codes' => $codes]);
+            });
+            $g->post('/disable', function (Request $q, Response $r) use ($s, $body) {
+                $s->mfa->disable((string) $q->getAttribute('userId'), (string) ($body($q)['code'] ?? ''));
+                $s->audit->record('mfa.disable', ['user_id' => (string) $q->getAttribute('userId'), 'tenant_id' => $q->getAttribute('tenantId')]);
+                return $r->withStatus(204);
+            });
+        })->add(new AuthMiddleware($s->jwt, $s->tenant, true));
+
+        // --- Mot de passe oublié ---
+        $app->post('/auth/password/forgot', function (Request $req, Response $res) use ($s, $limit, $body) {
+            $limit($req, 'forgot', 5, 3600);
+            $s->passwordReset->request((string) ($body($req)['email'] ?? ''));
+            self::drainLater($s);
+            return $res->withStatus(204);
+        });
+        $app->get('/auth/password/reset/{token}', fn (Request $q, Response $r, array $a) => $json($r, ['usable' => $s->passwordReset->isUsable($a['token'])]));
+        $app->post('/auth/password/reset/{token}', function (Request $req, Response $res, array $a) use ($s, $limit, $body) {
+            $limit($req, 'reset', 10, 3600);
+            $s->passwordReset->reset($a['token'], (string) ($body($req)['password'] ?? ''));
+            return $res->withStatus(204);
+        });
+
+        // --- Sessions et PIN de l'utilisateur connecté ---
+        $app->group('/auth', function (RouteCollectorProxy $g) use ($s, $json, $body, $limit) {
+            $g->get('/sessions', fn (Request $q, Response $r) => $json($r, ['sessions' => $s->sessions->list((string) $q->getAttribute('userId'))]));
+            $g->delete('/sessions/{family}', function (Request $q, Response $r, array $a) use ($s) {
+                $s->sessions->revoke((string) $q->getAttribute('userId'), $a['family']);
+                return $r->withStatus(204);
+            });
+            $g->post('/sessions/revoke-all', function (Request $q, Response $r) use ($s) {
+                $s->sessions->revokeAll((string) $q->getAttribute('userId'));
+                return $r->withStatus(204);
+            });
+            $g->put('/pin', function (Request $q, Response $r) use ($s, $body) {
+                $s->pin->set((string) $q->getAttribute('userId'), (string) ($body($q)['pin'] ?? ''));
+                return $r->withStatus(204);
+            });
+            $g->post('/pin/verify', function (Request $q, Response $r) use ($s, $json, $body, $limit) {
+                $limit($q, 'pin', 30, 60);
+                return $json($r, ['valid' => $s->pin->verify((string) $q->getAttribute('userId'), (string) ($body($q)['pin'] ?? ''))]);
+            });
         })->add(new AuthMiddleware($s->jwt, $s->tenant));
 
         // --- Activation (US3) ---

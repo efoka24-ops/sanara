@@ -27,6 +27,7 @@ final class Config
         public readonly string $mailFromName = 'Sanara',
         public readonly string $dbDriver = 'mysql',
         public readonly string $mailDir = '',
+        public readonly bool $enforceAdminMfa = true,
     ) {
     }
 
@@ -57,6 +58,7 @@ final class Config
             mailFromName: $get('MAIL_FROM_NAME', 'Sanara'),
             dbDriver: $get('DB_DRIVER', 'mysql') === 'sqlite' ? 'sqlite' : 'mysql',
             mailDir: $get('MAIL_DIR'),
+            enforceAdminMfa: filter_var($get('MFA_ADMIN', $appEnv === 'testing' ? '0' : '1'), FILTER_VALIDATE_BOOLEAN),
         );
     }
 }

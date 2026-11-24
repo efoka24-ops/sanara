@@ -17,6 +17,7 @@ final class ErrorCatalog
         'too_many_requests' => ['Trop de tentatives, réessayez plus tard.', 'Too many attempts, try again later.'],
         'invalid_credentials' => ['Identifiants incorrects.', 'Invalid credentials.'],
         'account_locked' => ['Compte verrouillé temporairement.', 'Account temporarily locked.'],
+        'mfa_required' => ['Activez la double vérification pour continuer.', 'Enable two-factor authentication to continue.'],
         'invalid_token' => ['Session invalide ou expirée.', 'Invalid or expired session.'],
         'invalid_refresh_token' => ['Session expirée, reconnectez-vous.', 'Session expired, sign in again.'],
         'file_type_not_allowed' => ['Type de fichier non autorisé.', 'File type not allowed.'],

@@ -38,14 +38,17 @@ final class UserRepository
         return $this->db->one('SELECT * FROM users WHERE id = ? AND deleted_at IS NULL', [$id]);
     }
 
-    public function recordFailure(string $id, int $maxAttempts, int $lockMinutes): void
+    /** @return bool vrai si ce échec vient de verrouiller le compte */
+    public function recordFailure(string $id, int $maxAttempts, int $lockMinutes): bool
     {
         $this->db->execute('UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?', [$id]);
         $u = $this->findById($id);
         if ($u !== null && (int) $u['failed_attempts'] >= $maxAttempts) {
             $until = $this->clock->stamp($this->clock->now()->modify("+$lockMinutes minutes"));
             $this->db->execute('UPDATE users SET locked_until = ? WHERE id = ?', [$until, $id]);
+            return (int) $u['failed_attempts'] === $maxAttempts;
         }
+        return false;
     }
 
     public function resetFailures(string $id): void

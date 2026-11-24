@@ -37,6 +37,18 @@ final class EmailTemplates
             'en' => ['subject' => 'Your new Sanara activation link',
                 'body' => "Hello,\n\nHere is a new link to activate your account, valid for {{duree_lien}}:\n\n{{lien_activation}}\n\nPrevious links no longer work."],
         ],
+        'password_reset' => [
+            'fr' => ['subject' => 'Réinitialisation de votre mot de passe Sanara',
+                'body' => "Bonjour,\n\nPour choisir un nouveau mot de passe (lien valable 1 heure) :\n\n{{lien}}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message."],
+            'en' => ['subject' => 'Reset your Sanara password',
+                'body' => "Hello,\n\nTo choose a new password (link valid for 1 hour):\n\n{{lien}}\n\nIf you did not request this, ignore this message."],
+        ],
+        'account_locked' => [
+            'fr' => ['subject' => 'Compte Sanara verrouillé temporairement',
+                'body' => "Bonjour,\n\nLe compte {{compte}} a été verrouillé 15 minutes après plusieurs échecs de connexion. S'il ne s'agit pas de vous ou d'un membre de l'équipe, changez le mot de passe."],
+            'en' => ['subject' => 'Sanara account temporarily locked',
+                'body' => "Hello,\n\nThe account {{compte}} was locked for 15 minutes after several failed sign-ins. If this was not you or a team member, change the password."],
+        ],
         'member_invited' => [
             'fr' => ['subject' => 'Vous êtes invité sur Sanara',
                 'body' => "Bonjour {{nom}},\n\nVous avez été invité(e) à rejoindre votre pharmacie sur Sanara avec le rôle : {{role}}.\n\nActivez votre compte : {{lien_activation}}"],

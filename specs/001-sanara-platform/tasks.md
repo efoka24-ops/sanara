@@ -151,11 +151,11 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 7 : US5 - Authentification et sécurité du compte (P1) 🎯 MVP 1
 
-- [ ] T072 **[TDD]** [US5] Tests : verrouillage après 5 échecs, 2FA obligatoire si activée, jeton de reset à usage unique et révocation des sessions (`apps/api/test/auth.e2e-spec.ts`)
-- [ ] T073 [US5] 2FA TOTP (secret chiffré, codes de secours) et option SMS (`apps/api/src/modules/users/mfa/`)
-- [ ] T074 [US5] Réinitialisation de mot de passe, politique et historique (`apps/api/src/modules/users/password-reset.ts`)
-- [ ] T075 [US5] Verrouillage temporaire, notification au titulaire (`apps/api/src/common/auth/lockout.ts`)
-- [ ] T076 [US5] Gestion des sessions et des postes autorisés (`Device`), révocation à distance (`apps/api/src/modules/users/devices.controller.ts`)
+- [x] T072 **[TDD]** [US5] Tests : verrouillage après 5 échecs, 2FA obligatoire si activée, jeton de reset à usage unique et révocation des sessions (`apps/api/test/auth.e2e-spec.ts`)
+- [x] T073 [US5] 2FA TOTP (secret chiffré, codes de secours) et option SMS (`apps/api/src/modules/users/mfa/`) (TOTP fait ; option SMS non faite)
+- [x] T074 [US5] Réinitialisation de mot de passe, politique et historique (`apps/api/src/modules/users/password-reset.ts`)
+- [x] T075 [US5] Verrouillage temporaire, notification au titulaire (`apps/api/src/common/auth/lockout.ts`)
+- [x] T076 [US5] Gestion des sessions et des postes autorisés (`Device`), révocation à distance (`apps/api/src/modules/users/devices.controller.ts`) (sessions par appareil faites ; table devices par poste avec le desktop)
 - [ ] T077 [US5] Pages connexion, 2FA, reset, sessions/postes (`apps/web/src/app/(auth)/`)
 - [ ] T078 [US5] Verrouillage d'écran par inactivité avec PIN (`packages/ui/src/auth/idle-lock.tsx`)
 
