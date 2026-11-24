@@ -28,6 +28,7 @@ final class Config
         public readonly string $dbDriver = 'mysql',
         public readonly string $mailDir = '',
         public readonly bool $enforceAdminMfa = true,
+        public readonly bool $captchaEnabled = false,
     ) {
     }
 
@@ -59,6 +60,7 @@ final class Config
             dbDriver: $get('DB_DRIVER', 'mysql') === 'sqlite' ? 'sqlite' : 'mysql',
             mailDir: $get('MAIL_DIR'),
             enforceAdminMfa: filter_var($get('MFA_ADMIN', $appEnv === 'testing' ? '0' : '1'), FILTER_VALIDATE_BOOLEAN),
+            captchaEnabled: filter_var($get('CAPTCHA_ENABLED', $appEnv === 'production' ? '1' : '0'), FILTER_VALIDATE_BOOLEAN),
         );
     }
 }

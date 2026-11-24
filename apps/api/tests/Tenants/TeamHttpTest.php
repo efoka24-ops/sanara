@@ -72,6 +72,38 @@ final class TeamHttpTest extends TestCase
         $this->assertContains('stock.write', $me['permissions'], 'effet immédiat sans reconnexion');
     }
 
+    public function testTeamListReturnsEffectivePermissionsAndOverrides(): void
+    {
+        $owner = $this->login('owner@t1.cm', 'Owner#Motdepasse1');
+        [$st, $invite] = $this->call('POST', '/app/team', ['name' => 'Kossi', 'email' => 'kossi@t1.cm', 'role' => 'preparateur'], $owner);
+        $this->assertSame(201, $st);
+
+        $this->assertSame(204, $this->call('PUT', '/app/team/' . $invite['id'] . '/permissions/finance.read', ['granted' => true], $owner)[0]);
+        $this->assertSame(204, $this->call('PUT', '/app/team/' . $invite['id'] . '/permissions/sales.discount', ['granted' => false], $owner)[0]);
+
+        [, $team] = $this->call('GET', '/app/team', null, $owner);
+        $member = null;
+        foreach ($team['members'] as $m) {
+            if (($m['id'] ?? null) === $invite['id']) {
+                $member = $m;
+                break;
+            }
+        }
+        $this->assertNotNull($member);
+        $this->assertSame('preparateur', $member['role_code']);
+        $this->assertContains('finance.read', $member['permissions']);
+        $this->assertNotContains('sales.discount', $member['permissions']);
+
+        $overrides = [];
+        foreach ($member['permission_overrides'] as $o) {
+            $overrides[$o['permission_code']] = (bool) $o['granted'];
+        }
+        $this->assertArrayHasKey('finance.read', $overrides);
+        $this->assertArrayHasKey('sales.discount', $overrides);
+        $this->assertTrue($overrides['finance.read']);
+        $this->assertFalse($overrides['sales.discount']);
+    }
+
     public function testSettingsAndOnboardingThroughHttp(): void
     {
         $owner = $this->login('owner@t1.cm', 'Owner#Motdepasse1');

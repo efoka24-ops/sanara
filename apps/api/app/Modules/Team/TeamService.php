@@ -18,7 +18,7 @@ use Sanara\Modules\Applications\ActivationService;
 /** US4 : équipe de la pharmacie. Toutes les opérations sont bornées au tenant et auditées. */
 final class TeamService
 {
-    private const ASSIGNABLE = ['pharmacist', 'storekeeper', 'cashier', 'accountant'];
+    private const ASSIGNABLE = ['pharmacist', 'storekeeper', 'preparateur', 'cashier', 'accountant'];
     private readonly AuditLogger $audit;
 
     public function __construct(
@@ -37,7 +37,16 @@ final class TeamService
     /** @return list<array<string, mixed>> */
     public function members(string $tenantId): array
     {
-        return $this->db->all('SELECT id, email, phone, role_code, status, created_at FROM users WHERE tenant_id = ? AND deleted_at IS NULL ORDER BY created_at', [$tenantId]);
+        $members = $this->db->all('SELECT id, email, phone, role_code, status, created_at FROM users WHERE tenant_id = ? AND deleted_at IS NULL ORDER BY created_at', [$tenantId]);
+        foreach ($members as &$member) {
+            $overrides = $this->db->all('SELECT permission_code, granted FROM user_permission_overrides WHERE user_id = ?', [(string) $member['id']]);
+            $member['permissions'] = $this->authz->permissionsFor((string) $member['id']);
+            $member['permission_overrides'] = array_map(
+                static fn (array $row): array => ['permission_code' => (string) $row['permission_code'], 'granted' => (int) $row['granted'] === 1],
+                $overrides,
+            );
+        }
+        return $members;
     }
 
     /** @param array{name: string, email: string, phone?: ?string, role: string} $in */

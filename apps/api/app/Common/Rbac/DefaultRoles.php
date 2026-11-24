@@ -22,6 +22,9 @@ final class DefaultRoles
         'sales.create' => 'Vendre et encaisser',
         'sales.discount' => 'Accorder une remise',
         'sales.cancel' => 'Annuler une vente',
+        'sales.discount_override' => 'Autoriser une remise au-delà du plafond',
+        'stock.destroy' => 'Détruire du stock périmé ou retiré',
+        'inventory.validate' => 'Valider un inventaire',
         'pickup.validate' => 'Valider un retrait par code',
         'cash.close' => 'Clôturer la caisse',
         'patients.read' => 'Consulter les dossiers patients',
@@ -33,8 +36,8 @@ final class DefaultRoles
 
     private const TENANT_ALL = [
         'audit.read', 'team.manage', 'settings.write', 'assistant.configure', 'requests.process', 'products.read', 'products.write',
-        'stock.read', 'stock.write', 'purchases.write', 'sales.create', 'sales.discount', 'sales.cancel', 'pickup.validate',
-        'cash.close', 'patients.read', 'patients.write', 'narcotics.dispense', 'finance.read', 'reports.read',
+        'stock.read', 'stock.write', 'purchases.write', 'sales.create', 'sales.discount', 'sales.discount_override', 'sales.cancel', 'pickup.validate',
+        'stock.destroy', 'inventory.validate', 'cash.close', 'patients.read', 'patients.write', 'narcotics.dispense', 'finance.read', 'reports.read',
     ];
 
     /** @return array<string, array{name: string, scope: string, permissions: list<string>}> */
@@ -45,9 +48,10 @@ final class DefaultRoles
             'owner' => ['name' => 'Pharmacien titulaire', 'scope' => 'tenant', 'permissions' => self::TENANT_ALL],
             'pharmacist' => ['name' => 'Pharmacien adjoint', 'scope' => 'tenant', 'permissions' => [
                 'requests.process', 'products.read', 'products.write', 'stock.read', 'stock.write', 'purchases.write', 'sales.create',
-                'sales.discount', 'pickup.validate', 'patients.read', 'patients.write', 'narcotics.dispense', 'reports.read',
+                'sales.discount', 'sales.discount_override', 'stock.destroy', 'inventory.validate', 'pickup.validate', 'patients.read', 'patients.write', 'narcotics.dispense', 'reports.read',
             ]],
             'storekeeper' => ['name' => 'Magasinier', 'scope' => 'tenant', 'permissions' => ['products.read', 'stock.read', 'stock.write', 'purchases.write']],
+            'preparateur' => ['name' => 'Préparateur', 'scope' => 'tenant', 'permissions' => ['products.read', 'stock.read', 'sales.create', 'sales.discount', 'pickup.validate']],
             'cashier' => ['name' => 'Caissier', 'scope' => 'tenant', 'permissions' => ['products.read', 'sales.create', 'sales.discount', 'pickup.validate']],
             'accountant' => ['name' => 'Comptable', 'scope' => 'tenant', 'permissions' => ['finance.read', 'reports.read', 'cash.close']],
         ];

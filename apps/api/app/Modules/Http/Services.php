@@ -18,11 +18,14 @@ use Sanara\Common\Storage\EncryptedStorage;
 use Sanara\Common\Tenancy\TenantContext;
 use Sanara\Modules\Applications\ActivationService;
 use Sanara\Modules\Applications\ApplicationService;
+use Sanara\Modules\Applications\PublicPharmacyService;
 use Sanara\Modules\Applications\ReviewService;
 use Sanara\Modules\Notifications\Email\EmailTemplates;
 use Sanara\Modules\Notifications\Email\LogMailer;
 use Sanara\Modules\Notifications\Email\SmtpMailer;
 use Sanara\Modules\Notifications\MailJobHandler;
+use Sanara\Modules\Security\CaptchaVerifier;
+use Sanara\Modules\Stock\StockService;
 
 /** Composition des services d'une requête. Les tests la construisent avec une base SQLite et une horloge figée. */
 final class Services
@@ -45,10 +48,13 @@ final class Services
     public readonly \Sanara\Modules\Catalog\CatalogService $catalog;
     public readonly \Sanara\Modules\Catalog\CatalogTransfer $catalogTransfer;
     public readonly \Sanara\Modules\Catalog\ReferenceCatalog $reference;
+    public readonly StockService $stock;
     public readonly \Sanara\Modules\Security\MfaService $mfa;
     public readonly \Sanara\Modules\Security\PasswordResetService $passwordReset;
     public readonly \Sanara\Modules\Security\SessionService $sessions;
     public readonly \Sanara\Modules\Security\PinService $pin;
+    public readonly PublicPharmacyService $publicPharmacies;
+    public readonly CaptchaVerifier $captcha;
 
     public function __construct(public readonly Db $db, public readonly Clock $clock, public readonly Config $config, ?EncryptedStorage $storage = null)
     {
@@ -73,6 +79,7 @@ final class Services
         $this->passwordReset = new \Sanara\Modules\Security\PasswordResetService($db, $clock, $hasher, $this->jobs, $config->appUrl);
         $this->sessions = new \Sanara\Modules\Security\SessionService($db, $clock);
         $this->pin = new \Sanara\Modules\Security\PinService($db, $hasher);
+        $this->captcha = new CaptchaVerifier($config->captchaEnabled);
         $this->tenant = new TenantContext();
         $this->storage = $storage ?? new EncryptedStorage(
             $config->storageDir !== '' ? $config->storageDir : dirname(__DIR__, 4) . '/storage-private',
@@ -80,6 +87,7 @@ final class Services
             hash_hmac('sha256', 'storage-url', $config->jwtSecret),
         );
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
+        $this->publicPharmacies = new PublicPharmacyService($db);
         $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
         $this->activation = new ActivationService($db, $clock, $hasher);
         $mailer = match (true) {
@@ -94,6 +102,7 @@ final class Services
         $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
         $this->catalogTransfer = new \Sanara\Modules\Catalog\CatalogTransfer($this->catalog);
         $this->reference = new \Sanara\Modules\Catalog\ReferenceCatalog($db, $this->catalog);
+        $this->stock = new StockService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);
     }
 }

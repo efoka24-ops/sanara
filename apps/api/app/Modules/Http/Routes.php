@@ -150,6 +150,17 @@ final class Routes
             return $res->withStatus(204); // même réponse que le compte existe ou non
         });
 
+        $app->get('/public/pharmacies', function (Request $req, Response $res) use ($s, $json) {
+            $q = trim((string) ($req->getQueryParams()['q'] ?? ''));
+            $region = trim((string) ($req->getQueryParams()['region'] ?? ''));
+            $city = trim((string) ($req->getQueryParams()['city'] ?? ''));
+            $visibleRaw = strtolower(trim((string) ($req->getQueryParams()['visible'] ?? 'true')));
+            $visible = !in_array($visibleRaw, ['0', 'false', 'no'], true);
+            $limit = max(1, min(100, (int) ($req->getQueryParams()['limit'] ?? 20)));
+            $offset = max(0, (int) ($req->getQueryParams()['offset'] ?? 0));
+            return $json($res, $s->publicPharmacies->search($q, $region, $city, $visible, $limit, $offset));
+        });
+
         // --- Demandes d'accès (US1) ---
         $docs = static function (Request $req): array {
             $out = [];
@@ -168,7 +179,9 @@ final class Routes
         };
         $app->post('/public/applications', function (Request $req, Response $res) use ($s, $json, $limit, $body, $docs) {
             $limit($req, 'application', 5, 3600);
-            $out = $s->applications->submit($body($req), $docs($req));
+            $b = $body($req);
+            $s->captcha->verify(isset($b['captcha_token']) ? (string) $b['captcha_token'] : null);
+            $out = $s->applications->submit($b, $docs($req));
             self::drainLater($s);
             return $json($res, $out, 201);
         });
@@ -269,6 +282,16 @@ final class Routes
                 $s->catalog->setActive($a['id'], !empty($body($q)['active']), $actor($q));
                 return $r->withStatus(204);
             })->add($perm('products.write'));
+
+            // --- Stock par lot (US7) ---
+            $g->post('/stock/receipts', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $id = $s->stock->receive($body($q), $actor($q));
+                $s->audit->record('stock.receipt', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'movement_id' => $id]);
+                return $json($r, ['movement_id' => $id], 201);
+            })->add($perm('stock.write'));
+            $g->get('/stock/products/{id}/lots', fn (Request $q, Response $r, array $a) => $json($r, ['items' => $s->stock->listLots($a['id'])]))->add($perm('stock.read'));
+            $g->get('/stock/products/{id}/on-hand', fn (Request $q, Response $r, array $a) => $json($r, $s->stock->onHand($a['id'])))->add($perm('stock.read'));
+
             $g->get('/families', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->families()]))->add($perm('products.read'));
             $g->post('/families', fn (Request $q, Response $r) => $json($r, ['id' => $s->catalog->createFamily((string) ($body($q)['name'] ?? ''))], 201))->add($perm('products.write'));
             $g->get('/generic-groups', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->groups()]))->add($perm('products.read'));
