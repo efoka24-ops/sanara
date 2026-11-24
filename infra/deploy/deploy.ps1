@@ -32,7 +32,7 @@ function Invoke-External([scriptblock]$Block, [string]$Failure) {
 function Read-DotEnv([string]$path) {
   $h = @{}
   Get-Content -LiteralPath $path -Encoding UTF8 | ForEach-Object {
-    if ($_ -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $h[$Matches[1]] = $Matches[2].Trim() }
+    if ($_ -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $k = $Matches[1]; $v = $Matches[2].Trim(); if ($v -match "^'(.*)'$") { $v = $Matches[1] }; $h[$k] = $v }
   }
   return $h
 }
@@ -118,10 +118,10 @@ try {
   `$out['ok'] = `$ok;
   try {
     require `$root . '/api-core/vendor/autoload.php';
-    DotenvDotenv::createImmutable(`$root . '/api-core')->load();
-    `$cfg = SanaraCommonConfig::fromEnv(`$_ENV);
-    SanaraCommonDatabase::configure(`$cfg);
-    `$p = new SanaraCommonPersistenceProvisioner(SanaraCommonDatabase::db(), new SanaraCommonClock(), `$root . '/api-core/database/migrations');
+    Dotenv\Dotenv::createImmutable(`$root . '/api-core')->load();
+    `$cfg = Sanara\Common\Config::fromEnv(`$_ENV);
+    Sanara\Common\Database::configure(`$cfg);
+    `$p = new Sanara\Common\Persistence\Provisioner(Sanara\Common\Database::db(), new Sanara\Common\Clock(), `$root . '/api-core/database/migrations');
     `$out['provision'] = `$p->run((string)`$_ENV['SUPERADMIN_EMAIL'], (string)`$_ENV['SUPERADMIN_PASSWORD']);
   } catch (Throwable `$e) { `$out['provision_error'] = get_class(`$e) . ': ' . `$e->getMessage(); }
 } catch (Throwable `$e) { `$out['error'] = `$e->getMessage(); }

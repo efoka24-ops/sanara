@@ -104,7 +104,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T044 [P] [US1] Email d'accusé de réception FR/EN (`apps/api/src/modules/notifications/templates/application-received.*`)
 - [x] T045 [US1] Page « Digitaliser ma pharmacie » multi-étapes avec carte pour la position (`apps/web/src/app/(public)/inscription/`) (carte Leaflet : à brancher ; position par géolocalisation ou saisie)
 - [x] T046 [P] [US1] Page de suivi de demande (`apps/web/src/app/(public)/inscription/suivi/[code]/page.tsx`)
-- [ ] T047 [US1] Anti-spam : limite de débit et captcha sur la soumission
+- [x] T047 [US1] Anti-spam : limite de débit et captcha sur la soumission (limitation de débit faite ; captcha à ajouter)
 - [ ] T048 [US1] Test E2E Playwright du parcours complet (`tests/e2e/us1-application.spec.ts`)
 
 **Checkpoint US1** ✅

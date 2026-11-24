@@ -19,9 +19,9 @@ final class Database
         self::$pdo = null;
     }
 
-    public static function db(): SanaraCommonPersistenceDb
+    public static function db(): \Sanara\Common\Persistence\Db
     {
-        return new SanaraCommonPersistenceDb(self::pdo());
+        return new \Sanara\Common\Persistence\Db(self::pdo());
     }
 
     public static function pdo(): PDO
