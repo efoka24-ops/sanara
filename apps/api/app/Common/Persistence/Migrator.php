@@ -28,7 +28,15 @@ final class Migrator
                 continue;
             }
             foreach ($this->statements((string) file_get_contents($file)) as $sql) {
-                $this->db->exec($this->adapt($sql));
+                try {
+                    $this->db->exec($this->adapt($sql));
+                } catch (\PDOException $e) {
+                    // MySQL ne annule pas le DDL : une migration interrompue peut être reprise sans erreur sur ce qui existe déjà.
+                    $again = stripos($sql, 'CREATE') === 0 && (str_contains($e->getMessage(), 'already exists') || str_contains($e->getMessage(), 'Duplicate key name'));
+                    if (!$again) {
+                        throw $e;
+                    }
+                }
             }
             $this->db->run('INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)', [$name, gmdate('Y-m-d H:i:s')]);
             $applied[] = $name;
