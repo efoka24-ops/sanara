@@ -363,6 +363,66 @@ final class Routes
                 return $json($r, $rep);
             })->add($perm('inventory.validate'));
 
+            // --- Caisse et ventes (US10, US11) ---
+            $tenantInfo = static fn (Request $q): array => $s->db->one('SELECT name, license_number, address, phone, currency FROM tenants WHERE id = ?', [(string) $q->getAttribute('tenantId')]) ?? [];
+            $emailOf = static fn (string $id): string => (string) ($s->db->one('SELECT email FROM users WHERE id = ?', [$id])['email'] ?? '');
+            $html = static function (Response $r, string $page): Response {
+                $r->getBody()->write($page);
+                return $r->withHeader('Content-Type', 'text/html; charset=utf-8')->withHeader('Cache-Control', 'private, no-store');
+            };
+            $g->get('/cash/current', fn (Request $q, Response $r) => $json($r, ['session' => $s->cash->current($actor($q))]))->add($perm('sales.create'));
+            $g->post('/cash/open', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $b = $body($q);
+                $id = $s->cash->open($actor($q), (string) ($b['station'] ?? ''), (int) ($b['opening_float'] ?? 0));
+                $s->audit->record('cash.open', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'session_id' => $id]);
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('sales.create'));
+            $g->get('/cash/sessions', fn (Request $q, Response $r) => $json($r, ['items' => $s->cash->sessions()]))->add($perm('cash.close'));
+            $g->get('/cash/sessions/{id}/preview', fn (Request $q, Response $r, array $a) => $json($r, $s->cash->report($a['id'])))->add($perm('sales.create'));
+            $g->post('/cash/sessions/{id}/close', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $sess = $s->cash->session($a['id']);
+                if ($sess['opened_by'] !== $actor($q) && !$s->authz->can($actor($q), 'cash.close')) {
+                    throw new ApiException('forbidden', 403);
+                }
+                $b = $body($q);
+                $rep = $s->cash->close($a['id'], $actor($q), (array) ($b['counts'] ?? []), isset($b['reason']) ? (string) $b['reason'] : null);
+                $s->audit->record('cash.close', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'session_id' => $a['id'], 'gap' => $rep['session']['gap']]);
+                return $json($r, $rep);
+            })->add($perm('sales.create'));
+            $g->get('/cash/sessions/{id}/z', fn (Request $q, Response $r, array $a) => $html($r, \Sanara\Modules\Sales\SalesDocuments::zReport($s->cash->report($a['id']))))->add($perm('sales.create'));
+
+            $g->post('/sales', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $sale = $s->sales->create($body($q), $actor($q));
+                $s->audit->record('sale.create', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'sale_id' => $sale['id'], 'total' => $sale['total']]);
+                return $json($r, $sale, 201);
+            })->add($perm('sales.create'));
+            $g->get('/sales', function (Request $q, Response $r) use ($s, $json, $actor) {
+                $all = $s->authz->can($actor($q), 'reports.read') || $s->authz->can($actor($q), 'cash.close');
+                return $json($r, ['items' => $s->sales->list($all ? null : $actor($q), ($q->getQueryParams()['date'] ?? null) ?: null)]);
+            })->add($perm('sales.create'));
+            $g->get('/sales/alternatives/{id}', fn (Request $q, Response $r, array $a) => $json($r, ['items' => $s->sales->alternatives($a['id'])]))->add($perm('sales.create'));
+            $g->get('/sales/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->sales->get($a['id'])))->add($perm('sales.create'));
+            $g->get('/sales/{id}/receipt', function (Request $q, Response $r, array $a) use ($s, $html, $tenantInfo, $emailOf) {
+                $sale = $s->sales->get($a['id']);
+                $n = $s->sales->markPrinted($a['id']);
+                $page = \Sanara\Modules\Sales\SalesDocuments::receipt($sale, $tenantInfo($q), $s->setup->settings(), $emailOf((string) $sale['cashier_id']), $n > 1, isset($q->getQueryParams()['width']) ? (string) $q->getQueryParams()['width'] : null);
+                return $html($r, $page);
+            })->add($perm('sales.create'));
+            $g->get('/sales/{id}/invoice', function (Request $q, Response $r, array $a) use ($s, $html, $tenantInfo, $emailOf) {
+                $sale = $s->sales->get($a['id']);
+                $num = $s->sales->invoiceNumber($a['id']);
+                $dup = $s->sales->markPrinted($a['id']) > 1;
+                return $html($r, \Sanara\Modules\Sales\SalesDocuments::invoice($s->sales->get($a['id']), $tenantInfo($q), $s->setup->settings(), $num, $emailOf((string) $sale['cashier_id']), $dup));
+            })->add($perm('sales.create'));
+            $g->get('/pos/held', fn (Request $q, Response $r) => $json($r, ['items' => $s->sales->held($actor($q))]))->add($perm('sales.create'));
+            $g->post('/pos/held', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                return $json($r, ['id' => $s->sales->hold($actor($q), (string) ($body($q)['label'] ?? ''), $body($q)['cart'] ?? null)], 201);
+            })->add($perm('sales.create'));
+            $g->delete('/pos/held/{id}', function (Request $q, Response $r, array $a) use ($s, $actor) {
+                $s->sales->resume($actor($q), $a['id']);
+                return $r->withStatus(204);
+            })->add($perm('sales.create'));
+
 
             $g->get('/families', fn (Request $q, Response $r) => $json($r, ['items' => $s->catalog->families()]))->add($perm('products.read'));
             $g->post('/families', fn (Request $q, Response $r) => $json($r, ['id' => $s->catalog->createFamily((string) ($body($q)['name'] ?? ''))], 201))->add($perm('products.write'));
