@@ -89,6 +89,10 @@ final class SyncPullHttpTest extends TestCase
         $this->assertNull($page['nextCursor']);
         $this->assertSame('2026-11-26T18:00:00.000Z', $page['serverTime']);
         $this->assertSame(1000, $page['settings']['maxDiscountBp']);
+        $this->assertSame([], $page['settings']['saleCounters']);
+        $this->call('POST', '/app/cash/open', ['station' => 'C1', 'opening_float' => 0], 'cashier');
+        $this->call('POST', '/app/sales', ['lines' => [['product_id' => $id, 'qty' => 1]], 'payments' => [['method' => 'cash', 'amount' => 1500]]], 'cashier');
+        $this->assertSame(['C1:2026' => 1], $this->call('GET', '/sync/pull', null, 'cashier')[1]['settings']['saleCounters']);
         $this->assertCount(1, $page['products'], 'jamais les produits d’une autre pharmacie');
         $this->assertSame(
             ['id' => $id, 'name' => 'Paracétamol', 'dci' => null, 'form' => null, 'strength' => null, 'regulatoryStatus' => 'free', 'salePrice' => 1500, 'vatBp' => 1925, 'active' => true, 'barcodes' => ['3400930000001'], 'unassignedQty' => 0],

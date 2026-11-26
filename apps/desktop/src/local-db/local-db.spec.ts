@@ -45,6 +45,7 @@ describe('base locale du poste', () => {
     expect(db.prepare('SELECT name FROM schema_migrations').all()).toEqual([
       { name: '0001_init.sql' },
       { name: '0002_reference.sql' },
+      { name: '0003_pos.sql' },
     ]);
   });
 
@@ -58,7 +59,7 @@ describe('base locale du poste', () => {
     );
     expect(() => migrate(db, bad)).toThrow(/absente/);
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'a_moitie'").all()).toEqual([]);
-    expect(db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get()).toEqual({ n: 2 });
+    expect(db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get()).toEqual({ n: 3 });
   });
 });
 

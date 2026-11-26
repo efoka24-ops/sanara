@@ -22,7 +22,7 @@ const product = (id: string, name: string, over: Partial<ReferenceProduct> = {})
 
 const snapshot = (over: Partial<ReferenceSnapshot> = {}): ReferenceSnapshot => ({
   serverTime: '2026-11-26T18:00:00.000Z',
-  settings: { maxDiscountBp: 800, allowNegativeStock: true },
+  settings: { maxDiscountBp: 800, allowNegativeStock: true, saleCounters: {} },
   products: [
     product('P1', 'Paracétamol 500', { dci: 'paracétamol', barcodes: ['340001', '340002'] }),
     product('P2', 'Amoxicilline', { regulatoryStatus: 'prescription_only' }),
@@ -75,7 +75,11 @@ describe('référentiel hors-ligne', () => {
   it('rend les lots et les réglages', () => {
     reference.replace(snapshot());
     expect(reference.lots('P1')).toEqual(snapshot().lots);
-    expect(reference.settings()).toEqual({ maxDiscountBp: 800, allowNegativeStock: true });
+    expect(reference.settings()).toEqual({
+      maxDiscountBp: 800,
+      allowNegativeStock: true,
+      saleCounters: {},
+    });
     expect(reference.syncedAt()).toBe('2026-11-26T18:00:00.000Z');
   });
 

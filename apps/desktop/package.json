@@ -17,6 +17,7 @@
     "vitest": "^2.1.0"
   },
   "dependencies": {
+    "@sanara/shared": "workspace:*",
     "@sanara/sync": "workspace:*",
     "better-sqlite3": "^12.11.1"
   }

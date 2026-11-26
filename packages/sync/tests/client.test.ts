@@ -25,7 +25,7 @@ const op = (n: number, userId = 'u1'): SyncOperation => ({
 
 const page = (products: string[], nextCursor: string | null, first = false): PullPage => ({
   serverTime: '2026-11-26T18:00:00.000Z',
-  settings: first ? { maxDiscountBp: 1000, allowNegativeStock: false } : null,
+  settings: first ? { maxDiscountBp: 1000, allowNegativeStock: false, saleCounters: {} } : null,
   products: products.map((id) => ({
     id,
     name: id,

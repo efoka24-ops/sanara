@@ -38,6 +38,10 @@ export class SqliteReference implements ReferenceSink {
       for (const l of snapshot.lots) {
         lot.run(l.id, l.productId, l.expiry, l.receivedAt, JSON.stringify(l));
       }
+      // La copie reçue compte déjà les ventes acquittées : on cesse de les déduire.
+      this.db.exec(
+        'DELETE FROM pos_consumption WHERE operation_id IN (SELECT id FROM operations WHERE acked_at IS NOT NULL)',
+      );
       this.state.set('reference_settings', JSON.stringify(snapshot.settings));
       this.state.set('reference_synced_at', snapshot.serverTime);
     })();
@@ -77,6 +81,14 @@ export class SqliteReference implements ReferenceSink {
              WHERE b.code = ? AND p.active = 1`,
           )
           .all(code),
+      )[0] ?? null
+    );
+  }
+
+  product(id: string): ReferenceProduct | null {
+    return (
+      this.parse<ReferenceProduct>(
+        this.db.prepare('SELECT data_json FROM ref_products WHERE id = ?').all(id),
       )[0] ?? null
     );
   }

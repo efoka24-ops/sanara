@@ -100,7 +100,7 @@ final class SyncService
 
         return [
             'serverTime' => $this->clock->now()->format('Y-m-d\TH:i:s.v\Z'),
-            'settings' => $cursor === '' ? ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true] : null,
+            'settings' => $cursor === '' ? ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters()] : null,
             'products' => array_map(static fn (array $p) => [
                 'id' => $p['id'], 'name' => $p['name'], 'dci' => $p['dci'], 'form' => $p['form'], 'strength' => $p['strength'], 'regulatoryStatus' => $p['regulatory_status'],
                 'salePrice' => (int) $p['sale_price'], 'vatBp' => (int) $p['vat_bp'], 'active' => (int) $p['active'] === 1, 'barcodes' => $barcodes[$p['id']] ?? [], 'unassignedQty' => $unassigned[$p['id']] ?? 0,
@@ -108,6 +108,18 @@ final class SyncService
             'lots' => $lots,
             'nextCursor' => $more ? (string) end($ids) : null,
         ];
+    }
+
+    /** Un poste réinstallé repart après les numéros déjà attribués. @return array<string, int> « POSTE:année » => dernier numéro */
+    private function saleCounters(): array
+    {
+        $out = [];
+        foreach ($this->tdb->select('document_sequences') as $r) {
+            if (str_starts_with((string) $r['scope'], 'sale:')) {
+                $out[substr((string) $r['scope'], 5)] = (int) $r['seq_value'];
+            }
+        }
+        return $out;
     }
 
     private function setting(string $key, mixed $default): mixed

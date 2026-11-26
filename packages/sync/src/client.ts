@@ -26,6 +26,8 @@ export interface PushResponse {
 export interface ReferenceSettings {
   maxDiscountBp: number;
   allowNegativeStock: boolean;
+  /** Dernier numéro de ticket connu du serveur, par « POSTE:année ». */
+  saleCounters: Record<string, number>;
 }
 export interface ReferenceProduct {
   id: string;

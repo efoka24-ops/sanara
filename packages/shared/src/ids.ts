@@ -13,7 +13,7 @@ export function ulid(
   }
   const bytes = random(16);
   let rand = '';
-  for (let i = 0; i < 16; i++) rand += ALPHABET[bytes[i] % 32];
+  for (let i = 0; i < 16; i++) rand += ALPHABET[bytes[i]! % 32];
   return time + rand;
 }
 

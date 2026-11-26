@@ -215,6 +215,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@sanara/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@sanara/sync':
         specifier: workspace:*
         version: link:../../packages/sync
