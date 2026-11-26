@@ -256,8 +256,8 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [ ] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (2 scénarios de base écrits et verts : idempotence sur reprise, serveur gagnant sur référentiel ; scénario « deux postes vendent le même produit » encore à écrire)
 - [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`)
 - [ ] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`)
-- [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`)
-- [ ] T138 [US28] Résolution des conflits et journal `SyncConflict` (`packages/sync/src/conflicts/`)
+- [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`) (`push` fait et testé : idempotent, atomique par opération, trois types (ouverture, vente, clôture de caisse), attribution au compte auteur ; `pull` fait pour le référentiel complet par pages (produits, codes-barres, lots, soldes, réglages) ; restent le différentiel et les clients)
+- [ ] T138 [US28] Résolution des conflits et journal `SyncConflict` (`packages/sync/src/conflicts/`) (côté serveur, table `sync_conflicts` alimentée : prix, produit désactivé, manque de stock, caisse déjà close, horloge ; résolution et écran restants)
 - [ ] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale
 - [ ] T140 [US28] Vérification d'intégrité d'un poste hors-ligne trop longtemps (checksums de stock) avant acceptation
 - [ ] T141 [US28] Indicateur de synchro dans l'interface (état, nombre d'opérations en attente, erreurs)

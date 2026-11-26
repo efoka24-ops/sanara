@@ -25,6 +25,7 @@ final class SyncService
 {
     public const SCHEMA_VERSION = 1;
     private const MAX_BATCH = 200;
+    private const MAX_PAGE = 500;
     /** Au-delà, l'horloge du poste est signalée comme déréglée. */
     private const MAX_SKEW = 300;
 
@@ -59,6 +60,60 @@ final class SyncService
             'clockSkewSeconds' => $sent === null ? null : $sent->getTimestamp() - $this->clock->now()->getTimestamp(),
             'results' => array_map(fn (array $o) => $this->one($o, $userId), $ops),
         ];
+    }
+
+    /**
+     * T139 : référentiel nécessaire à la vente hors-ligne, par pages de produits classés par identifiant.
+     * Les prix d'achat n'y figurent jamais.
+     *
+     * @return array{serverTime: string, settings: ?array<string, mixed>, products: list<array<string, mixed>>, lots: list<array<string, mixed>>, nextCursor: ?string}
+     */
+    public function pull(string $cursor, int $limit): array
+    {
+        $limit = max(1, min(self::MAX_PAGE, $limit));
+        $tid = $this->ctx->require();
+        $rows = $this->db->all('SELECT id, name, dci, form, strength, regulatory_status, sale_price, vat_bp, active FROM products WHERE tenant_id = ? AND id > ? ORDER BY id LIMIT ' . ($limit + 1), [$tid, $cursor]);
+        $more = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
+        $ids = array_column($rows, 'id');
+
+        $barcodes = [];
+        $lots = [];
+        $unassigned = [];
+        if ($ids !== []) {
+            $in = implode(', ', array_fill(0, count($ids), '?'));
+            foreach ($this->db->all("SELECT product_id, code FROM product_barcodes WHERE tenant_id = ? AND product_id IN ($in) ORDER BY code", [$tid, ...$ids]) as $b) {
+                $barcodes[$b['product_id']][] = (string) $b['code'];
+            }
+            $balances = [];
+            foreach ($this->db->all("SELECT product_id, lot_id, SUM(qty) AS qty FROM stock_movements WHERE tenant_id = ? AND product_id IN ($in) GROUP BY product_id, lot_id", [$tid, ...$ids]) as $m) {
+                if ($m['lot_id'] === null) {
+                    $unassigned[$m['product_id']] = (int) $m['qty'];
+                } else {
+                    $balances[$m['lot_id']] = (int) $m['qty'];
+                }
+            }
+            foreach ($this->db->all("SELECT id, product_id, lot_number, expiry, status, received_at FROM lots WHERE tenant_id = ? AND status <> 'destroyed' AND product_id IN ($in) ORDER BY product_id, expiry, received_at", [$tid, ...$ids]) as $l) {
+                $lots[] = ['id' => $l['id'], 'productId' => $l['product_id'], 'lotNumber' => $l['lot_number'], 'expiry' => $l['expiry'], 'status' => $l['status'], 'receivedAt' => $l['received_at'], 'quantity' => $balances[$l['id']] ?? 0];
+            }
+        }
+
+        return [
+            'serverTime' => $this->clock->now()->format('Y-m-d\TH:i:s.v\Z'),
+            'settings' => $cursor === '' ? ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true] : null,
+            'products' => array_map(static fn (array $p) => [
+                'id' => $p['id'], 'name' => $p['name'], 'dci' => $p['dci'], 'form' => $p['form'], 'strength' => $p['strength'], 'regulatoryStatus' => $p['regulatory_status'],
+                'salePrice' => (int) $p['sale_price'], 'vatBp' => (int) $p['vat_bp'], 'active' => (int) $p['active'] === 1, 'barcodes' => $barcodes[$p['id']] ?? [], 'unassignedQty' => $unassigned[$p['id']] ?? 0,
+            ], $rows),
+            'lots' => $lots,
+            'nextCursor' => $more ? (string) end($ids) : null,
+        ];
+    }
+
+    private function setting(string $key, mixed $default): mixed
+    {
+        $r = $this->tdb->select('tenant_settings', ['setting_key' => $key], null, 1)[0] ?? null;
+        return $r === null ? $default : json_decode((string) $r['setting_value'], true);
     }
 
     /** @param array<string, mixed> $op @return array<string, mixed> */

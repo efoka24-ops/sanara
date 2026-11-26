@@ -564,6 +564,7 @@ final class Routes
         $app->group('/sync', function (RouteCollectorProxy $g) use ($s, $json, $body, $rf) {
             $perm = fn (string $p) => new RequirePermission($s->authz, $p, $rf, $s->audit);
             $g->post('/push', fn (Request $q, Response $r) => $json($r, $s->sync->push($body($q), (string) $q->getAttribute('userId'))))->add($perm('sales.create'));
+            $g->get('/pull', fn (Request $q, Response $r) => $json($r, $s->sync->pull((string) ($q->getQueryParams()['cursor'] ?? ''), (int) ($q->getQueryParams()['limit'] ?? 500))))->add($perm('sales.create'));
         })->add(new AuthMiddleware($s->jwt, $s->tenant));
 
         // Document chiffré : accès uniquement par URL signée à durée courte.
