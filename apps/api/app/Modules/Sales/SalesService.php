@@ -110,7 +110,7 @@ final class SalesService
     /**
      * Vente encaissée sur un poste hors-ligne : la marchandise est déjà partie, on l'enregistre telle que
      * le ticket l'indique et on signale les écarts. Sont refusés les cas qu'aucun PIN ne peut couvrir à
-     * distance : produit réglementé sans compte pharmacien, remise non autorisée, Mobile Money.
+     * distance : produit réglementé sans compte pharmacien et remise non autorisée.
      * À appeler dans une transaction.
      *
      * @param array<string, mixed> $in saleId, sessionId, number, lines[{productId, qty, unitPrice, discountBp, vatBp}], payments[], customerName?, prescription?
@@ -178,10 +178,8 @@ final class SalesService
         $total = array_sum(array_column($lines, 'total'));
         foreach ($raw as $p) {
             $method = (string) ($p['method'] ?? '');
-            if (str_starts_with($method, 'momo_')) {
-                throw new ApiException('payment_offline_forbidden', 422);
-            }
-            if ($method === 'card' && trim((string) ($p['reference'] ?? '')) === '') {
+            // Le Mobile Money n'est proposé par le poste que réseau présent (règle côté poste) ; référence exigée.
+            if (in_array($method, ['momo_mtn', 'momo_orange', 'card'], true) && trim((string) ($p['reference'] ?? '')) === '') {
                 throw new ApiException('validation_failed', 422, ['fields' => ['payments.reference' => 'required']]);
             }
             if ($method === 'credit' && trim((string) ($in['customerName'] ?? '')) === '') {

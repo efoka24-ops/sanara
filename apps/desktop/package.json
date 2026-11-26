@@ -3,16 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "src/main.ts",
+  "main": "dist/main.cjs",
   "scripts": {
-    "dev": "echo \"desktop: shell bootstrap disponible\"",
+    "dev": "node scripts/build.mjs && electron dist/main.cjs",
     "build": "tsc --noEmit",
+    "bundle": "node scripts/build.mjs",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "electron": "^37.5.0",
+    "esbuild": "^0.25.12",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   },

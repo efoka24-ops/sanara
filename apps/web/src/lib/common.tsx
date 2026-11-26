@@ -101,7 +101,7 @@ export function ProductSearch({
     const h = window.setTimeout(() => {
       api<{ items: ProductLite[] }>(
         'GET',
-        `/app/products?${new URLSearchParams({ q, limit: '8' })}`,
+        `/app/products?${new URLSearchParams({ q, limit: '8', picker: '1' })}`,
       ).then((r) => setItems(r.items));
     }, 120);
     return () => window.clearTimeout(h);

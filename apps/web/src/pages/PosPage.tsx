@@ -110,7 +110,7 @@ export function PosPage() {
     } else {
       setCart([...cart, { product: p, qty: 1, discountBp: 0, stock: null }]);
       setSel(cart.length);
-      api<{ on_hand: number }>('GET', `/app/stock/products/${p.id}/on-hand`)
+      api<{ on_hand: number }>('GET', `/app/stock/products/${p.id}/on-hand?picker=1`)
         .then((r) =>
           setCart((c) => c.map((l) => (l.product.id === p.id ? { ...l, stock: r.on_hand } : l))),
         )

@@ -3,6 +3,7 @@ import { Logo } from '@sanara/ui';
 import { useT } from '@sanara/i18n';
 import { useSession } from './session';
 import { IdleLock } from './IdleLock';
+import { DesktopStatus } from './DesktopStatus';
 
 // Une entrée n'est ajoutée qu'avec sa page (route dans Router.tsx) : jamais de lien vers un écran vide.
 const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
@@ -72,6 +73,7 @@ export function PharmacyLayout() {
             </NavLink>
           ))}
         </nav>
+        <DesktopStatus />
       </aside>
       <main>
         <Outlet />

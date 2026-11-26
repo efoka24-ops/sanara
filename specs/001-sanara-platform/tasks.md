@@ -239,11 +239,11 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 14 : US27 - Application desktop installable (P1) 🎯 MVP 1
 
-- [ ] T125 [US27] Coque Electron sécurisée (contextIsolation, sandbox, CSP, IPC typé) (`apps/desktop/src/main/`) (base écrite dans `apps/desktop/src/main.ts` + `apps/desktop/src/preload.ts` : contextIsolation/sandbox activés, navigation externe bloquée ; CSP stricte et déplacement dans `src/main/` restants)
-- [ ] T126 [US27] Chargement de l'interface partagée (build Next.js export ou serveur local) et fenêtre de connexion
+- [x] T125 [US27] Coque Electron sécurisée (contextIsolation, sandbox, CSP, IPC typé) (`apps/desktop/src/main/`) (contextIsolation, sandbox, CSP servie avec l'interface (apps/desktop/src/shell/), navigation externe bloquée ; aucun IPC nécessaire : l'interface parle à la passerelle par le protocole app://)
+- [x] T126 [US27] Chargement de l'interface partagée (build Next.js export ou serveur local) et fenêtre de connexion (interface web inchangée chargée par app://sanara, passerelle locale apps/desktop/src/gateway/, écran de connexion, connexion hors-ligne (30 jours, verrou après 5 échecs ; jamais pour un compte à double vérification))
 - [ ] T127 [US27] Configuration electron-builder : installateur NSIS `Sanara-Setup.exe` sans droits admin, raccourcis, lancement au démarrage optionnel (`apps/desktop/electron-builder.yml`)
 - [ ] T128 [US27] Mises à jour automatiques signées (electron-updater), installation différée, retour arrière (`apps/desktop/src/updater/`)
-- [ ] T129 [US27] Enregistrement du poste (`Device`) au premier lancement et initialisation de la base locale (`apps/desktop/src/local-db/`)
+- [ ] T129 [US27] Enregistrement du poste (`Device`) au premier lancement et initialisation de la base locale (`apps/desktop/src/local-db/`) (identifiant de poste créé et base locale initialisée au premier lancement ; restent l'enregistrement côté serveur et le nom de poste unique)
 - [ ] T130 [US27] Signature de code Windows et pipeline de publication des versions (`.github/workflows/release-desktop.yml`)
 - [ ] T131 [US27] Test d'installation/désinstallation propre sur machine virtuelle Windows vierge (checklist `tests/desktop/install-checklist.md`)
 - [ ] T132 [US27] Mesure du démarrage (< 5 s) sur PC 4 Go de RAM
@@ -252,16 +252,16 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 15 : US28 - Mode hors-ligne et synchronisation (P1) 🎯 MVP 1
 
-- [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (file d'opérations, opérations appliquées et curseur persistés avec better-sqlite3, testés sous Node ; restent les tables métier hors-ligne (catalogue, stock, ventes, caisse) et la recompilation du binaire pour Electron à l'empaquetage)
+- [x] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (migrations 0001 à 0004 ; binaire SQLite d'Electron ajouté à l'assemblage (apps/desktop/scripts/build.mjs) ; les tests gardent celui de Node)
 - [x] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (couverts : reprise sans doublon et référentiel (packages/sync/tests), deux postes sur le même produit (SyncPushHttpTest et tests/e2e/us28-sync.spec.ts))
-- [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`) (caisse hors-ligne faite et testée (apps/desktop/src/pos/local-pos.ts) ; reste l'interface commune branchée dans l'application (T126))
+- [x] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`) (même API HTTP pour l'interface : la passerelle répond depuis SQLite pour la caisse (apps/desktop/src/pos/) et relaie le reste au serveur)
 - [x] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`) (`pushPending` et `createHttpTransport` dans packages/sync/src/client.ts ; file persistante dans apps/desktop/src/local-db ; le branchement dans l'application relève de T126)
 - [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`) (`push` fait et testé : idempotent, atomique par opération, trois types (ouverture, vente, clôture de caisse), attribution au compte auteur ; `pull` fait pour le référentiel complet par pages (produits, codes-barres, lots, soldes, réglages) ; restent le différentiel et les clients)
 - [ ] T138 [US28] Résolution des conflits et journal `SyncConflict` (`packages/sync/src/conflicts/`) (côté serveur, table `sync_conflicts` alimentée : prix, produit désactivé, manque de stock, caisse déjà close, horloge ; résolution et écran restants)
 - [ ] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale (synchronisation initiale du catalogue, du stock et des réglages faite ; restent les clients et le différentiel)
 - [ ] T140 [US28] Vérification d'intégrité d'un poste hors-ligne trop longtemps (checksums de stock) avant acceptation
-- [ ] T141 [US28] Indicateur de synchro dans l'interface (état, nombre d'opérations en attente, erreurs)
-- [ ] T142 [US28] Détection de décalage d'horloge et horodatage serveur de référence (écart d'horloge mesuré et signalé par l'API puis rendu au poste ; affichage restant)
+- [x] T141 [US28] Indicateur de synchro dans l'interface (état, nombre d'opérations en attente, erreurs) (bloc d'état de la barre latérale (apps/web/src/app/DesktopStatus.tsx) : en ligne, opérations en attente, refusées, conflits, dernière synchronisation, bouton)
+- [x] T142 [US28] Détection de décalage d'horloge et horodatage serveur de référence (écart d'horloge mesuré et signalé par l'API puis rendu au poste ; affichage restant) (écart mesuré et signalé par l'API, affiché sur le poste)
 - [x] T143 [US28] Test de bout en bout : coupure de 8 h simulée sur 2 postes (`tests/sync/offline-8h.spec.ts`) (tests/e2e/us28-sync.spec.ts : deux postes, 8 h, réponse réseau perdue, contre l'API réelle sur SQLite avec la file en mémoire ; à rejouer depuis l'application desktop quand elle existera)
 
 **Checkpoint US28 = fin du MVP 1** : une pharmacie pilote s'inscrit, s'installe, vend hors-ligne et synchronise. **Démonstration et validation par le pharmacien pilote avant de continuer.**

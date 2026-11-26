@@ -5,10 +5,11 @@ import Database from 'better-sqlite3';
 
 export type LocalDatabase = Database.Database;
 
-const MIGRATIONS = fileURLToPath(new URL('./migrations', import.meta.url));
+/** Dossier des migrations à côté des sources ; l'application assemblée fournit le sien. */
+const sources = () => fileURLToPath(new URL('./migrations', import.meta.url));
 
 /** Applique les fichiers `*.sql` pas encore passés, dans l'ordre, chacun dans sa transaction. */
-export function migrate(db: LocalDatabase, dir: string = MIGRATIONS): void {
+export function migrate(db: LocalDatabase, dir: string = sources()): void {
   db.exec(
     'CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)',
   );
@@ -29,11 +30,17 @@ export function migrate(db: LocalDatabase, dir: string = MIGRATIONS): void {
 }
 
 /** Ouvre la base du poste. Une vente validée doit survivre à une coupure de courant. */
-export function openLocalDatabase(file: string): LocalDatabase {
-  const db = new Database(file);
+export function openLocalDatabase(
+  file: string,
+  options: { migrations?: string; nativeBinding?: string } = {},
+): LocalDatabase {
+  const db = new Database(
+    file,
+    options.nativeBinding ? { nativeBinding: options.nativeBinding } : {},
+  );
   db.pragma('journal_mode = WAL');
   db.pragma('synchronous = FULL');
   db.pragma('foreign_keys = ON');
-  migrate(db);
+  migrate(db, options.migrations);
   return db;
 }

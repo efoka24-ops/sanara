@@ -1,19 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge } from 'electron';
 
-type AppBridge = {
-  getVersion: () => Promise<string>;
-  ping: (message?: string) => Promise<string>;
-};
-
-const appBridge: AppBridge = {
-  getVersion: () => ipcRenderer.invoke('app:getVersion') as Promise<string>,
-  ping: (message = 'ping') => ipcRenderer.invoke('app:ping', message) as Promise<string>,
-};
-
-contextBridge.exposeInMainWorld('sanaraApp', appBridge);
-
-declare global {
-  interface Window {
-    sanaraApp: AppBridge;
-  }
-}
+/** Seul signal donné à l'interface : elle tourne dans l'application de bureau. */
+contextBridge.exposeInMainWorld('sanaraDesktop', Object.freeze({ desktop: true }));

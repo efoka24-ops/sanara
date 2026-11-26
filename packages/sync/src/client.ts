@@ -28,6 +28,17 @@ export interface ReferenceSettings {
   allowNegativeStock: boolean;
   /** Dernier numéro de ticket connu du serveur, par « POSTE:année ». */
   saleCounters: Record<string, number>;
+  /** En-tête des tickets imprimés sur le poste. */
+  pharmacy?: PharmacyHeader;
+}
+export interface PharmacyHeader {
+  name: string;
+  address: string;
+  phone: string;
+  licenseNumber: string;
+  currency: string;
+  ticketFooter: string;
+  ticketWidth: string;
 }
 export interface ReferenceProduct {
   id: string;

@@ -230,13 +230,13 @@ final class SyncPushHttpTest extends TestCase
     {
         $p = $this->product(stock: 20);
         $open = $this->openOp(session: $session);
-        $momo = $this->saleOp($session, $p, 1, 1, ['payments' => [['method' => 'momo_mtn', 'amount' => 1000, 'reference' => 'X1']]]);
+        $momo = $this->saleOp($session, $p, 1, 1, ['payments' => [['method' => 'momo_mtn', 'amount' => 1000]]]);
         $line = ['productId' => $p, 'qty' => 1, 'unitPrice' => 1000, 'vatBp' => 0];
         $big = $this->saleOp($session, $p, 1, 2, ['lines' => [$line + ['discountBp' => 2000]]]);
         $small = $this->saleOp($session, $p, 1, 3, ['lines' => [$line + ['discountBp' => 500]]]);
         $results = $this->push([$open, $momo, $big, $small]);
         $this->assertSame(['applied', 'rejected', 'rejected', 'applied'], $this->statuses($results));
-        $this->assertSame('payment_offline_forbidden', $results[1]['code']);
+        $this->assertSame('validation_failed', $results[1]['code'], 'Mobile Money sans référence');
         $this->assertSame('discount_needs_approval', $results[2]['code']);
     }
 

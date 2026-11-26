@@ -725,3 +725,16 @@ textarea.sa-field__input {
   flex-wrap: wrap;
   gap: 20px;
 }
+/* État de synchronisation du poste (application de bureau). */
+.desktop-status {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.desktop-status__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

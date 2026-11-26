@@ -100,13 +100,24 @@ final class SyncService
 
         return [
             'serverTime' => $this->clock->now()->format('Y-m-d\TH:i:s.v\Z'),
-            'settings' => $cursor === '' ? ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters()] : null,
+            'settings' => $cursor === '' ? ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters(), 'pharmacy' => $this->pharmacy($tid)] : null,
             'products' => array_map(static fn (array $p) => [
                 'id' => $p['id'], 'name' => $p['name'], 'dci' => $p['dci'], 'form' => $p['form'], 'strength' => $p['strength'], 'regulatoryStatus' => $p['regulatory_status'],
                 'salePrice' => (int) $p['sale_price'], 'vatBp' => (int) $p['vat_bp'], 'active' => (int) $p['active'] === 1, 'barcodes' => $barcodes[$p['id']] ?? [], 'unassignedQty' => $unassigned[$p['id']] ?? 0,
             ], $rows),
             'lots' => $lots,
             'nextCursor' => $more ? (string) end($ids) : null,
+        ];
+    }
+
+    /** En-tête des tickets imprimés hors-ligne. @return array<string, string> */
+    private function pharmacy(string $tid): array
+    {
+        $t = $this->db->one('SELECT name, address, phone, license_number, currency FROM tenants WHERE id = ?', [$tid]) ?? [];
+        return [
+            'name' => (string) ($t['name'] ?? ''), 'address' => (string) ($t['address'] ?? ''), 'phone' => (string) ($t['phone'] ?? ''),
+            'licenseNumber' => (string) ($t['license_number'] ?? ''), 'currency' => (string) ($t['currency'] ?? 'XAF'),
+            'ticketFooter' => (string) $this->setting('ticket_footer', ''), 'ticketWidth' => (string) $this->setting('ticket_width', '80'),
         ];
     }
 

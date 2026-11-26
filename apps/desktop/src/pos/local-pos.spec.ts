@@ -190,7 +190,9 @@ describe('caisse hors-ligne', () => {
     expect(till.sell(sale(one)).number).toBe('V-C1-2026-00042');
     reference.replace(snapshot());
     expect(till.sell(sale(one)).number).toBe('V-C1-2026-00043');
+    till.closeCash([], 'Fin d’année');
     now = new Date('2027-01-02T09:00:00.000Z');
+    till.openCash('C1', 0);
     expect(till.sell(sale(one)).number).toBe('V-C1-2027-00001');
   });
 

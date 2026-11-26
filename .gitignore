@@ -30,3 +30,6 @@ apps/storage-private/
 .e2e/
 test-results/
 playwright-report/
+
+# Binaire SQLite téléchargé pour Electron
+.native/
