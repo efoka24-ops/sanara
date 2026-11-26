@@ -17,8 +17,16 @@ export interface SyncOperation {
 const byOrder = (a: SyncOperation, b: SyncOperation) =>
   a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
 
-/** File locale des opérations en attente d'envoi (le desktop la persiste dans SQLite : même interface). */
-export class LocalQueue {
+/** File des opérations en attente d'envoi. */
+export interface OperationQueue {
+  append(o: SyncOperation): void;
+  pending(): SyncOperation[];
+  pendingCount(): number;
+  acknowledge(ids: string[]): void;
+}
+
+/** Version en mémoire (le desktop persiste la sienne dans SQLite : même interface). */
+export class LocalQueue implements OperationQueue {
   private ops = new Map<string, SyncOperation>();
   append(o: SyncOperation): void {
     if (!this.ops.has(o.id)) this.ops.set(o.id, o);

@@ -252,7 +252,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 15 : US28 - Mode hors-ligne et synchronisation (P1) 🎯 MVP 1
 
-- [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (squelette SQL `0001_init.sql` pour la file d'opérations écrit ; persistance SQLite réelle (better-sqlite3) encore en mémoire seulement)
+- [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (file d'opérations, opérations appliquées et curseur persistés avec better-sqlite3, testés sous Node ; restent les tables métier hors-ligne (catalogue, stock, ventes, caisse) et la recompilation du binaire pour Electron à l'empaquetage)
 - [ ] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (2 scénarios de base écrits et verts : idempotence sur reprise, serveur gagnant sur référentiel ; scénario « deux postes vendent le même produit » encore à écrire)
 - [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`)
 - [ ] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`)
