@@ -4,6 +4,7 @@ import { LocalQueue, applyBatch, MemoryApplied, SCHEMA_VERSION, type SyncOperati
 const op = (id: string, over: Partial<SyncOperation> = {}): SyncOperation => ({
   id,
   deviceId: 'D1',
+  userId: 'u1',
   type: 'sale.create',
   payload: { n: id },
   schemaVersion: SCHEMA_VERSION,

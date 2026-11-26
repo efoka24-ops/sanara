@@ -8,6 +8,8 @@ export const SYNC_PROTOCOL_VERSION = 1;
 export interface SyncOperation {
   id: string;
   deviceId: string;
+  /** Compte qui a produit l'opération : le serveur ne l'accepte que de lui. */
+  userId: string;
   type: string;
   payload: unknown;
   schemaVersion: number;
@@ -23,11 +25,15 @@ export interface OperationQueue {
   pending(): SyncOperation[];
   pendingCount(): number;
   acknowledge(ids: string[]): void;
+  /** Le serveur a refusé l'opération : elle reste en attente, avec son motif. */
+  markRejected(id: string, code: string): void;
+  rejected(): { id: string; code: string }[];
 }
 
 /** Version en mémoire (le desktop persiste la sienne dans SQLite : même interface). */
 export class LocalQueue implements OperationQueue {
   private ops = new Map<string, SyncOperation>();
+  private errors = new Map<string, string>();
   append(o: SyncOperation): void {
     if (!this.ops.has(o.id)) this.ops.set(o.id, o);
   }
@@ -38,9 +44,20 @@ export class LocalQueue implements OperationQueue {
     return this.ops.size;
   }
   acknowledge(ids: string[]): void {
-    ids.forEach((i) => this.ops.delete(i));
+    ids.forEach((i) => {
+      this.ops.delete(i);
+      this.errors.delete(i);
+    });
+  }
+  markRejected(id: string, code: string): void {
+    if (this.ops.has(id)) this.errors.set(id, code);
+  }
+  rejected(): { id: string; code: string }[] {
+    return [...this.errors].map(([id, code]) => ({ id, code }));
   }
 }
+
+export * from './client';
 
 export interface AppliedStore {
   has(id: string): Promise<boolean>;

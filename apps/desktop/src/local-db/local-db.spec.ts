@@ -8,6 +8,7 @@ import { SqliteApplied, SqliteQueue, SqliteState, migrate, openLocalDatabase } f
 const op = (id: string, over: Partial<SyncOperation> = {}): SyncOperation => ({
   id,
   deviceId: 'poste-1',
+  userId: 'u1',
   type: 'sale.create',
   payload: { id, libellé: 'Paracétamol d’essai', total: 1500 },
   schemaVersion: SCHEMA_VERSION,
@@ -43,6 +44,7 @@ describe('base locale du poste', () => {
     const db = database();
     expect(db.prepare('SELECT name FROM schema_migrations').all()).toEqual([
       { name: '0001_init.sql' },
+      { name: '0002_reference.sql' },
     ]);
   });
 
@@ -51,12 +53,12 @@ describe('base locale du poste', () => {
     const bad = path.join(dir, 'migrations');
     fs.mkdirSync(bad);
     fs.writeFileSync(
-      path.join(bad, '0002_casse.sql'),
+      path.join(bad, '0099_casse.sql'),
       'CREATE TABLE a_moitie (id TEXT);\nINSERT INTO absente VALUES (1);',
     );
     expect(() => migrate(db, bad)).toThrow(/absente/);
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'a_moitie'").all()).toEqual([]);
-    expect(db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get()).toEqual({ n: 1 });
+    expect(db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get()).toEqual({ n: 2 });
   });
 });
 

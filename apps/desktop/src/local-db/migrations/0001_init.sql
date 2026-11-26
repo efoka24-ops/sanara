@@ -2,11 +2,13 @@
 CREATE TABLE operations (
   id TEXT PRIMARY KEY,
   device_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
   type TEXT NOT NULL,
   payload_json TEXT NOT NULL,
   schema_version INTEGER NOT NULL,
   created_at TEXT NOT NULL,
-  acked_at TEXT
+  acked_at TEXT,
+  last_error TEXT
 );
 
 CREATE INDEX idx_operations_pending ON operations (created_at, id) WHERE acked_at IS NULL;

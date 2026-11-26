@@ -11,6 +11,7 @@ import {
 const op = (id: string, over: Partial<SyncOperation> = {}): SyncOperation => ({
   id,
   deviceId: 'desktop-01',
+  userId: 'u1',
   type: 'ref.update',
   payload: { id, status: 'updated' },
   schemaVersion: SCHEMA_VERSION,

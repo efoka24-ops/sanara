@@ -4,6 +4,7 @@ import type { LocalDatabase } from './database';
 interface OperationRow {
   id: string;
   device_id: string;
+  user_id: string;
   type: string;
   payload_json: string;
   schema_version: number;
@@ -18,10 +19,18 @@ export class SqliteQueue implements OperationQueue {
     // « ON CONFLICT(id) » ne tolère que le doublon : une donnée manquante reste une erreur.
     this.db
       .prepare(
-        `INSERT INTO operations (id, device_id, type, payload_json, schema_version, created_at)
-         VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`,
+        `INSERT INTO operations (id, device_id, user_id, type, payload_json, schema_version, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`,
       )
-      .run(o.id, o.deviceId, o.type, JSON.stringify(o.payload), o.schemaVersion, o.createdAt);
+      .run(
+        o.id,
+        o.deviceId,
+        o.userId,
+        o.type,
+        JSON.stringify(o.payload),
+        o.schemaVersion,
+        o.createdAt,
+      );
   }
 
   pending(): SyncOperation[] {
@@ -31,6 +40,7 @@ export class SqliteQueue implements OperationQueue {
     return rows.map((r) => ({
       id: r.id,
       deviceId: r.device_id,
+      userId: r.user_id,
       type: r.type,
       payload: JSON.parse(r.payload_json) as unknown,
       schemaVersion: r.schema_version,
@@ -47,10 +57,25 @@ export class SqliteQueue implements OperationQueue {
 
   acknowledge(ids: string[]): void {
     const ack = this.db.prepare(
-      'UPDATE operations SET acked_at = ? WHERE id = ? AND acked_at IS NULL',
+      'UPDATE operations SET acked_at = ?, last_error = NULL WHERE id = ? AND acked_at IS NULL',
     );
     const now = new Date().toISOString();
     this.db.transaction(() => ids.forEach((id) => ack.run(now, id)))();
+  }
+
+  markRejected(id: string, code: string): void {
+    this.db
+      .prepare('UPDATE operations SET last_error = ? WHERE id = ? AND acked_at IS NULL')
+      .run(code, id);
+  }
+
+  rejected(): { id: string; code: string }[] {
+    return this.db
+      .prepare(
+        `SELECT id, last_error AS code FROM operations
+         WHERE acked_at IS NULL AND last_error IS NOT NULL ORDER BY created_at, id`,
+      )
+      .all() as { id: string; code: string }[];
   }
 }
 
