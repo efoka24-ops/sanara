@@ -253,16 +253,16 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 ## Phase 15 : US28 - Mode hors-ligne et synchronisation (P1) 🎯 MVP 1
 
 - [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (file d'opérations, opérations appliquées et curseur persistés avec better-sqlite3, testés sous Node ; restent les tables métier hors-ligne (catalogue, stock, ventes, caisse) et la recompilation du binaire pour Electron à l'empaquetage)
-- [ ] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (2 scénarios de base écrits et verts : idempotence sur reprise, serveur gagnant sur référentiel ; scénario « deux postes vendent le même produit » encore à écrire)
+- [x] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (couverts : reprise sans doublon et référentiel (packages/sync/tests), deux postes sur le même produit (SyncPushHttpTest et tests/e2e/us28-sync.spec.ts))
 - [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`)
-- [ ] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`)
+- [x] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`) (`pushPending` et `createHttpTransport` dans packages/sync/src/client.ts ; file persistante dans apps/desktop/src/local-db ; le branchement dans l'application relève de T126)
 - [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`) (`push` fait et testé : idempotent, atomique par opération, trois types (ouverture, vente, clôture de caisse), attribution au compte auteur ; `pull` fait pour le référentiel complet par pages (produits, codes-barres, lots, soldes, réglages) ; restent le différentiel et les clients)
 - [ ] T138 [US28] Résolution des conflits et journal `SyncConflict` (`packages/sync/src/conflicts/`) (côté serveur, table `sync_conflicts` alimentée : prix, produit désactivé, manque de stock, caisse déjà close, horloge ; résolution et écran restants)
 - [ ] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale
 - [ ] T140 [US28] Vérification d'intégrité d'un poste hors-ligne trop longtemps (checksums de stock) avant acceptation
 - [ ] T141 [US28] Indicateur de synchro dans l'interface (état, nombre d'opérations en attente, erreurs)
-- [ ] T142 [US28] Détection de décalage d'horloge et horodatage serveur de référence
-- [ ] T143 [US28] Test de bout en bout : coupure de 8 h simulée sur 2 postes (`tests/sync/offline-8h.spec.ts`)
+- [ ] T142 [US28] Détection de décalage d'horloge et horodatage serveur de référence (écart d'horloge mesuré et signalé par l'API puis rendu au poste ; affichage restant)
+- [x] T143 [US28] Test de bout en bout : coupure de 8 h simulée sur 2 postes (`tests/sync/offline-8h.spec.ts`) (tests/e2e/us28-sync.spec.ts : deux postes, 8 h, réponse réseau perdue, contre l'API réelle sur SQLite avec la file en mémoire ; à rejouer depuis l'application desktop quand elle existera)
 
 **Checkpoint US28 = fin du MVP 1** : une pharmacie pilote s'inscrit, s'installe, vend hors-ligne et synchronise. **Démonstration et validation par le pharmacien pilote avant de continuer.**
 
