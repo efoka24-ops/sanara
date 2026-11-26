@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Button, Field } from '@sanara/ui';
 import { api } from '../api/client';
+import { Art } from '../app/BrandPanel';
 
 interface Pharmacy {
   id: string;
@@ -59,7 +60,13 @@ export function PharmaciesPage() {
 
   return (
     <div className="directory">
-      <h1>{t('pub.title')}</h1>
+      <header className="directory__banner">
+        <div>
+          <h1>{t('pub.title')}</h1>
+          <p>{t('pub.lead')}</p>
+        </div>
+        <Art name="carte" />
+      </header>
       <Field
         label={t('pub.search')}
         type="search"

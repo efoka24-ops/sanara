@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 440" width="600" height="440" role="img" aria-label="Poste de caisse qui continue de vendre sans connexion">
+<circle cx="300" cy="230" r="198" fill="#14804f" opacity="0.28"/>
+<g transform="translate(448 92) scale(1)"><path d="M-62 28C-88 28 -92 -10 -62 -14C-64 -44 -22 -58 -6 -34C8 -62 62 -50 56 -14C90 -18 94 28 62 28Z" fill="#bfe5d0" /></g>
+<path d="M404 48L496 138" fill="none" stroke="#e8a33d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M300 120C312 96 340 84 370 88" fill="none" stroke="#7fcaa3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 14"/>
+<g transform="translate(63 63) scale(0.66)" opacity="0.9"><path d="M50 45C38 37 37 15 50 3C63 15 62 37 50 45Z" fill="#ffffff" /><path d="M55 50C63 38 85 37 97 50C85 63 63 62 55 50Z" fill="#bfe5d0" /><path d="M50 55C62 63 63 85 50 97C37 85 38 63 50 55Z" fill="#7fcaa3" /><path d="M45 50C37 62 15 63 3 50C15 37 37 38 45 50Z" fill="#e8a33d" /></g>
+<rect x="150" y="138" width="300" height="212" rx="18" fill="#14201a" />
+<rect x="164" y="152" width="272" height="184" rx="8" fill="#ffffff" />
+<rect x="164" y="152" width="272" height="28" rx="8" fill="#e8a33d" />
+<rect x="164" y="168" width="272" height="12" rx="0" fill="#e8a33d" />
+<circle cx="180" cy="166" r="5" fill="#14201a" />
+<rect x="194" y="163" width="104" height="6" rx="3" fill="#14201a" />
+<circle cx="196" cy="208" r="11" fill="#14804f" /><path d="M190 208L195 213L203 203" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" /><rect x="218" y="201" width="108" height="6" rx="3" fill="#7fcaa3" /><rect x="218" y="212" width="64.8" height="5" rx="2.5" fill="#bfe5d0" /><rect x="366" y="202" width="42" height="11" rx="5.5" fill="#0b5d3b" />
+<circle cx="196" cy="246" r="11" fill="#14804f" /><path d="M190 246L195 251L203 241" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" /><rect x="218" y="239" width="92" height="6" rx="3" fill="#7fcaa3" /><rect x="218" y="250" width="55.199999999999996" height="5" rx="2.5" fill="#bfe5d0" /><rect x="366" y="240" width="42" height="11" rx="5.5" fill="#0b5d3b" />
+<circle cx="196" cy="284" r="11" fill="#14804f" /><path d="M190 284L195 289L203 279" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" /><rect x="218" y="277" width="118" height="6" rx="3" fill="#7fcaa3" /><rect x="218" y="288" width="70.8" height="5" rx="2.5" fill="#bfe5d0" /><rect x="366" y="278" width="42" height="11" rx="5.5" fill="#0b5d3b" />
+<rect x="184" y="306" width="232" height="20" rx="10" fill="#0b5d3b" />
+<rect x="262" y="313" width="76" height="6" rx="3" fill="#e8f4ed" />
+<rect x="276" y="350" width="48" height="30" rx="0" fill="#14201a" />
+<rect x="226" y="376" width="148" height="14" rx="7" fill="#14201a" />
+<path d="M478 330V236L488 244L498 236L508 244L518 236L528 244L538 236V330Z" fill="#ffffff" />
+<rect x="488" y="258" width="40" height="5" rx="2.5" fill="#7fcaa3" />
+<rect x="488" y="272" width="28" height="5" rx="2.5" fill="#bfe5d0" />
+<rect x="488" y="286" width="40" height="5" rx="2.5" fill="#bfe5d0" />
+<rect x="488" y="306" width="40" height="9" rx="4.5" fill="#0b5d3b" />
+<rect x="462" y="326" width="92" height="64" rx="12" fill="#14804f" />
+<circle cx="536" cy="372" r="5" fill="#bfe5d0" />
+<path d="M96 238L136 252V292C136 322 118 340 96 350C74 340 56 322 56 292V252Z" fill="#e8a33d" />
+<path d="M76 292L91 307L119 277" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+<ellipse cx="300" cy="396" rx="262" ry="12" fill="#06402a" opacity="0.55"/>
+</svg>

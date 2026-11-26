@@ -145,3 +145,17 @@ L'atlas regroupe tous les écrans par rôle ; il fait foi pour la répartition d
 | Super admin (14)                                    | B0, B1, S1, S2, B2 à B11                                      |
 
 Précisions nouvelles : menu super admin avec « Pays et zones » ; signalements d'abus (fausse urgence répétée, limitation d'envoi d'urgences par numéro) ; paramètres globaux (lien 48 h, 2FA obligatoire, limite 5 demandes par patient et par jour, libération 24 h, mode maintenance, version desktop) ; convention de tiers payant avec part assureur (ex. 80 %) ; clôture avec écart et Z de caisse ; prévision de la demande dans les rapports ; journal d'audit non modifiable avec IP ; allergie du patient comparée à l'ordonnance (alerte à la délivrance).
+
+## Illustrations des panneaux verts
+
+Les images vectorielles sont dans [apps/web/public/images](../apps/web/public/images) et générées par `node scripts/illustrations.mjs` (modifier le script, jamais les SVG). Elles sont décoratives (`alt=""`) et masquées sous 800 px de large.
+
+| Image                | Écran                            |
+| -------------------- | -------------------------------- |
+| `officine.svg`       | Accueil et connexion (A7)        |
+| `verification.svg`   | Demande d'accès (A1 à A3, P6)    |
+| `carte.svg`          | Annuaire des pharmacies (P2, P9) |
+| `stock.svg`          | Assistant de configuration (A8)  |
+| `hors-ligne.svg`     | Application de bureau (D1, D2)   |
+| `motif-feuilles.svg` | Motif de fond des panneaux verts |
+| `icone.svg`          | Icône de l'application           |

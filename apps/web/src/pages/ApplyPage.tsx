@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Button, Field, Stepper } from '@sanara/ui';
 import { api, ApiError, readAsBase64 } from '../api/client';
+import { BrandPanel } from '../app/BrandPanel';
 
 const DOCS = ['license', 'diploma', 'order_card', 'identity'] as const;
 const MAX = 2 * 1024 * 1024;
@@ -118,126 +119,133 @@ export function ApplyPage() {
   }
 
   return (
-    <div className="card-form card-form--wide">
-      <Stepper
-        steps={[t('apply.s1'), t('apply.s2'), t('apply.s3'), t('apply.s4')]}
-        current={step}
-      />
-      {step === 0 && (
-        <>
-          <h1>{t('apply.officineTitle')}</h1>
-          {input('pharmacy_name', t('apply.name'))}
-          <div className="grid2">
-            {input('license_number', t('apply.license'))}
-            {input('license_date', t('apply.licenseDate'), { type: 'date' })}
-          </div>
-          <div className="grid2">
-            {input('pharmacy_phone', t('apply.phone'), { type: 'tel' })}
-            {input('pharmacy_email', t('apply.email'), { type: 'email' })}
-          </div>
-          <Field
-            label={t('apply.pos')}
-            type="number"
-            min={1}
-            value={f.pos_count ?? '1'}
-            onChange={set('pos_count')}
-          />
-          <label className="check">
-            <input type="checkbox" checked={duty} onChange={(e) => setDuty(e.target.checked)} />{' '}
-            {t('apply.duty')}
-          </label>
-        </>
-      )}
-      {step === 1 && (
-        <>
-          <h1>{t('apply.locTitle')}</h1>
-          <div className="grid2">
-            {input('region', t('apply.region'))}
-            {input('department', t('apply.department'))}
-          </div>
-          <div className="grid2">
-            {input('city', t('apply.city'))}
-            {input('district', t('apply.district'))}
-          </div>
-          {input('address', t('apply.address'))}
-          <div className="grid2">
-            <Field label={t('apply.lat')} value={f.latitude ?? ''} onChange={set('latitude')} />
-            <Field label={t('apply.lng')} value={f.longitude ?? ''} onChange={set('longitude')} />
-          </div>
-          <Button type="button" variant="secondary" onClick={locate}>
-            {t('apply.useMyPosition')}
-          </Button>
-        </>
-      )}
-      {step === 2 && (
-        <>
-          <h1>{t('apply.docsTitle')}</h1>
-          {DOCS.map((d) => (
-            <label
-              key={d}
-              className={`dropzone${docs[d] ? ' dropzone--ok' : ''}${errors[`doc_${d}`] ? ' dropzone--error' : ''}`}
-            >
-              <strong>{t(`apply.doc.${d}`)} *</strong>
-              <span className="muted">
-                {docs[d] ? `✓ ${t('apply.added')} · ${docs[d]!.name}` : t('apply.docHint')}
-              </span>
-              <input
-                type="file"
-                accept="application/pdf,image/jpeg,image/png"
-                onChange={(e) => pick(d, e.target.files?.[0])}
-                hidden
-              />
+    <div className="brand-split brand-split--aside">
+      <div className="card-form card-form--wide">
+        <Stepper
+          steps={[t('apply.s1'), t('apply.s2'), t('apply.s3'), t('apply.s4')]}
+          current={step}
+        />
+        {step === 0 && (
+          <>
+            <h1>{t('apply.officineTitle')}</h1>
+            {input('pharmacy_name', t('apply.name'))}
+            <div className="grid2">
+              {input('license_number', t('apply.license'))}
+              {input('license_date', t('apply.licenseDate'), { type: 'date' })}
+            </div>
+            <div className="grid2">
+              {input('pharmacy_phone', t('apply.phone'), { type: 'tel' })}
+              {input('pharmacy_email', t('apply.email'), { type: 'email' })}
+            </div>
+            <Field
+              label={t('apply.pos')}
+              type="number"
+              min={1}
+              value={f.pos_count ?? '1'}
+              onChange={set('pos_count')}
+            />
+            <label className="check">
+              <input type="checkbox" checked={duty} onChange={(e) => setDuty(e.target.checked)} />{' '}
+              {t('apply.duty')}
             </label>
-          ))}
-        </>
-      )}
-      {step === 3 && (
-        <>
-          <h1>{t('apply.ownerTitle')}</h1>
-          <div className="grid2">
-            {input('owner_last_name', t('apply.lastName'))}
-            {input('owner_first_name', t('apply.firstName'))}
+          </>
+        )}
+        {step === 1 && (
+          <>
+            <h1>{t('apply.locTitle')}</h1>
+            <div className="grid2">
+              {input('region', t('apply.region'))}
+              {input('department', t('apply.department'))}
+            </div>
+            <div className="grid2">
+              {input('city', t('apply.city'))}
+              {input('district', t('apply.district'))}
+            </div>
+            {input('address', t('apply.address'))}
+            <div className="grid2">
+              <Field label={t('apply.lat')} value={f.latitude ?? ''} onChange={set('latitude')} />
+              <Field label={t('apply.lng')} value={f.longitude ?? ''} onChange={set('longitude')} />
+            </div>
+            <Button type="button" variant="secondary" onClick={locate}>
+              {t('apply.useMyPosition')}
+            </Button>
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <h1>{t('apply.docsTitle')}</h1>
+            {DOCS.map((d) => (
+              <label
+                key={d}
+                className={`dropzone${docs[d] ? ' dropzone--ok' : ''}${errors[`doc_${d}`] ? ' dropzone--error' : ''}`}
+              >
+                <strong>{t(`apply.doc.${d}`)} *</strong>
+                <span className="muted">
+                  {docs[d] ? `✓ ${t('apply.added')} · ${docs[d]!.name}` : t('apply.docHint')}
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={(e) => pick(d, e.target.files?.[0])}
+                  hidden
+                />
+              </label>
+            ))}
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <h1>{t('apply.ownerTitle')}</h1>
+            <div className="grid2">
+              {input('owner_last_name', t('apply.lastName'))}
+              {input('owner_first_name', t('apply.firstName'))}
+            </div>
+            <div className="grid2">
+              {input('owner_order_number', t('apply.orderNumber'))}
+              {input('owner_phone', t('apply.ownerPhone'), { type: 'tel' })}
+            </div>
+            {input('owner_email', t('apply.ownerEmail'), { type: 'email' })}
+            {(['truth', 'terms', 'data'] as const).map((k) => (
+              <label key={k} className="check">
+                <input
+                  type="checkbox"
+                  checked={agree[k]}
+                  onChange={(e) => setAgree((a) => ({ ...a, [k]: e.target.checked }))}
+                />{' '}
+                {t(`apply.${k}`)}
+              </label>
+            ))}
+          </>
+        )}
+        {banner && (
+          <div role="alert" className="form-error">
+            {banner}
           </div>
-          <div className="grid2">
-            {input('owner_order_number', t('apply.orderNumber'))}
-            {input('owner_phone', t('apply.ownerPhone'), { type: 'tel' })}
-          </div>
-          {input('owner_email', t('apply.ownerEmail'), { type: 'email' })}
-          {(['truth', 'terms', 'data'] as const).map((k) => (
-            <label key={k} className="check">
-              <input
-                type="checkbox"
-                checked={agree[k]}
-                onChange={(e) => setAgree((a) => ({ ...a, [k]: e.target.checked }))}
-              />{' '}
-              {t(`apply.${k}`)}
-            </label>
-          ))}
-        </>
-      )}
-      {banner && (
-        <div role="alert" className="form-error">
-          {banner}
+        )}
+        <div className="actions">
+          {step > 0 ? (
+            <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
+              {t('common.back')}
+            </Button>
+          ) : (
+            <span />
+          )}
+          {step < 3 ? (
+            <Button type="button" onClick={next}>
+              {t('common.continue')}
+            </Button>
+          ) : (
+            <Button type="button" onClick={submit} disabled={busy || docs.license?.base64 === ''}>
+              {t('apply.submit')}
+            </Button>
+          )}
         </div>
-      )}
-      <div className="actions">
-        {step > 0 ? (
-          <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
-            {t('common.back')}
-          </Button>
-        ) : (
-          <span />
-        )}
-        {step < 3 ? (
-          <Button type="button" onClick={next}>
-            {t('common.continue')}
-          </Button>
-        ) : (
-          <Button type="button" onClick={submit} disabled={busy || docs.license?.base64 === ''}>
-            {t('apply.submit')}
-          </Button>
-        )}
       </div>
+      <BrandPanel
+        image="verification"
+        title={t('apply.aside.title')}
+        lead={t(`apply.aside.${step}`)}
+      />
     </div>
   );
 }

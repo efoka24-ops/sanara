@@ -572,5 +572,11 @@
   "err.number_taken": "Ce numéro de ticket existe déjà : changez le nom du poste.",
   "err.other_user": "En attente de la connexion de la personne qui les a saisies.",
   "err.server_error": "Erreur du serveur, nouvel essai automatique.",
-  "errors.offline": "Réseau indisponible. Reconnectez-vous une première fois avec le réseau."
+  "errors.offline": "Réseau indisponible. Reconnectez-vous une première fois avec le réseau.",
+  "pub.lead": "Cherchez une pharmacie par nom, ville ou quartier, appelez-la ou ouvrez l’itinéraire.",
+  "apply.aside.title": "Pourquoi ces informations",
+  "apply.aside.0": "Le numéro d’agrément et sa date permettent à notre équipe de vérifier que l’officine est autorisée à exercer.",
+  "apply.aside.1": "La localisation permet aux patients de trouver votre pharmacie, une fois votre dossier validé.",
+  "apply.aside.2": "Vos documents sont vérifiés par notre équipe avant l’ouverture de votre accès.",
+  "apply.aside.3": "Après validation, le pharmacien responsable reçoit un lien d’activation à durée limitée."
 }

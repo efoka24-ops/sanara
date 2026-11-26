@@ -1,6 +1,6 @@
 /* Page d'accueil : reprend l'écran de connexion A7 de la maquette (panneau vert + panneau blanc). */
 .home {
-  min-height: 100vh;
+  min-height: calc(100vh - 68px);
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: var(--sa-surface);
@@ -8,10 +8,16 @@
 .home__brand {
   background: var(--sa-green-900);
   color: #fff;
-  padding: 56px 48px;
+  padding: 32px 48px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+.home__brand .home__art {
+  width: auto;
+  max-width: 100%;
+  max-height: 38vh;
+  margin: auto auto 0;
 }
 .home__title {
   margin-top: auto;
@@ -324,7 +330,7 @@ a.sa-btn {
 .setup {
   display: grid;
   grid-template-columns: 300px 1fr;
-  min-height: calc(100vh - 56px);
+  min-height: 100vh;
   margin: -28px -32px;
 }
 .setup__side {
@@ -737,4 +743,99 @@ textarea.sa-field__input {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Panneaux verts illustrés (maquette A1, A7) */
+.home__brand,
+.brand-panel,
+.setup__side,
+.directory__banner {
+  background-color: var(--sa-green-900);
+  background-image: url('/images/motif-feuilles.svg');
+}
+.art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.brand-split {
+  display: grid;
+  min-height: calc(100vh - 68px);
+}
+.brand-split--login {
+  grid-template-columns: 1fr 1fr;
+}
+.brand-split--aside {
+  grid-template-columns: minmax(0, 1fr) 400px;
+}
+.brand-split > form,
+.brand-split > .card-form {
+  width: calc(100% - 48px);
+  align-self: center;
+  justify-self: center;
+}
+.brand-panel {
+  color: #fff;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+.brand-split--login > .brand-panel {
+  order: -1;
+}
+.brand-panel .art {
+  max-width: 480px;
+  margin: 0 auto 8px;
+}
+.brand-panel__title {
+  margin: 0;
+  font-family: var(--sa-font-display);
+  font-weight: 800;
+  font-size: clamp(26px, 2.6vw, 36px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.brand-panel__lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--sa-green-50);
+}
+.setup__art {
+  max-width: 240px;
+  margin: auto auto 0;
+}
+.directory__banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 36px;
+  border-radius: var(--sa-r-modal);
+  color: #fff;
+}
+.directory__banner p {
+  margin: 10px 0 0;
+  color: var(--sa-green-50);
+  max-width: 32rem;
+  line-height: 1.55;
+}
+.directory__banner .art {
+  max-width: 260px;
+}
+@media (max-width: 800px) {
+  .brand-split--login,
+  .brand-split--aside {
+    grid-template-columns: 1fr;
+  }
+  .brand-panel,
+  .directory__banner .art {
+    display: none;
+  }
+}
+.directory .sa-field {
+  background: var(--sa-surface);
+  border-color: var(--sa-line);
 }

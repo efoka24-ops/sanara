@@ -572,5 +572,11 @@
   "err.number_taken": "This ticket number already exists: change the station name.",
   "err.other_user": "Waiting for the person who entered them to sign in.",
   "err.server_error": "Server error, retrying automatically.",
-  "errors.offline": "Network unavailable. Sign in once with the network first."
+  "errors.offline": "Network unavailable. Sign in once with the network first.",
+  "pub.lead": "Search a pharmacy by name, city or district, call it or open directions.",
+  "apply.aside.title": "Why we ask for this",
+  "apply.aside.0": "The licence number and date let our team check that the pharmacy is allowed to operate.",
+  "apply.aside.1": "The location lets patients find your pharmacy once your application is approved.",
+  "apply.aside.2": "Our team checks your documents before opening your access.",
+  "apply.aside.3": "Once approved, the responsible pharmacist receives a time-limited activation link."
 }

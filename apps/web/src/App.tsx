@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Logo } from '@sanara/ui';
+import { Art } from './app/BrandPanel';
 
 type Health = { status: string; database?: { ok: boolean; version?: string } };
 
@@ -23,6 +24,7 @@ export function Home() {
     <div className="home">
       <section className="home__brand">
         <Logo size={40} tone="light" />
+        <Art name="officine" className="home__art" />
         <h1 className="home__title">{t('home.title')}</h1>
         <p className="home__lead">{t('home.lead')}</p>
       </section>

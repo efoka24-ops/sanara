@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Button, Field, Switch } from '@sanara/ui';
 import { api } from '../api/client';
+import { Art } from '../app/BrandPanel';
 
 const STEPS = ['hours', 'team', 'catalog', 'visibility'] as const;
 type Step = (typeof STEPS)[number];
@@ -88,6 +89,7 @@ export function SetupPage() {
           ))}
         </ol>
         <p className="muted">{t('setup.progress', { percent: o?.percent ?? 0 })}</p>
+        <Art name="stock" className="setup__art" />
       </aside>
       <section className="setup__main">
         {step === 'hours' && (

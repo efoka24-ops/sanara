@@ -4,6 +4,7 @@ import { useT } from '@sanara/i18n';
 import { Button, Field } from '@sanara/ui';
 import { api, ApiError, setTokens } from '../api/client';
 import { useSession, type Role } from '../app/session';
+import { BrandPanel } from '../app/BrandPanel';
 
 interface Tokens {
   access: string;
@@ -59,54 +60,57 @@ export function LoginPage() {
   }
 
   return (
-    <form className="card-form" onSubmit={submit}>
-      <h1>{mfaToken ? t('mfa.title') : t('login.title')}</h1>
-      {!mfaToken && (
-        <>
+    <div className="brand-split brand-split--login">
+      <BrandPanel image="officine" title={t('home.title')} lead={t('home.lead')} />
+      <form className="card-form" onSubmit={submit}>
+        <h1>{mfaToken ? t('mfa.title') : t('login.title')}</h1>
+        {!mfaToken && (
+          <>
+            <Field
+              label={t('auth.email')}
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Field
+              label={t('auth.password')}
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </>
+        )}
+        {mfaToken && (
           <Field
-            label={t('auth.email')}
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label={t('mfa.code')}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
             required
           />
-          <Field
-            label={t('auth.password')}
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </>
-      )}
-      {mfaToken && (
-        <Field
-          label={t('mfa.code')}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          autoFocus
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          required
-        />
-      )}
-      {error && (
-        <div role="alert" className="form-error">
-          {error}
-        </div>
-      )}
-      <Button type="submit" block disabled={busy}>
-        {mfaToken ? t('mfa.verify') : t('login.submit')}
-      </Button>
-      {!mfaToken && (
-        <p className="muted">
-          <Link to="/mot-de-passe-oublie">{t('auth.forgot')}</Link>
-          <br />
-          {t('login.noAccount')} <Link to="/inscription">{t('login.apply')}</Link>
-        </p>
-      )}
-    </form>
+        )}
+        {error && (
+          <div role="alert" className="form-error">
+            {error}
+          </div>
+        )}
+        <Button type="submit" block disabled={busy}>
+          {mfaToken ? t('mfa.verify') : t('login.submit')}
+        </Button>
+        {!mfaToken && (
+          <p className="muted">
+            <Link to="/mot-de-passe-oublie">{t('auth.forgot')}</Link>
+            <br />
+            {t('login.noAccount')} <Link to="/inscription">{t('login.apply')}</Link>
+          </p>
+        )}
+      </form>
+    </div>
   );
 }
