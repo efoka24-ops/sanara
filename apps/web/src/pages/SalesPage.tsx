@@ -73,8 +73,14 @@ export function SalesPage() {
   useEffect(load, [load]);
 
   async function open(r: Row) {
-    setSale(await api<Sale>('GET', `/app/sales/${r.id}`));
-    setReturns((await api<{ items: Ret[] }>('GET', `/app/sales/${r.id}/returns`)).items);
+    // La fiche ne s'affiche qu'une fois complète : sinon la fin du chargement des retours
+    // refermait un formulaire de retour déjà ouvert.
+    const [detail, past] = await Promise.all([
+      api<Sale>('GET', `/app/sales/${r.id}`),
+      api<{ items: Ret[] }>('GET', `/app/sales/${r.id}/returns`),
+    ]);
+    setSale(detail);
+    setReturns(past.items);
     setForm(null);
     setNeedApprover(false);
   }
