@@ -254,11 +254,11 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 - [ ] T133 [P] [US28] Schéma SQLite local et migrations (`apps/desktop/src/local-db/migrations/`) (file d'opérations, opérations appliquées et curseur persistés avec better-sqlite3, testés sous Node ; restent les tables métier hors-ligne (catalogue, stock, ventes, caisse) et la recompilation du binaire pour Electron à l'empaquetage)
 - [x] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (couverts : reprise sans doublon et référentiel (packages/sync/tests), deux postes sur le même produit (SyncPushHttpTest et tests/e2e/us28-sync.spec.ts))
-- [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`)
+- [ ] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`) (caisse hors-ligne faite et testée (apps/desktop/src/pos/local-pos.ts) ; reste l'interface commune branchée dans l'application (T126))
 - [x] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`) (`pushPending` et `createHttpTransport` dans packages/sync/src/client.ts ; file persistante dans apps/desktop/src/local-db ; le branchement dans l'application relève de T126)
 - [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`) (`push` fait et testé : idempotent, atomique par opération, trois types (ouverture, vente, clôture de caisse), attribution au compte auteur ; `pull` fait pour le référentiel complet par pages (produits, codes-barres, lots, soldes, réglages) ; restent le différentiel et les clients)
 - [ ] T138 [US28] Résolution des conflits et journal `SyncConflict` (`packages/sync/src/conflicts/`) (côté serveur, table `sync_conflicts` alimentée : prix, produit désactivé, manque de stock, caisse déjà close, horloge ; résolution et écran restants)
-- [ ] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale
+- [ ] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale (synchronisation initiale du catalogue, du stock et des réglages faite ; restent les clients et le différentiel)
 - [ ] T140 [US28] Vérification d'intégrité d'un poste hors-ligne trop longtemps (checksums de stock) avant acceptation
 - [ ] T141 [US28] Indicateur de synchro dans l'interface (état, nombre d'opérations en attente, erreurs)
 - [ ] T142 [US28] Détection de décalage d'horloge et horodatage serveur de référence (écart d'horloge mesuré et signalé par l'API puis rendu au poste ; affichage restant)
@@ -270,11 +270,11 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 16 : US18 - Recherche de pharmacies et carte (P1) 🎯 MVP 2
 
-- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table + index région/ville/nom créés ; point GPS, garde, et alimentation automatique depuis les changements de tenant restent à faire)
-- [ ] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/tests/Applications/PublicPharmaciesHttpTest.php`) (visibilité et filtre texte/ville testés et verts ; tri par distance et hiérarchie département/quartier restants)
+- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table alimentée à la publication, au retrait, à la suspension et rattrapée au déploiement ; restent le point GPS et la garde)
+- [ ] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/tests/Applications/PublicPharmaciesHttpTest.php`) (visibilité, suspension et filtre texte testés (PublicProjectionHttpTest) ; restent le tri par distance et la hiérarchie département/quartier)
 - [ ] T146 [US18] Endpoints `GET /public/pharmacies` (filtres, bbox, distance) avec cache et pagination (`apps/api/app/Modules/Applications/PublicPharmacyService.php`, route dans `Routes.php`) (filtres q/région/ville + pagination faits ; bbox, distance et cache restants)
 - [ ] T147 [US18] Référentiel géographique (régions, départements, villes, quartiers) dans `CountryConfig` + sélecteurs en cascade
-- [ ] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`)
+- [ ] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`) (page /pharmacies : liste, recherche, appel et itinéraire ; restent la carte Leaflet et le regroupement des marqueurs)
 - [ ] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde
 - [ ] T150 [US18] Géolocalisation avec consentement et repli sur saisie du quartier
 - [ ] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21)

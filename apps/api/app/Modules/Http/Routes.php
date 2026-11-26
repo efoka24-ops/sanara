@@ -155,11 +155,9 @@ final class Routes
             $q = trim((string) ($req->getQueryParams()['q'] ?? ''));
             $region = trim((string) ($req->getQueryParams()['region'] ?? ''));
             $city = trim((string) ($req->getQueryParams()['city'] ?? ''));
-            $visibleRaw = strtolower(trim((string) ($req->getQueryParams()['visible'] ?? 'true')));
-            $visible = !in_array($visibleRaw, ['0', 'false', 'no'], true);
             $limit = max(1, min(100, (int) ($req->getQueryParams()['limit'] ?? 20)));
             $offset = max(0, (int) ($req->getQueryParams()['offset'] ?? 0));
-            return $json($res, $s->publicPharmacies->search($q, $region, $city, $visible, $limit, $offset));
+            return $json($res, $s->publicPharmacies->search($q, $region, $city, $limit, $offset));
         });
 
         // --- Demandes d'accès (US1) ---
@@ -338,8 +336,9 @@ final class Routes
                 $s->setup->setOpeningHours((array) ($body($q)['days'] ?? []));
                 return $r->withStatus(204);
             })->add($perm('settings.write'));
-            $g->put('/visibility', function (Request $q, Response $r) use ($s, $body) {
+            $g->put('/visibility', function (Request $q, Response $r) use ($s, $body, $tenantId) {
                 $s->setup->setVisibility(!empty($body($q)['visible']));
+                $s->publicProjection->refresh($tenantId($q));
                 return $r->withStatus(204);
             })->add($perm('settings.write'));
             $g->get('/onboarding', fn (Request $q, Response $r) => $json($r, $s->setup->onboarding()))->add($perm('settings.write'));

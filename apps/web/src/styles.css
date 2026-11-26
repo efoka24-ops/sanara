@@ -706,3 +706,22 @@ textarea.sa-field__input {
     grid-template-columns: 1fr;
   }
 }
+/* Annuaire public des pharmacies (US18). */
+.directory {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.directory__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.directory__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}

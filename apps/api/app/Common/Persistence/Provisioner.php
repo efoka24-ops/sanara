@@ -25,6 +25,7 @@ final class Provisioner
         Seeder::cameroon($this->db);
         Seeder::platformDefaults($this->db);
         (new \Sanara\Modules\Catalog\ReferenceCatalog($this->db))->seed('CM');
+        (new \Sanara\Modules\Applications\PublicPharmacyProjection($this->db, $this->clock))->refreshAll();
         $users = new UserRepository($this->db, $this->clock);
         $created = false;
         $renamed = false;

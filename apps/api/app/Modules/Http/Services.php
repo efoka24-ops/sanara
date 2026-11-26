@@ -60,6 +60,7 @@ final class Services
     public readonly \Sanara\Modules\Security\SessionService $sessions;
     public readonly \Sanara\Modules\Security\PinService $pin;
     public readonly PublicPharmacyService $publicPharmacies;
+    public readonly \Sanara\Modules\Applications\PublicPharmacyProjection $publicProjection;
     public readonly CaptchaVerifier $captcha;
     public readonly \Sanara\Modules\Sync\SyncService $sync;
 
@@ -95,6 +96,7 @@ final class Services
         );
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
         $this->publicPharmacies = new PublicPharmacyService($db);
+        $this->publicProjection = new \Sanara\Modules\Applications\PublicPharmacyProjection($db, $clock);
         $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
         $this->activation = new ActivationService($db, $clock, $hasher);
         $mailer = match (true) {

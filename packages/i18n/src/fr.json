@@ -537,5 +537,22 @@
   "adm.set.desktop_version": "Version courante du logiciel de bureau",
   "adm.set.saved": "Paramètres enregistrés.",
   "adm.err.conflict": "Action impossible dans l’état actuel.",
-  "adm.err.invalid": "Vérifiez les champs signalés."
+  "adm.err.invalid": "Vérifiez les champs signalés.",
+  "home.title": "Votre pharmacie, même quand le réseau coupe.",
+  "home.lead": "Stock, caisse, ordonnances et assistant au même endroit.",
+  "home.welcome": "Bienvenue",
+  "home.demo": "Sanara est en construction. Cette version est une démonstration : n’y saisissez aucune donnée réelle.",
+  "home.apply": "Digitaliser ma pharmacie",
+  "home.find": "Trouver une pharmacie",
+  "home.checking": "Vérification du service…",
+  "home.online": "Service en ligne",
+  "home.offline": "Service indisponible",
+  "home.note": "Version de démonstration, données de test uniquement.",
+  "pub.title": "Trouver une pharmacie",
+  "pub.search": "Nom, ville ou quartier",
+  "pub.loading": "Recherche en cours…",
+  "pub.count": "Pharmacies trouvées : {n}",
+  "pub.call": "Appeler",
+  "pub.directions": "Itinéraire",
+  "pub.more": "Voir plus"
 }

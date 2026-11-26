@@ -537,5 +537,22 @@
   "adm.set.desktop_version": "Current desktop software version",
   "adm.set.saved": "Settings saved.",
   "adm.err.conflict": "Not possible in the current state.",
-  "adm.err.invalid": "Check the highlighted fields."
+  "adm.err.invalid": "Check the highlighted fields.",
+  "home.title": "Your pharmacy, even when the network drops.",
+  "home.lead": "Stock, till, prescriptions and assistant in one place.",
+  "home.welcome": "Welcome",
+  "home.demo": "Sanara is under construction. This version is a demonstration: do not enter any real data.",
+  "home.apply": "Digitise my pharmacy",
+  "home.find": "Find a pharmacy",
+  "home.checking": "Checking the service…",
+  "home.online": "Service online",
+  "home.offline": "Service unavailable",
+  "home.note": "Demonstration version, test data only.",
+  "pub.title": "Find a pharmacy",
+  "pub.search": "Name, town or district",
+  "pub.loading": "Searching…",
+  "pub.count": "Pharmacies found: {n}",
+  "pub.call": "Call",
+  "pub.directions": "Directions",
+  "pub.more": "Show more"
 }

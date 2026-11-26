@@ -30,6 +30,7 @@ import {
 import { AdminLayout, PharmacyLayout, PublicLayout } from './app/layouts';
 import { RequireArea, RequireSession } from './app/guards';
 import { SessionProvider } from './app/session';
+import { PharmaciesPage } from './pages/PharmaciesPage';
 
 export function Router() {
   return (
@@ -41,6 +42,7 @@ export function Router() {
               <Route element={<PublicLayout />}>
                 <Route index element={<Home />} />
                 <Route path="connexion" element={<LoginPage />} />
+                <Route path="pharmacies" element={<PharmaciesPage />} />
                 <Route path="inscription" element={<ApplyPage />} />
                 <Route path="inscription/envoyee" element={<SentPage />} />
                 <Route path="inscription/suivi/:code" element={<TrackPage />} />
