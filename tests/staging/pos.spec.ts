@@ -6,21 +6,32 @@ const run = Date.now().toString(36);
 test.skip(!PW, 'STAGING_DEMO_PASSWORD non fourni');
 test.describe.configure({ mode: 'serial' });
 
+// Un jeton par rôle : l'API limite les connexions à 10 par minute et par adresse IP.
+const tokens = new Map<string, string>();
 async function api(request: APIRequestContext, role: string) {
-  const login = await request.post('/api/auth/login', {
-    data: { email: `${role}@demo.sanara.test`, password: PW },
-  });
-  expect(login.ok(), `connexion ${role}`).toBeTruthy();
-  const token = ((await login.json()) as { access: string }).access;
+  let token = tokens.get(role);
+  if (!token) {
+    const login = await request.post('/api/auth/login', {
+      data: { email: `${role}@demo.sanara.test`, password: PW },
+    });
+    expect(login.ok(), `connexion ${role} : HTTP ${login.status()}`).toBeTruthy();
+    token = ((await login.json()) as { access: string }).access;
+    tokens.set(role, token);
+  }
   return async <T = Record<string, unknown>>(
     method: string,
     path: string,
     data?: unknown,
   ): Promise<T> => {
+    // Comme le client web : l'hébergeur refuse PUT, PATCH et DELETE
+    const overridden = ['PUT', 'PATCH', 'DELETE'].includes(method);
     const r = await request.fetch(`/api${path}`, {
-      method,
+      method: overridden ? 'POST' : method,
       data,
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(overridden ? { 'X-HTTP-Method-Override': method } : {}),
+      },
     });
     return r.status() === 204 ? ({} as T) : ((await r.json()) as T);
   };
@@ -94,7 +105,7 @@ test('le caissier vend en espèces sur la préproduction puis clôture sa caisse
 
   await page.getByRole('button', { name: /Clôturer la caisse/ }).click();
   const close = page.getByRole('dialog', { name: 'Clôture de caisse' });
-  await close.getByLabel('Coupure 1 000').fill('3');
+  await close.getByLabel('Coupure 1 000').fill('2'); // 3 000 attendus, 2 000 comptés : l'écart rend le motif obligatoire
   await close
     .getByLabel(/Coupure 5 ?000$/)
     .first()
