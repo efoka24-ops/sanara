@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Badge, Button, Field, Table } from '@sanara/ui';
 import { api, ApiError } from '../api/client';
+import { BackLink } from './AdminConsole';
 
 interface Row {
   id: string;
@@ -111,7 +112,7 @@ export function AdminApplicationPage() {
   const a = d.application;
   return (
     <div className="detail">
-      <Link to="/admin">← {t('admin.apps.title')}</Link>
+      <BackLink to="/admin/demandes" label={t('admin.apps.title')} />
       <h1>
         {String(a.pharmacy_name)}{' '}
         <Badge tone={TONE[String(a.status)] ?? 'neutral'}>{t(`admin.apps.${a.status}`)}</Badge>

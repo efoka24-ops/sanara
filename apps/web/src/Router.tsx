@@ -15,6 +15,18 @@ import { LoginPage } from './pages/LoginPage';
 import { ApplyPage } from './pages/ApplyPage';
 import { ActivatePage, SentPage, TrackPage } from './pages/TrackPages';
 import { AdminApplicationPage, AdminApplicationsPage } from './pages/AdminPages';
+import {
+  AdminAuditPage,
+  AdminBillingPage,
+  AdminCountriesPage,
+  AdminDashboardPage,
+  AdminPharmaciesPage,
+  AdminPharmacyPage,
+  AdminPlansPage,
+  AdminReportsPage,
+  AdminSettingsPage,
+  AdminTemplatesPage,
+} from './pages/AdminConsole';
 import { AdminLayout, PharmacyLayout, PublicLayout } from './app/layouts';
 import { RequireArea, RequireSession } from './app/guards';
 import { SessionProvider } from './app/session';
@@ -53,8 +65,18 @@ export function Router() {
               </Route>
               <Route path="admin" element={<RequireArea area="admin" />}>
                 <Route element={<AdminLayout />}>
-                  <Route index element={<AdminApplicationsPage />} />
+                  <Route index element={<AdminDashboardPage />} />
+                  <Route path="demandes" element={<AdminApplicationsPage />} />
                   <Route path="demandes/:id" element={<AdminApplicationPage />} />
+                  <Route path="pharmacies" element={<AdminPharmaciesPage />} />
+                  <Route path="pharmacies/:id" element={<AdminPharmacyPage />} />
+                  <Route path="abonnements" element={<AdminPlansPage />} />
+                  <Route path="facturation" element={<AdminBillingPage />} />
+                  <Route path="signalements" element={<AdminReportsPage />} />
+                  <Route path="modeles" element={<AdminTemplatesPage />} />
+                  <Route path="audit" element={<AdminAuditPage />} />
+                  <Route path="pays" element={<AdminCountriesPage />} />
+                  <Route path="parametres" element={<AdminSettingsPage />} />
                 </Route>
               </Route>
             </Routes>

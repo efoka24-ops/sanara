@@ -14,7 +14,7 @@ test('US5 : activation de la double vérification, connexion en deux étapes, co
   page,
 }) => {
   await login(page, E2E.admin.email, E2E.admin.password);
-  await expect(page.getByRole('heading', { name: 'Demandes d’accès' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Sécurité' }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
@@ -34,7 +34,7 @@ test('US5 : activation de la double vérification, connexion en deux étapes, co
   await expect(page.getByRole('alert')).toBeVisible();
   await page.getByLabel(/Code à 6 chiffres/).fill(totp(secret, Math.floor(Date.now() / 1000) + 30)); // pas suivant : le code déjà utilisé est refusé
   await page.getByRole('button', { name: 'Valider' }).click();
-  await expect(page.getByRole('heading', { name: 'Demandes d’accès' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
 
   // Code de secours : fonctionne une fois seulement
   await page.context().clearCookies();
@@ -42,7 +42,7 @@ test('US5 : activation de la double vérification, connexion en deux étapes, co
   await login(page, E2E.admin.email, E2E.admin.password);
   await page.getByLabel(/Code à 6 chiffres/).fill(backup[0]!);
   await page.getByRole('button', { name: 'Valider' }).click();
-  await expect(page.getByRole('heading', { name: 'Demandes d’accès' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
   await page.goto('/connexion');
   await login(page, E2E.admin.email, E2E.admin.password);
   await page.getByLabel(/Code à 6 chiffres/).fill(backup[0]!);

@@ -13,6 +13,8 @@ test('US2 : soumission, validation par le super admin, e-mail d’activation, pr
   await page.getByLabel('E-mail').fill(E2E.admin.email);
   await page.getByLabel('Mot de passe').fill(E2E.admin.password);
   await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
+  await page.getByRole('link', { name: 'Demandes d’accès' }).click();
   await expect(page.getByRole('heading', { name: 'Demandes d’accès' })).toBeVisible();
   await page
     .getByRole('row', { name: new RegExp(number) })
