@@ -11,6 +11,7 @@ use Sanara\Common\Clock;
 use Sanara\Common\Config;
 use Sanara\Common\Database;
 use Sanara\Common\JsonErrorHandler;
+use Sanara\Common\MethodOverrideMiddleware;
 use Sanara\Modules\Http\Routes;
 use Sanara\Modules\Http\Services;
 use Slim\App;
@@ -44,6 +45,8 @@ final class Bootstrap
         // Ajouté après le parseur : s'exécute avant lui et rejette les corps invalides en 400.
         $app->add(new BodyGuardMiddleware($app->getResponseFactory()));
         $app->addRoutingMiddleware();
+        // Ajouté après le routage : s'exécute avant lui, pour que la route soit choisie sur la bonne méthode.
+        $app->add(new MethodOverrideMiddleware());
         $errors = $app->addErrorMiddleware($config->debug, true, true);
         $errors->setDefaultErrorHandler(new JsonErrorHandler($app, $config->debug));
 

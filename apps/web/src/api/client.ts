@@ -29,8 +29,11 @@ async function raw(method: string, path: string, body?: unknown, retry = true): 
   };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  // L'hébergeur refuse PUT, PATCH et DELETE : envoi en POST, l'API rétablit la méthode.
+  const overridden = ['PUT', 'PATCH', 'DELETE'].includes(method);
+  if (overridden) headers['X-HTTP-Method-Override'] = method;
   const res = await fetch(`${BASE}${path}`, {
-    method,
+    method: overridden ? 'POST' : method,
     headers,
     body: body === undefined ? undefined : rawJson(body),
   });
