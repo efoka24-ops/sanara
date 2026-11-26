@@ -8,6 +8,11 @@ final class Ulid
 {
     private const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
+    public static function isValid(string $id): bool
+    {
+        return preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/', $id) === 1;
+    }
+
     public static function generate(?int $millis = null): string
     {
         $t = $millis ?? (int) floor(microtime(true) * 1000);

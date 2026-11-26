@@ -107,6 +107,122 @@ final class SalesService
         return $this->get($id) + ['change' => $settle['change']];
     }
 
+    /**
+     * Vente encaissée sur un poste hors-ligne : la marchandise est déjà partie, on l'enregistre telle que
+     * le ticket l'indique et on signale les écarts. Sont refusés les cas qu'aucun PIN ne peut couvrir à
+     * distance : produit réglementé sans compte pharmacien, remise non autorisée, Mobile Money.
+     * À appeler dans une transaction.
+     *
+     * @param array<string, mixed> $in saleId, sessionId, number, lines[{productId, qty, unitPrice, discountBp, vatBp}], payments[], customerName?, prescription?
+     * @return list<array{kind: string, details: array<string, mixed>}> écarts à signaler
+     */
+    public function recordOffline(array $in, string $userId, string $at): array
+    {
+        $id = (string) ($in['saleId'] ?? '');
+        $session = $this->cash->session((string) ($in['sessionId'] ?? ''));
+        if ($session['opened_by'] !== $userId) {
+            throw new ApiException('forbidden', 403);
+        }
+        $number = (string) ($in['number'] ?? '');
+        if (!Ulid::isValid($id) || preg_match('/^V-' . preg_quote((string) $session['station'], '/') . '-(\d{4})-(\d{5,9})$/', $number, $m) !== 1) {
+            throw new ApiException('validation_failed', 422, ['fields' => [Ulid::isValid($id) ? 'number' : 'saleId' => 'invalid']]);
+        }
+        if ($this->tdb->select('sales', ['id' => $id], null, 1) !== []) {
+            throw new ApiException('conflict', 409, ['saleId' => $id]);
+        }
+        if ($this->tdb->select('sales', ['number' => $number], null, 1) !== []) {
+            throw new ApiException('number_taken', 409, ['number' => $number]);
+        }
+
+        $conflicts = [];
+        $lines = [];
+        $maxBp = $this->maxDiscountBp();
+        foreach ((array) ($in['lines'] ?? []) as $r) {
+            $qty = $r['qty'] ?? null;
+            $price = $r['unitPrice'] ?? null;
+            $bp = $r['discountBp'] ?? 0;
+            $vat = $r['vatBp'] ?? null;
+            if (!is_int($qty) || $qty <= 0 || !is_int($price) || $price < 0 || !is_int($bp) || $bp < 0 || $bp > 10000 || !is_int($vat) || $vat < 0 || $vat > 10000) {
+                throw new ApiException('validation_failed', 422, ['fields' => ['lines' => 'invalid']]);
+            }
+            $p = $this->tdb->select('products', ['id' => (string) ($r['productId'] ?? '')], null, 1)[0] ?? throw new ApiException('not_found', 404);
+            if ($bp > 0 && !$this->authz->can($userId, 'sales.discount')) {
+                throw new ApiException('forbidden', 403);
+            }
+            if ($bp > $maxBp && !$this->authz->can($userId, 'sales.discount_override')) {
+                throw new ApiException('discount_needs_approval', 403);
+            }
+            if ($price !== (int) $p['sale_price'] || $vat !== (int) $p['vat_bp']) {
+                $conflicts[] = ['kind' => 'price_mismatch', 'details' => ['productId' => $p['id'], 'sold' => $price, 'current' => (int) $p['sale_price'], 'soldVatBp' => $vat, 'currentVatBp' => (int) $p['vat_bp']]];
+            }
+            if ((int) $p['active'] !== 1) {
+                $conflicts[] = ['kind' => 'product_inactive', 'details' => ['productId' => $p['id']]];
+            }
+            $lines[] = ['product_id' => (string) $p['id'], 'name' => (string) $p['name'], 'status' => (string) $p['regulatory_status'], 'qty' => $qty, 'unit_price' => $price, 'discount_bp' => $bp, 'vat_bp' => $vat]
+                + SaleMath::line($qty, $price, $bp, $vat);
+        }
+        if ($lines === []) {
+            throw new ApiException('validation_failed', 422, ['fields' => ['lines' => 'required']]);
+        }
+
+        $presc = (array) ($in['prescription'] ?? []);
+        $regulated = array_filter($lines, static fn ($l) => $l['status'] !== 'free') !== [];
+        if ($regulated) {
+            $complete = trim((string) ($presc['ref'] ?? '')) !== '' && trim((string) ($presc['prescriber'] ?? '')) !== '' && trim((string) ($presc['patientName'] ?? '')) !== '';
+            if (!$complete || !$this->authz->can($userId, 'narcotics.dispense')) {
+                throw new ApiException('prescription_required', 422);
+            }
+        }
+
+        $raw = array_values((array) ($in['payments'] ?? []));
+        $total = array_sum(array_column($lines, 'total'));
+        foreach ($raw as $p) {
+            $method = (string) ($p['method'] ?? '');
+            if (str_starts_with($method, 'momo_')) {
+                throw new ApiException('payment_offline_forbidden', 422);
+            }
+            if ($method === 'card' && trim((string) ($p['reference'] ?? '')) === '') {
+                throw new ApiException('validation_failed', 422, ['fields' => ['payments.reference' => 'required']]);
+            }
+            if ($method === 'credit' && trim((string) ($in['customerName'] ?? '')) === '') {
+                throw new ApiException('validation_failed', 422, ['fields' => ['customerName' => 'required']]);
+            }
+        }
+        $settle = SaleMath::settle($total, $this->payments($raw)) ?? throw new ApiException('payment_insufficient', 422, ['total' => $total]);
+
+        if ($session['status'] !== 'open') {
+            $conflicts[] = ['kind' => 'session_closed', 'details' => ['sessionId' => $session['id']]];
+        }
+        $this->tdb->insert('sales', [
+            'id' => $id, 'number' => $number, 'invoice_number' => null, 'station' => $session['station'], 'session_id' => $session['id'], 'cashier_id' => $userId, 'status' => 'completed',
+            'gross_total' => array_sum(array_column($lines, 'gross')), 'discount_total' => array_sum(array_column($lines, 'discount')), 'total' => $total, 'vat_total' => array_sum(array_column($lines, 'vat')),
+            'customer_name' => $this->str($in['customerName'] ?? null, 120), 'prescription_ref' => $this->str($presc['ref'] ?? null, 60), 'prescriber' => $this->str($presc['prescriber'] ?? null, 120),
+            'patient_name' => $this->str($presc['patientName'] ?? null, 120), 'pharmacist_id' => $regulated ? $userId : null,
+            'discount_approved_by' => max(array_column($lines, 'discount_bp')) > $maxBp ? $userId : null, 'printed_count' => 1, 'created_at' => $at,
+        ]);
+        $this->seq->reserve('sale:' . $session['station'] . ':' . $m[1], (int) $m[2]);
+        foreach ($lines as $l) {
+            $this->tdb->insert('sale_lines', [
+                'id' => Ulid::generate(), 'sale_id' => $id, 'product_id' => $l['product_id'], 'name' => $l['name'], 'regulatory_status' => $l['status'], 'qty' => $l['qty'], 'unit_price' => $l['unit_price'],
+                'discount_bp' => $l['discount_bp'], 'vat_bp' => $l['vat_bp'], 'line_total' => $l['total'], 'vat_amount' => $l['vat'],
+            ]);
+            $missing = 0;
+            foreach ($this->stock->issue($l['product_id'], $l['qty'], 'sale', 'sale', $id, $userId, 'Vente ' . $number, true, $at) as $a) {
+                $missing += $a['lot_id'] === null ? $a['qty'] : 0;
+            }
+            if ($missing > 0) {
+                $conflicts[] = ['kind' => 'stock_shortage', 'details' => ['productId' => $l['product_id'], 'missing' => $missing]];
+            }
+        }
+        foreach ($settle['applied'] as $i => $p) {
+            $this->tdb->insert('payments', [
+                'id' => Ulid::generate(), 'sale_id' => $id, 'session_id' => $session['id'], 'method' => $p['method'], 'amount' => $p['amount'], 'tendered' => $p['tendered'],
+                'reference' => $this->str($raw[$i]['reference'] ?? null, 80), 'created_at' => $at,
+            ]);
+        }
+        return $conflicts;
+    }
+
     /** @return array<string, mixed> */
     public function get(string $id): array
     {

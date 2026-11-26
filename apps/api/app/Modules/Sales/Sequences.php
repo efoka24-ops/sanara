@@ -14,6 +14,19 @@ final class Sequences
     {
     }
 
+    public function reserve(string $scope, int $n): void
+    {
+        // Numéro déjà attribué par un poste hors-ligne : le compteur repart au moins après lui.
+        $this->db->transaction(function () use ($scope, $n): void {
+            $row = $this->tdb->select('document_sequences', ['scope' => $scope], null, 1)[0] ?? null;
+            if ($row === null) {
+                $this->tdb->insert('document_sequences', ['id' => Ulid::generate(), 'scope' => $scope, 'seq_value' => $n]);
+            } elseif ((int) $row['seq_value'] < $n) {
+                $this->tdb->update('document_sequences', ['seq_value' => $n], ['id' => $row['id']]);
+            }
+        });
+    }
+
     public function next(string $scope): int
     {
         return (int) $this->db->transaction(function () use ($scope): int {

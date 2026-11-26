@@ -125,9 +125,10 @@ final class StockService
     public function onHand(string $productId): array
     {
         $lots = $this->listLots($productId);
+        // Le stock est la somme de tous les mouvements, y compris les sorties sans lot (stock négatif).
         $total = 0;
-        foreach ($this->lotBalances($productId) as $qty) {
-            $total += $qty;
+        foreach ($this->tdb->select('stock_movements', ['product_id' => $productId]) as $m) {
+            $total += (int) $m['qty'];
         }
         return ['product_id' => $productId, 'on_hand' => $total, 'lots' => $lots];
     }
@@ -154,7 +155,7 @@ final class StockService
      *
      * @return list<array{lot_id: ?string, qty: int}>
      */
-    public function plan(string $productId, int $qty): array
+    public function plan(string $productId, int $qty, bool $allowShortage = false): array
     {
         if ($qty <= 0) {
             throw new ApiException('validation_failed', 422, ['fields' => ['quantity' => 'invalid']]);
@@ -172,7 +173,7 @@ final class StockService
             }
         }
         if ($left > 0) {
-            if (!$this->allowsNegative()) {
+            if (!$allowShortage && !$this->allowsNegative()) {
                 throw new ApiException('insufficient_stock', 409, ['product_id' => $productId, 'missing' => $left]);
             }
             $out[] = ['lot_id' => null, 'qty' => $left];
@@ -185,15 +186,15 @@ final class StockService
      *
      * @return list<array{lot_id: ?string, qty: int, movement_id: string}>
      */
-    public function issue(string $productId, int $qty, string $kind, string $refType, string $refId, string $userId, ?string $reason = null): array
+    public function issue(string $productId, int $qty, string $kind, string $refType, string $refId, string $userId, ?string $reason = null, bool $allowShortage = false, ?string $at = null): array
     {
         $this->mustProductExist($productId);
         $out = [];
-        foreach ($this->plan($productId, $qty) as $a) {
+        foreach ($this->plan($productId, $qty, $allowShortage) as $a) {
             $id = Ulid::generate();
             $this->tdb->insert('stock_movements', [
                 'id' => $id, 'product_id' => $productId, 'lot_id' => $a['lot_id'], 'qty' => -$a['qty'], 'kind' => $kind,
-                'ref_type' => $refType, 'ref_id' => $refId, 'reversal_of' => null, 'reason' => $reason, 'user_id' => $userId, 'created_at' => $this->clock->stamp(),
+                'ref_type' => $refType, 'ref_id' => $refId, 'reversal_of' => null, 'reason' => $reason, 'user_id' => $userId, 'created_at' => $at ?? $this->clock->stamp(),
             ]);
             $out[] = $a + ['movement_id' => $id];
         }
@@ -343,6 +344,12 @@ final class StockService
                 }
             } elseif ($r['status'] !== 'destroyed') {
                 $by[$id]['blocked'] += $qty;
+            }
+        }
+        $unassigned = $this->db->all('SELECT product_id, SUM(qty) AS qty FROM stock_movements WHERE tenant_id = ? AND lot_id IS NULL GROUP BY product_id', [$tid]);
+        foreach ($unassigned as $r) {
+            if (isset($by[(string) $r['product_id']])) {
+                $by[(string) $r['product_id']]['available'] += (int) $r['qty'];
             }
         }
         $out = array_values($by);

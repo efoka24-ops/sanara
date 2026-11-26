@@ -560,6 +560,12 @@ final class Routes
             })->add($perm('team.manage'));
         })->add(new AuthMiddleware($s->jwt, $s->tenant));
 
+        // --- Synchronisation des postes hors-ligne (US28) ---
+        $app->group('/sync', function (RouteCollectorProxy $g) use ($s, $json, $body, $rf) {
+            $perm = fn (string $p) => new RequirePermission($s->authz, $p, $rf, $s->audit);
+            $g->post('/push', fn (Request $q, Response $r) => $json($r, $s->sync->push($body($q), (string) $q->getAttribute('userId'))))->add($perm('sales.create'));
+        })->add(new AuthMiddleware($s->jwt, $s->tenant));
+
         // Document chiffré : accès uniquement par URL signée à durée courte.
         $app->get('/admin/documents/{id}', function (Request $req, Response $res, array $a) use ($s) {
             $q = $req->getQueryParams();

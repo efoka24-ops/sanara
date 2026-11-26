@@ -22,7 +22,7 @@ final class CashService
         return $s === '' ? 'CAISSE1' : substr($s, 0, 8);
     }
 
-    public function open(string $userId, string $station, int $float): string
+    public function open(string $userId, string $station, int $float, ?string $id = null, ?string $at = null): string
     {
         if ($float < 0) {
             throw new ApiException('validation_failed', 422, ['fields' => ['opening_float' => 'invalid']]);
@@ -30,9 +30,9 @@ final class CashService
         if ($this->current($userId) !== null) {
             throw new ApiException('cash_session_open', 409);
         }
-        $id = Ulid::generate();
+        $id ??= Ulid::generate();
         $this->tdb->insert('cash_sessions', [
-            'id' => $id, 'station' => self::station($station), 'opened_by' => $userId, 'opened_at' => $this->clock->stamp(), 'opening_float' => $float, 'status' => 'open',
+            'id' => $id, 'station' => self::station($station), 'opened_by' => $userId, 'opened_at' => $at ?? $this->clock->stamp(), 'opening_float' => $float, 'status' => 'open',
             'closed_by' => null, 'closed_at' => null, 'expected_cash' => null, 'counted_cash' => null, 'gap' => null, 'gap_reason' => null, 'z_number' => null,
         ]);
         return $id;
@@ -90,7 +90,7 @@ final class CashService
      * @param list<array{denomination: int, qty: int}> $counts
      * @return array<string, mixed> rapport Z
      */
-    public function close(string $sessionId, string $userId, array $counts, ?string $reason): array
+    public function close(string $sessionId, string $userId, array $counts, ?string $reason, ?string $at = null): array
     {
         $s = $this->session($sessionId);
         if ($s['status'] !== 'open') {
@@ -108,7 +108,8 @@ final class CashService
         if ($gap !== 0 && trim((string) $reason) === '') {
             throw new ApiException('validation_failed', 422, ['fields' => ['reason' => 'required'], 'gap' => $gap]);
         }
-        $this->db->transaction(function () use ($sessionId, $userId, $counts, $counted, $t, $gap, $reason, $s): void {
+        $closedAt = $at ?? $this->clock->stamp();
+        $this->db->transaction(function () use ($sessionId, $userId, $counts, $counted, $t, $gap, $reason, $s, $closedAt): void {
             foreach ($counts as $c) {
                 if ($c['qty'] > 0) {
                     $this->tdb->insert('cash_counts', ['id' => Ulid::generate(), 'session_id' => $sessionId, 'denomination' => $c['denomination'], 'qty' => $c['qty']]);
@@ -116,7 +117,7 @@ final class CashService
             }
             $n = $this->seq->next('z:' . $s['station'] . ':' . substr($this->clock->stamp(), 0, 4));
             $this->tdb->update('cash_sessions', [
-                'status' => 'closed', 'closed_by' => $userId, 'closed_at' => $this->clock->stamp(), 'expected_cash' => $t['expected_cash'], 'counted_cash' => $counted,
+                'status' => 'closed', 'closed_by' => $userId, 'closed_at' => $closedAt, 'expected_cash' => $t['expected_cash'], 'counted_cash' => $counted,
                 'gap' => $gap, 'gap_reason' => $reason !== null ? mb_substr(trim($reason), 0, 190) : null, 'z_number' => sprintf('Z-%s-%s-%04d', $s['station'], substr($this->clock->stamp(), 0, 4), $n),
             ], ['id' => $sessionId]);
         });

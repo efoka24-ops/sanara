@@ -61,6 +61,7 @@ final class Services
     public readonly \Sanara\Modules\Security\PinService $pin;
     public readonly PublicPharmacyService $publicPharmacies;
     public readonly CaptchaVerifier $captcha;
+    public readonly \Sanara\Modules\Sync\SyncService $sync;
 
     public function __construct(public readonly Db $db, public readonly Clock $clock, public readonly Config $config, ?EncryptedStorage $storage = null)
     {
@@ -116,6 +117,7 @@ final class Services
         $this->cash = new \Sanara\Modules\Sales\CashService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $seq);
         $this->sales = new \Sanara\Modules\Sales\SalesService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant);
         $this->returns = new \Sanara\Modules\Sales\ReturnsService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->sales, $this->cash, $seq, $this->authz, $this->pin, $this->tenant);
+        $this->sync = new \Sanara\Modules\Sync\SyncService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->sales, $this->cash, $this->authz, $this->audit, $this->tenant);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);
     }
 
