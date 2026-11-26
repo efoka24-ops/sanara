@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { ulid } from '../../packages/shared/src/ids';
 
 /** Parcours connectés sur la préproduction, avec la pharmacie de démonstration (données fictives). */
 const PW = process.env.STAGING_DEMO_PASSWORD;
@@ -225,4 +226,70 @@ test('le magasinier réceptionne et le titulaire valide un inventaire', async ({
     (await owner<{ on_hand: number }>('GET', `/app/stock/products/${p.id}/on-hand`)).on_hand,
   ).toBe(9);
   expect(inv.id).toBeTruthy();
+});
+
+test('un poste hors-ligne envoie sa journée puis télécharge le référentiel', async ({
+  request,
+}) => {
+  await closeOpenSession(request, 'cashier');
+  const owner = await api(request, 'owner');
+  const p = await owner<{ id: string }>('POST', '/app/products', {
+    name: `Hors-ligne ${run}`,
+    regulatory_status: 'free',
+    sale_price: 500,
+    purchase_price: 300,
+  });
+  await owner('POST', '/app/stock/receipts', {
+    product_id: p.id,
+    lot_number: `H-${run}`,
+    expiry: '2031-03-31',
+    quantity: 3,
+    unit_cost: 300,
+  });
+  const cashier = await api(request, 'cashier');
+  const userId = JSON.parse(
+    Buffer.from(tokens.get('cashier')!.split('.')[1]!, 'base64url').toString(),
+  ).sub as string;
+  const start = Date.now() - 3600_000;
+  const op = (n: number, type: string, payload: unknown) => ({
+    id: ulid(),
+    deviceId: 'poste-staging',
+    userId,
+    type,
+    schemaVersion: 1,
+    createdAt: new Date(start + n * 1000).toISOString(),
+    payload,
+  });
+  const sessionId = ulid();
+  const station = `S${run.slice(-6)}`.toUpperCase();
+  const operations = [
+    op(1, 'cash.open', { sessionId, station, openingFloat: 0 }),
+    op(2, 'sale.create', {
+      saleId: ulid(),
+      sessionId,
+      number: `V-${station}-${new Date().getUTCFullYear()}-00001`,
+      lines: [{ productId: p.id, qty: 5, unitPrice: 500, discountBp: 0, vatBp: 0 }],
+      payments: [{ method: 'cash', amount: 2500 }],
+    }),
+    op(3, 'cash.close', { sessionId, counts: [{ denomination: 500, qty: 5 }], reason: null }),
+  ];
+  type Push = { results: { status: string; code?: string; conflicts: { kind: string }[] }[] };
+  const body = { deviceId: 'poste-staging', sentAt: new Date().toISOString(), operations };
+  const first = await cashier<Push>('POST', '/sync/push', body);
+  expect(first.results.map((r) => r.code ?? r.status)).toEqual(['applied', 'applied', 'applied']);
+  expect(first.results[1]!.conflicts.map((c) => c.kind)).toEqual(['stock_shortage']);
+  const again = await cashier<Push>('POST', '/sync/push', body);
+  expect(again.results.map((r) => r.status)).toEqual(['duplicate', 'duplicate', 'duplicate']);
+  expect(
+    (await owner<{ on_hand: number }>('GET', `/app/stock/products/${p.id}/on-hand`)).on_hand,
+  ).toBe(-2);
+
+  const page = await cashier<{
+    settings: { saleCounters: Record<string, number> };
+    products: { id: string }[];
+    nextCursor: string | null;
+  }>('GET', '/sync/pull?limit=2');
+  expect(page.products).toHaveLength(2);
+  expect(page.nextCursor).toBe(page.products[1]!.id);
+  expect(page.settings.saleCounters[`${station}:${new Date().getUTCFullYear()}`]).toBe(1);
 });

@@ -81,3 +81,12 @@ test('le super admin passe par la double vérification', async ({ request }) => 
   const j = await r.json();
   expect(j.mfa_required === true || j.user?.mfa_setup_required === true).toBe(true);
 });
+
+test('les boutons de l’accueil mènent à la demande d’accès et à l’annuaire', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Trouver une pharmacie' }).click();
+  await expect(page.getByText(/Pharmacies trouvées : \d+/)).toBeVisible();
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Digitaliser ma pharmacie' }).click();
+  await expect(page.getByLabel(/Nom de l’officine/)).toBeVisible();
+});
