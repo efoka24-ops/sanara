@@ -60,7 +60,8 @@ final class TenantIsolationTest extends TestCase
                 str_contains($type, 'INT') || str_contains($type, 'DECIMAL') => 1,
                 str_contains($type, 'JSON') => '{}',
                 str_contains($type, 'DATETIME') => '2026-01-01 00:00:00.000',
-                default => 'v' . bin2hex(random_bytes(6)),
+                // Valeur factice à la taille de la colonne (les longueurs sont contrôlées par TestDb)
+                default => substr('v' . bin2hex(random_bytes(6)), 0, preg_match('/\((\d+)\)/', $type, $m) === 1 ? (int) $m[1] : 13),
             };
         }
         return $row;
