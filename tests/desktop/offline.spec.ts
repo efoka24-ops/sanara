@@ -39,8 +39,9 @@ function network(port: number) {
 
 async function launch(data: string, port: number) {
   const app = await _electron.launch({
-    executablePath: electron,
-    args: [path.join(desktop, 'dist', 'main.cjs')],
+    // SANARA_EXE : rejoue le test sur l'application empaquetée.
+    executablePath: process.env.SANARA_EXE ?? electron,
+    args: process.env.SANARA_EXE ? [] : [path.join(desktop, 'dist', 'main.cjs')],
     env: {
       ...(process.env as Record<string, string>),
       SANARA_DATA: data,

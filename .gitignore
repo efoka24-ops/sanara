@@ -33,3 +33,5 @@ playwright-report/
 
 # Binaire SQLite téléchargé pour Electron
 .native/
+# Ressources de l’installateur (versionnées)
+!apps/desktop/build/

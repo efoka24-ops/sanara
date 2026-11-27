@@ -1,0 +1,40 @@
+# Installateur Windows (T127, maquette D2). L'application est assemblée dans dist/ par
+# scripts/build.mjs : aucune dépendance à installer ni module à recompiler.
+appId: cm.sanara.poste
+productName: Sanara
+copyright: Sanara
+electronVersion: 37.10.3
+electronDist: node_modules/electron/dist
+npmRebuild: false
+nodeGypRebuild: false
+directories:
+  app: dist
+  output: release
+  buildResources: build
+files:
+  - '**/*'
+  # Tout est déjà réuni dans main.cjs.
+  - '!**/node_modules/**'
+asarUnpack:
+  - native/**
+win:
+  target: nsis
+  icon: build/icon.ico
+nsis:
+  artifactName: Sanara-Setup-${version}.exe
+  oneClick: false
+  # Installation dans le profil de l'utilisateur : aucun droit d'administrateur.
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Sanara
+  installerSidebar: build/installerSidebar.bmp
+  uninstallerSidebar: build/installerSidebar.bmp
+  installerLanguages:
+    - fr_FR
+    - en_US
+  include: build/installer.nsh
+  # Les ventes pas encore envoyées restent sur le poste après une désinstallation.
+  deleteAppDataOnUninstall: false

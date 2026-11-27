@@ -63,6 +63,7 @@ fs.cpSync(path.join(root, 'src', 'local-db', 'migrations'), path.join(dist, 'mig
   recursive: true,
 });
 fs.copyFileSync(nativeBinding(), path.join(dist, 'native', 'better_sqlite3.node'));
+fs.copyFileSync(path.join(root, 'build', 'icon.png'), path.join(dist, 'icon.png'));
 
 const common = {
   bundle: true,

@@ -59,6 +59,7 @@ function createWindow(): BrowserWindow {
     width: 1280,
     height: 800,
     show: false,
+    icon: path.join(__dirname, 'icon.png'),
     minWidth: 1024,
     minHeight: 680,
     autoHideMenuBar: true,

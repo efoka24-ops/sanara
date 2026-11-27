@@ -8,12 +8,14 @@
     "dev": "node scripts/build.mjs && electron dist/main.cjs",
     "build": "tsc --noEmit",
     "bundle": "node scripts/build.mjs",
+    "dist": "node scripts/build.mjs && electron-builder --win --publish never",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "electron": "^37.5.0",
+    "electron-builder": "^26.18.0",
     "esbuild": "^0.25.12",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
