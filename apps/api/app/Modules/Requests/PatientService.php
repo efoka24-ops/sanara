@@ -75,6 +75,7 @@ final class PatientService
             throw new ApiException('validation_failed', 422, ['fields' => $errors]);
         }
         $files = $this->files($in['documents'] ?? null, self::MAX_PAGES);
+        $this->checkDailyQuota($phone);
 
         $advice = Guardrails::severe($message) ? 'emergency' : null;
         $phoneKey = substr((string) preg_replace('/\D/', '', $phone), -9);
@@ -332,6 +333,18 @@ final class PatientService
                 'id' => Ulid::generate(), 'request_id' => $requestId, 'storage_id' => $s['id'], 'original_name' => $s['name'],
                 'mime' => $s['mime'], 'size_bytes' => $s['size'], 'sha256' => $s['sha256'], 'created_at' => $this->clock->stamp(),
             ]);
+        }
+    }
+
+    /** T312 : demandes d'un même numéro sur 24 h, dans toutes les pharmacies (5 par défaut). */
+    private function checkDailyQuota(string $phone): void
+    {
+        $key = substr((string) preg_replace('/\D/', '', $phone), -9);
+        $quota = $this->ledger->dailyQuota();
+        $since = $this->clock->stamp($this->clock->now()->modify('-24 hours'));
+        $sent = (int) ($this->db->one('SELECT COUNT(*) AS n FROM patient_requests WHERE phone_key = ? AND created_at >= ?', [$key, $since])['n'] ?? 0);
+        if ($quota > 0 && $sent >= $quota) {
+            throw new ApiException('too_many_requests', 429, ['quota' => $quota]);
         }
     }
 

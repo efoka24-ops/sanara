@@ -13,7 +13,7 @@ use Sanara\Common\Ulid;
  */
 final class PublicPharmacyProjection
 {
-    public function __construct(private readonly Db $db, private readonly Clock $clock)
+    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly ?\Sanara\Modules\Admin\SubscriptionPolicy $subscriptions = null)
     {
     }
 
@@ -32,7 +32,9 @@ final class PublicPharmacyProjection
             $a = $point = $profile;
         }
         $duties = $this->db->all('SELECT starts_at, ends_at FROM duty_periods WHERE tenant_id = ? AND ends_at > ? ORDER BY starts_at', [$tenantId, $this->clock->stamp()]);
-        $visible = (int) $t['public_visible'] === 1 && $t['status'] === 'active' && $t['deleted_at'] === null ? 1 : 0;
+        // Une pharmacie en lecture seule (abonnement échu) ne reçoit plus de patients.
+        $paid = $this->subscriptions === null || !$this->subscriptions->readOnly($tenantId);
+        $visible = (int) $t['public_visible'] === 1 && $t['status'] === 'active' && $t['deleted_at'] === null && $paid ? 1 : 0;
         $row = [
             'pharmacy_name' => $t['name'], 'region' => $a['region'] ?? '', 'city' => $a['city'] ?? '', 'district' => $a['district'] ?? null,
             'address' => $t['address'], 'phone' => $t['phone'], 'visible' => $visible, 'updated_at' => $this->clock->stamp(),

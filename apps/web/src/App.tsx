@@ -21,12 +21,17 @@ export function Home() {
   const [department, setDepartment] = useState('');
   const [locating, setLocating] = useState(false);
   const [health, setHealth] = useState<Health | 'error' | null>(null);
+  const [maintenance, setMaintenance] = useState(false);
 
   useEffect(() => {
     fetch('/api/health')
       .then((r) => r.json())
       .then(setHealth)
       .catch(() => setHealth('error'));
+    fetch('/api/public/status')
+      .then((r) => r.json())
+      .then((r: { maintenance?: boolean }) => setMaintenance(r.maintenance === true))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -61,6 +66,11 @@ export function Home() {
 
   return (
     <div className="landing">
+      {maintenance && (
+        <p role="alert" className="notice landing__maintenance">
+          {t('err.maintenance')}
+        </p>
+      )}
       <section className="landing__hero">
         <div>
           <p className="eyebrow">{t('home.eyebrow')}</p>

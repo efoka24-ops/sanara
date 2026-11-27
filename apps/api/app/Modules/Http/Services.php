@@ -35,6 +35,8 @@ final class Services
     public readonly Authorizer $authz;
     public readonly RateLimiter $limiter;
     public readonly JobQueue $jobs;
+    public readonly \Sanara\Common\PlatformSettings $platform;
+    public readonly \Sanara\Modules\Admin\SubscriptionPolicy $subscriptions;
     public readonly EncryptedStorage $storage;
     public readonly ApplicationService $applications;
     public readonly ReviewService $review;
@@ -80,10 +82,12 @@ final class Services
         $this->authz = new Authorizer($db);
         $this->limiter = new RateLimiter($db, $clock);
         $this->jobs = new JobQueue($db, $clock);
+        $this->platform = new \Sanara\Common\PlatformSettings($db);
+        $this->subscriptions = new \Sanara\Modules\Admin\SubscriptionPolicy($db, $clock, $this->jobs);
         $key = base64_decode($config->storageKey, true);
         $box = new \Sanara\Common\Crypto\SecretBox($key !== false && strlen($key) === 32 ? $key : sodium_crypto_generichash('sanara-mfa|' . $config->jwtSecret));
         $this->mfa = new \Sanara\Modules\Security\MfaService($db, $clock, $box, 'Sanara');
-        $this->auth = new AuthService($users, $hasher, $this->jwt, new RefreshTokenService($db, $clock), $clock, $this->mfa, $config->enforceAdminMfa, function (array $u) use ($db): void {
+        $this->auth = new AuthService($users, $hasher, $this->jwt, new RefreshTokenService($db, $clock), $clock, $this->mfa, fn (): bool => $config->enforceAdminMfa && $this->platform->on('admin_mfa'), function (array $u) use ($db): void {
             // Prévient le titulaire de la pharmacie (ou l'intéressé s'il n'y en a pas) qu'un compte vient d'être verrouillé.
             $to = $u['tenant_id'] !== null
                 ? array_column($db->all("SELECT email FROM users WHERE tenant_id = ? AND role_code = 'owner' AND status = 'active'", [$u['tenant_id']]), 'email')
@@ -104,8 +108,8 @@ final class Services
         );
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
         $this->publicPharmacies = new PublicPharmacyService($db, $clock, $this->storage);
-        $this->publicProjection = new \Sanara\Modules\Applications\PublicPharmacyProjection($db, $clock);
-        $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
+        $this->publicProjection = new \Sanara\Modules\Applications\PublicPharmacyProjection($db, $clock, $this->subscriptions);
+        $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl, $this->platform, $this->subscriptions);
         $this->activation = new ActivationService($db, $clock, $hasher);
         $mailer = match (true) {
             $config->mailDir !== '' && $config->env !== 'production' => new \Sanara\Modules\Notifications\Email\FileMailer($config->mailDir),
@@ -114,8 +118,8 @@ final class Services
         };
         $this->templates = new EmailTemplates($db);
         $this->mail = new MailJobHandler($this->jobs, $mailer, $this->templates);
-        $this->admin = new \Sanara\Modules\Admin\AdminService($db, $clock, $this->templates);
-        $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl);
+        $this->admin = new \Sanara\Modules\Admin\AdminService($db, $clock, $this->templates, $this->subscriptions);
+        $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl, $this->platform);
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
         $tdb = new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant, new \Sanara\Common\Tenancy\ChangeLog($db, $clock));
         $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, $tdb, $this->tenant, $clock);
@@ -128,7 +132,7 @@ final class Services
         $seq = new \Sanara\Modules\Sales\Sequences($db, $tdb);
         $this->cash = new \Sanara\Modules\Sales\CashService($db, $tdb, $clock, $seq);
         $this->customers = new \Sanara\Modules\Customers\CustomerService($db, $tdb, $clock, $this->cash, $seq, $this->tenant);
-        $ledger = new \Sanara\Modules\Requests\RequestLedger($db, $tdb, $clock);
+        $ledger = new \Sanara\Modules\Requests\RequestLedger($db, $tdb, $clock, $this->platform);
         $this->sales = new \Sanara\Modules\Sales\SalesService($db, $tdb, $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers, $ledger);
         // Sans fournisseur configuré, les SMS sont seulement journalisés (aucune clé dans le dépôt).
         $this->sms = $sms ?? ($config->smsUrl !== '' && $config->smsKey !== ''
@@ -147,7 +151,9 @@ final class Services
     /** Contrôles quotidiens (péremptions, ruptures) de chaque pharmacie active ; sans effet répété grâce aux clés de dédoublonnage. */
     public function runDaily(): int
     {
-        $n = 0;
+        // Abonnements : relances, et retrait du site public des pharmacies passées en lecture seule.
+        $n = $this->subscriptions->remind();
+        $this->publicProjection->refreshAll();
         foreach ($this->db->all("SELECT id FROM tenants WHERE status = 'active'") as $t) {
             $this->tenant->set((string) $t['id']);
             try {

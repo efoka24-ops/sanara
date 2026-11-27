@@ -18,7 +18,7 @@ final class ReviewService
     private readonly AuditLogger $audit;
     private readonly UserRepository $users;
 
-    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly JobQueue $jobs, private readonly string $appUrl)
+    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly JobQueue $jobs, private readonly string $appUrl, private readonly ?\Sanara\Common\PlatformSettings $platform = null, private readonly ?\Sanara\Modules\Admin\SubscriptionPolicy $subscriptions = null)
     {
         $this->audit = new AuditLogger($db, $clock);
         $this->users = new UserRepository($db, $clock);
@@ -27,7 +27,7 @@ final class ReviewService
     /** @return array{tenant_id: string, user_id: string, activation_token: string} */
     public function approve(string $applicationId, string $adminId, string $planCode, int $posCount): array
     {
-        $out = $this->db->transaction(function () use ($applicationId, $adminId, $planCode): array {
+        $out = $this->db->transaction(function () use ($applicationId, $adminId, $planCode, $posCount): array {
             $now = $this->clock->stamp();
             $won = $this->db->execute(
                 "UPDATE pharmacy_applications SET status = 'approved', plan_code = ?, reviewed_by = ?, reviewed_at = ?, updated_at = ? WHERE id = ? AND status = 'pending'",
@@ -44,6 +44,8 @@ final class ReviewService
                 'phone' => $a['pharmacy_phone'], 'email' => $a['pharmacy_email'], 'license_number' => $a['license_number'],
                 'public_visible' => 0, 'currency' => 'XAF', 'autonomy_level' => 1, 'created_at' => $now, 'updated_at' => $now,
             ]);
+            // T252 : essai de 30 jours sur la formule choisie.
+            $this->subscriptions?->startTrial($tenantId, $planCode, $posCount);
             $userId = $this->users->create([
                 'tenant_id' => $tenantId, 'role_code' => 'owner', 'email' => $a['owner_email'], 'phone' => $a['owner_phone'],
                 'status' => 'pending_activation', 'locale' => $a['locale'], 'password_hash' => '!' . bin2hex(random_bytes(16)), // inutilisable avant activation
@@ -51,7 +53,7 @@ final class ReviewService
             $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
             $this->db->insert('activation_tokens', [
                 'id' => Ulid::generate(), 'user_id' => $userId, 'token_hash' => hash('sha256', $token),
-                'expires_at' => $this->clock->stamp($this->clock->now()->modify('+' . self::ACTIVATION_HOURS . ' hours')), 'created_at' => $now,
+                'expires_at' => $this->clock->stamp($this->clock->now()->modify('+' . $this->linkHours() . ' hours')), 'created_at' => $now,
             ]);
             $this->db->execute('UPDATE pharmacy_applications SET tenant_id = ? WHERE id = ?', [$tenantId, $applicationId]);
             $this->audit->record('application.approve', ['user_id' => $adminId, 'tenant_id' => $tenantId, 'entity' => 'application', 'entity_id' => $applicationId, 'after' => ['plan' => $planCode]]);
@@ -59,7 +61,7 @@ final class ReviewService
                 'template' => 'access_granted', 'to' => $a['owner_email'], 'locale' => $a['locale'],
                 'vars' => [
                     'responsable' => trim($a['owner_first_name'] . ' ' . $a['owner_last_name']), 'pharmacie' => $a['pharmacy_name'],
-                    'duree_lien' => $a['locale'] === 'en' ? self::ACTIVATION_HOURS . ' hours' : self::ACTIVATION_HOURS . ' heures',
+                    'duree_lien' => $a['locale'] === 'en' ? $this->linkHours() . ' hours' : $this->linkHours() . ' heures',
                     'lien_activation' => rtrim($this->appUrl, '/') . '/activer/' . $token,
                 ],
             ]);
@@ -115,5 +117,11 @@ final class ReviewService
             $slug = $base . '-' . $i;
         }
         return $slug;
+    }
+
+    /** Durée des liens d'activation, réglée dans la console (48 h par défaut). */
+    public function linkHours(): int
+    {
+        return max(1, $this->platform?->int('link_validity_hours') ?? self::ACTIVATION_HOURS);
     }
 }

@@ -982,5 +982,11 @@
   "dl.install4": "Updates then arrive on their own.",
   "dl.unsigned": "Windows may show “Windows protected your PC”: click “More info” then “Run anyway”. The app is not signed yet.",
   "dl.noAccountTitle": "No account yet?",
-  "dl.noAccount": "Request access for your pharmacy: our team checks your application."
+  "dl.noAccount": "Request access for your pharmacy: our team checks your application.",
+  "err.maintenance": "Sanara is under maintenance. Try again in a few minutes.",
+  "sub.trialEnds": "Your free trial ends on {date} ({n} days). Contact the Sanara team to choose your plan.",
+  "sub.periodEnds": "Your subscription ends on {date} ({n} days): remember to pay the invoice.",
+  "sub.grace": "Your subscription ended on {date}. Sanara stays open a few days: pay the invoice to avoid read-only mode.",
+  "sub.expired": "Subscription expired since {date}: Sanara is read-only. You can view and export your data; pay the invoice to resume.",
+  "err.subscription_expired": "Subscription expired: Sanara is read-only. Pay the invoice to resume."
 }

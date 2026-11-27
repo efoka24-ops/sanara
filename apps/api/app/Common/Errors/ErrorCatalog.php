@@ -27,6 +27,8 @@ final class ErrorCatalog
         'pickup_mismatch' => ['La vente ne correspond pas au devis accepté.', 'The sale does not match the accepted quote.'],
         'https_required' => ['Envoi refusé : la connexion n’est pas sécurisée.', 'Upload refused: the connection is not secure.'],
         'reading_quota_reached' => ['Quota de lectures automatiques du mois atteint : saisissez les lignes à la main.', 'Monthly automatic reading quota reached: enter the lines by hand.'],
+        'subscription_expired' => ['Abonnement échu : Sanara est en lecture seule. Réglez la facture pour reprendre.', 'Subscription expired: Sanara is read-only. Pay the invoice to resume.'],
+        'maintenance' => ['Sanara est en maintenance. Réessayez dans quelques minutes.', 'Sanara is under maintenance. Try again in a few minutes.'],
         'too_many_requests' => ['Trop de tentatives, réessayez plus tard.', 'Too many attempts, try again later.'],
         'invalid_credentials' => ['Identifiants incorrects.', 'Invalid credentials.'],
         'account_locked' => ['Compte verrouillé temporairement.', 'Account temporarily locked.'],

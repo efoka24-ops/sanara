@@ -12,12 +12,23 @@ use Sanara\Common\Ulid;
 /** Règles communes aux demandes patients : historique, échéances, stock réservé et retrait en caisse. */
 final class RequestLedger
 {
+    public function dailyQuota(): int
+    {
+        return $this->platform?->int('request_quota_per_day') ?? 5;
+    }
+
     /** Durée de validité d'un devis. */
     public const QUOTE_HOURS = 24;
     private const PICKUP_HOURS = 24;
 
-    public function __construct(private readonly Db $db, private readonly TenantDb $tdb, private readonly Clock $clock)
+    public function __construct(private readonly Db $db, private readonly TenantDb $tdb, private readonly Clock $clock, private readonly ?\Sanara\Common\PlatformSettings $platform = null)
     {
+    }
+
+    /** Durée de validité d'un devis (stock réservé), réglée dans la console. */
+    public function quoteHours(): int
+    {
+        return max(1, $this->platform?->int('reservation_release_hours') ?? self::QUOTE_HOURS);
     }
 
     public function event(string $requestId, string $kind, ?string $actor = null, ?string $note = null): void

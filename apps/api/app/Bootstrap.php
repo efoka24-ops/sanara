@@ -41,6 +41,8 @@ final class Bootstrap
             $app->setBasePath($scriptDir);
         }
 
+        // Ajouté avant le parseur : s'exécute après lui, le corps est déjà lu.
+        $app->add(new \Sanara\Common\MaintenanceMiddleware($services->platform, $services->db, $app->getResponseFactory()));
         $app->addBodyParsingMiddleware();
         // Ajouté après le parseur : s'exécute avant lui et rejette les corps invalides en 400.
         $app->add(new BodyGuardMiddleware($app->getResponseFactory()));

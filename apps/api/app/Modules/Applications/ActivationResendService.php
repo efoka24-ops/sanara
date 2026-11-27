@@ -10,7 +10,7 @@ use Sanara\Common\Persistence\Db;
 /** T054 : nouveau lien d'activation. Ne révèle jamais si un compte existe ; un nouveau lien invalide les précédents. */
 final class ActivationResendService
 {
-    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly ActivationService $activation, private readonly JobQueue $jobs, private readonly string $appUrl)
+    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly ActivationService $activation, private readonly JobQueue $jobs, private readonly string $appUrl, private readonly ?\Sanara\Common\PlatformSettings $platform = null)
     {
     }
 
@@ -21,10 +21,11 @@ final class ActivationResendService
             return;
         }
         $this->db->execute('UPDATE activation_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [$this->clock->stamp(), $u['id']]);
-        $token = $this->activation->issueToken((string) $u['id'], ReviewService::ACTIVATION_HOURS);
+        $token = $hours = max(1, $this->platform?->int('link_validity_hours') ?? ReviewService::ACTIVATION_HOURS);
+        $token = $this->activation->issueToken((string) $u['id'], $hours);
         $this->jobs->push('mail', [
             'template' => 'activation_resend', 'to' => $u['email'], 'locale' => $u['locale'] === 'en' ? 'en' : 'fr',
-            'vars' => ['duree_lien' => ReviewService::ACTIVATION_HOURS . ($u['locale'] === 'en' ? ' hours' : ' heures'), 'lien_activation' => rtrim($this->appUrl, '/') . '/activer/' . $token],
+            'vars' => ['duree_lien' => $hours . ($u['locale'] === 'en' ? ' hours' : ' heures'), 'lien_activation' => rtrim($this->appUrl, '/') . '/activer/' . $token],
         ]);
     }
 }

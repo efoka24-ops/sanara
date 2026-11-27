@@ -171,6 +171,7 @@ final class Routes
             // Une photo ne change jamais sous le même identifiant.
             return $res->withHeader('Content-Type', $p['mime'])->withHeader('X-Content-Type-Options', 'nosniff')->withHeader('Cache-Control', 'public, max-age=604800, immutable');
         });
+        $app->get('/public/status', fn (Request $req, Response $res) => $json($res, ['maintenance' => $s->platform->on('maintenance'), 'desktop_version' => $s->platform->get('desktop_version')]));
         $app->get('/public/insurances', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->insurances()]));
         $app->get('/public/geo', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->places()]));
 
@@ -324,6 +325,9 @@ final class Routes
             })->add($perm('platform.manage'));
             $g->post('/invoices/{id}/paid', function (Request $q, Response $r, array $a) use ($s, $body, $audit) {
                 $s->admin->markPaid($a['id'], (string) ($body($q)['method'] ?? ''), (string) ($body($q)['reference'] ?? ''));
+                // La pharmacie revient aussitôt sur le site public si elle était en lecture seule.
+                $paid = $s->db->one('SELECT pharmacy_id FROM platform_invoices WHERE id = ?', [$a['id']]);
+                $s->publicProjection->refresh((string) ($paid['pharmacy_id'] ?? ''));
                 $audit($q, 'invoice.paid', ['invoice_id' => $a['id']]);
                 return $r->withStatus(204);
             })->add($perm('platform.manage'));
@@ -380,6 +384,7 @@ final class Routes
             $tenantId = static fn (Request $r): string => (string) ($r->getAttribute('tenantId') ?? throw new ApiException('forbidden', 403));
             $actor = static fn (Request $r): string => (string) $r->getAttribute('userId');
 
+            $g->get('/subscription', fn (Request $q, Response $r) => $json($r, $s->subscriptions->state($tenantId($q))));
             $g->get('/settings', fn (Request $q, Response $r) => $json($r, ['settings' => $s->setup->settings(), 'opening_hours' => $s->setup->openingHours()]))->add($perm('settings.write'));
             $g->put('/settings', function (Request $q, Response $r) use ($s, $body) {
                 $s->setup->setSettings((array) ($body($q)['settings'] ?? []));
@@ -690,7 +695,7 @@ final class Routes
                 $s->team->setOverride($tenantId($q), $actor($q), $a['id'], $a['code'], !empty($body($q)['granted']));
                 return $r->withStatus(204);
             })->add($perm('team.manage'));
-        })->add(new AuthMiddleware($s->jwt, $s->tenant));
+        })->add(new \Sanara\Modules\Admin\ReadOnlyGuard($s->subscriptions))->add(new AuthMiddleware($s->jwt, $s->tenant));
 
         // --- Synchronisation des postes hors-ligne (US28) ---
         $app->group('/sync', function (RouteCollectorProxy $g) use ($s, $json, $body, $rf) {

@@ -55,6 +55,18 @@ final class EmailTemplates
             'en' => ['subject' => 'New request {{numero}}',
                 'body' => "Hello,\n\nA new prescription is waiting for {{pharmacie}}: request {{numero}}. No pharmacist is connected right now. Open Sanara to handle it."],
         ],
+        'subscription_reminder' => [
+            'fr' => ['subject' => 'Votre abonnement Sanara se termine le {{date}}',
+                'body' => "Bonjour,\n\nL'abonnement de {{pharmacie}} se termine le {{date}}. Pour continuer sans interruption, réglez la facture ou contactez l'équipe Sanara."],
+            'en' => ['subject' => 'Your Sanara subscription ends on {{date}}',
+                'body' => "Hello,\n\nThe subscription of {{pharmacie}} ends on {{date}}. To continue without interruption, pay the invoice or contact the Sanara team."],
+        ],
+        'subscription_expired' => [
+            'fr' => ['subject' => 'Sanara est passé en lecture seule',
+                'body' => "Bonjour,\n\nL'abonnement de {{pharmacie}} a pris fin le {{date}}. Vos données restent consultables et exportables, mais plus rien ne peut être modifié. Réglez la facture pour reprendre."],
+            'en' => ['subject' => 'Sanara is now read-only',
+                'body' => "Hello,\n\nThe subscription of {{pharmacie}} ended on {{date}}. Your data can still be viewed and exported, but nothing can be changed. Pay the invoice to resume."],
+        ],
         'account_locked' => [
             'fr' => ['subject' => 'Compte Sanara verrouillé temporairement',
                 'body' => "Bonjour,\n\nLe compte {{compte}} a été verrouillé 15 minutes après plusieurs échecs de connexion. S'il ne s'agit pas de vous ou d'un membre de l'équipe, changez le mot de passe."],

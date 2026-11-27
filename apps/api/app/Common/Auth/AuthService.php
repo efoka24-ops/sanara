@@ -22,7 +22,8 @@ final class AuthService
         private readonly RefreshTokenService $refresh,
         private readonly Clock $clock,
         private readonly ?MfaService $mfa = null,
-        private readonly bool $enforceAdminMfa = false,
+        /** @var bool|\Closure(): bool */
+        private readonly bool|\Closure $enforceAdminMfa = false,
         private $onLocked = null,
     ) {
     }
@@ -49,7 +50,7 @@ final class AuthService
             return ['mfa_required' => true, 'mfa_token' => $this->jwt->issueMfa((string) $user['id'], $deviceId, $label)];
         }
         $this->users->resetFailures((string) $user['id']);
-        $setupOnly = $this->enforceAdminMfa && $user['role_code'] === 'super_admin';
+        $setupOnly = $this->adminMfa() && $user['role_code'] === 'super_admin';
         return $this->tokens($user, $deviceId, $label, $setupOnly);
     }
 
@@ -79,7 +80,7 @@ final class AuthService
             $this->refresh->revokeToken($new['token']);
             throw new AuthException('invalid_refresh_token');
         }
-        $setupOnly = $this->enforceAdminMfa && $user['role_code'] === 'super_admin' && (int) ($user['totp_enabled'] ?? 0) !== 1;
+        $setupOnly = $this->adminMfa() && $user['role_code'] === 'super_admin' && (int) ($user['totp_enabled'] ?? 0) !== 1;
         return ['access' => $this->jwt->issue($user, $setupOnly ? ['scope' => 'setup'] : []), 'refresh' => $new['token']];
     }
 
@@ -113,5 +114,10 @@ final class AuthService
             'refresh' => $this->refresh->issue((string) $user['id'], $deviceId, null, $label)['token'],
             'user' => ['id' => $user['id'], 'tenant_id' => $user['tenant_id'], 'role' => $user['role_code'], 'email' => $user['email'], 'mfa_setup_required' => $setupOnly && !$mfaOn],
         ];
+    }
+
+    private function adminMfa(): bool
+    {
+        return $this->enforceAdminMfa instanceof \Closure ? ($this->enforceAdminMfa)() : $this->enforceAdminMfa;
     }
 }

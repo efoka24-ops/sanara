@@ -215,7 +215,7 @@ final class ProcessingService
             }
             $this->tdb->insert('quotes', [
                 'id' => $quoteId, 'request_id' => $id, 'total' => $total, 'created_by' => $userId, 'created_at' => $this->clock->stamp(),
-                'valid_until' => $this->clock->stamp($this->clock->now()->modify('+' . RequestLedger::QUOTE_HOURS . ' hours')),
+                'valid_until' => $this->clock->stamp($this->clock->now()->modify('+' . $this->ledger->quoteHours() . ' hours')),
             ]);
             $this->ledger->move($id, ['status' => 'quoted', 'locked_by' => null, 'locked_at' => null]);
             $this->ledger->event($id, 'quoted', $userId);

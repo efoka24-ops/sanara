@@ -681,6 +681,11 @@ textarea.sa-field__input {
     display: none;
   }
 }
+.landing__maintenance {
+  margin: 0;
+  border-radius: 0;
+  text-align: center;
+}
 .landing__hero {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
@@ -1377,6 +1382,9 @@ img.rx-doc {
   }
 }
 
+.subscription {
+  margin: 0 0 16px;
+}
 /* Disponibilité du pharmacien */
 .presence {
   display: flex;

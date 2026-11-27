@@ -12,17 +12,10 @@ use Sanara\Modules\Notifications\Email\EmailTemplates;
 /** Console super admin (US32, US33, US34) : pharmacies, formules, facturation, signalements, modèles, audit, pays, paramètres. */
 final class AdminService
 {
-    public const SETTING_DEFAULTS = [
-        'link_validity_hours' => '48',
-        'admin_mfa' => '1',
-        'request_quota_per_day' => '5',
-        'reservation_release_hours' => '24',
-        'maintenance' => '0',
-        'desktop_version' => '1.0.0',
-    ];
+    public const SETTING_DEFAULTS = \Sanara\Common\PlatformSettings::DEFAULTS;
     private const REPORT_KINDS = ['false_urgency', 'abuse', 'content', 'other'];
 
-    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly EmailTemplates $templates)
+    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly EmailTemplates $templates, private readonly ?SubscriptionPolicy $subscriptions = null)
     {
     }
 
@@ -223,6 +216,9 @@ final class AdminService
             throw new ApiException('validation_failed', 422, ['fields' => ['reference' => 'required']]);
         }
         $this->db->execute("UPDATE platform_invoices SET status = 'paid', paid_at = ?, method = ?, reference = ? WHERE id = ?", [$this->clock->stamp(), $method, mb_substr(trim($reference), 0, 80), $id]);
+        // T254 : un paiement prolonge l'abonnement d'un mois.
+        $invoice = $this->db->one('SELECT pharmacy_id FROM platform_invoices WHERE id = ?', [$id]);
+        $this->subscriptions?->extend((string) $invoice['pharmacy_id']);
     }
 
     public function voidInvoice(string $id): void
