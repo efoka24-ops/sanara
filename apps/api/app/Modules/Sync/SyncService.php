@@ -186,6 +186,37 @@ final class SyncService
         }
     }
 
+    /**
+     * T138 : écarts signalés par les envois et pas encore traités.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function openConflicts(): array
+    {
+        $names = [];
+        $items = [];
+        foreach ($this->tdb->select('sync_conflicts', ['resolved_at' => null], 'created_at', 200) as $c) {
+            $details = (array) json_decode((string) $c['details'], true);
+            $product = (string) ($details['productId'] ?? '');
+            if ($product !== '' && !array_key_exists($product, $names)) {
+                $names[$product] = $this->tdb->select('products', ['id' => $product], null, 1)[0]['name'] ?? null;
+            }
+            $items[] = ['id' => $c['id'], 'kind' => $c['kind'], 'details' => (object) $details, 'product_name' => $names[$product] ?? null, 'created_at' => $c['created_at']];
+        }
+        return $items;
+    }
+
+    /** L'écart est marqué vérifié ; la correction du stock reste un mouvement distinct et tracé. */
+    public function resolveConflict(string $id, string $userId): void
+    {
+        $c = $this->tdb->select('sync_conflicts', ['id' => $id], null, 1)[0] ?? throw new ApiException('not_found', 404);
+        if ($c['resolved_at'] !== null) {
+            return;
+        }
+        $this->tdb->update('sync_conflicts', ['resolved_at' => $this->clock->stamp(), 'resolved_by' => $userId], ['id' => $id]);
+        $this->audit->record('sync.conflict.resolve', ['user_id' => $userId, 'tenant_id' => $this->ctx->require(), 'entity' => 'sync_conflict', 'entity_id' => $id]);
+    }
+
     /** @param array<string, mixed> $p @return list<array{kind: string, details: array<string, mixed>}> */
     private function apply(string $type, array $p, string $userId, string $at): array
     {

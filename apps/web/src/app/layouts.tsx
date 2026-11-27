@@ -11,6 +11,7 @@ const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
   { to: '/app/ventes', key: 'nav.sales', permission: 'sales.create' },
   { to: '/app/produits', key: 'nav.products', permission: 'products.read' },
   { to: '/app/stock', key: 'nav.stock', permission: 'stock.read' },
+  { to: '/app/synchronisation', key: 'nav.sync', permission: 'stock.read' },
   { to: '/app/equipe', key: 'nav.team', permission: 'team.manage' },
   { to: '/securite', key: 'nav.security' },
 ];

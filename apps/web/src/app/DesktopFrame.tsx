@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Logo } from '@sanara/ui';
 import { useDesktop, type DesktopState } from './desktop';
@@ -61,7 +62,9 @@ function StatusBar({ status }: { status: DesktopState }) {
           </span>
         )}
         {status.conflicts > 0 && (
-          <span className="statusbar__alert">{t('desk.conflicts', { n: status.conflicts })}</span>
+          <Link className="statusbar__alert" to="/app/synchronisation">
+            {t('desk.conflicts', { n: status.conflicts })}
+          </Link>
         )}
         {status.clockSkewSeconds !== null && Math.abs(status.clockSkewSeconds) > 300 && (
           <span className="statusbar__alert">{t('desk.clock')}</span>

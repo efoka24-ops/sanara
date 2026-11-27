@@ -563,6 +563,11 @@ final class Routes
         $app->group('/sync', function (RouteCollectorProxy $g) use ($s, $json, $body, $rf) {
             $perm = fn (string $p) => new RequirePermission($s->authz, $p, $rf, $s->audit);
             $g->post('/push', fn (Request $q, Response $r) => $json($r, $s->sync->push($body($q), (string) $q->getAttribute('userId'))))->add($perm('sales.create'));
+            $g->get('/conflicts', fn (Request $q, Response $r) => $json($r, ['items' => $s->sync->openConflicts()]))->add($perm('stock.read'));
+            $g->post('/conflicts/{id}/resolve', function (Request $q, Response $r, array $a) use ($s) {
+                $s->sync->resolveConflict($a['id'], (string) $q->getAttribute('userId'));
+                return $r->withStatus(204);
+            })->add($perm('stock.write'));
             $g->post('/device', function (Request $q, Response $r) use ($s, $json, $body) {
                 $b = $body($q);
                 return $json($r, $s->devices->register((string) $q->getAttribute('userId'), (string) ($b['deviceId'] ?? ''), (string) ($b['name'] ?? '')));

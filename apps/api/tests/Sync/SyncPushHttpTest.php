@@ -290,4 +290,29 @@ final class SyncPushHttpTest extends TestCase
         [$status] = $this->call('POST', '/sync/push', ['deviceId' => 'poste-1', 'operations' => array_fill(0, 201, [])], $this->token('cashier'));
         $this->assertSame(422, $status);
     }
+
+    public function testOpenConflictsAreListedAndResolvedByWhoManagesStock(): void
+    {
+        $product = $this->product('Ibuprofène', stock: 1);
+        $open = $this->openOp(session: $session);
+        $this->push([$open, $this->saleOp($session, $product, 2)]);
+
+        [$status, $body] = $this->call('GET', '/sync/conflicts', null, $this->token('storekeeper'));
+        $this->assertSame(200, $status);
+        $this->assertCount(1, $body['items']);
+        $conflict = $body['items'][0];
+        $this->assertSame('stock_shortage', $conflict['kind']);
+        $this->assertSame('Ibuprofène', $conflict['product_name']);
+        $this->assertSame(1, $conflict['details']['missing']);
+
+        $resolve = "/sync/conflicts/{$conflict['id']}/resolve";
+        $this->assertSame(403, $this->call('POST', $resolve, [], $this->token('cashier'))[0]);
+        $this->assertSame(404, $this->call('POST', $resolve, [], $this->token('other'))[0]);
+        $this->assertSame(204, $this->call('POST', $resolve, [], $this->token('storekeeper'))[0]);
+        $this->assertSame(204, $this->call('POST', $resolve, [], $this->token('owner'))[0]);
+        $this->assertSame([], $this->call('GET', '/sync/conflicts', null, $this->token('owner'))[1]['items']);
+        // Le premier traitement reste attribué à son auteur.
+        $this->assertSame($this->ids['storekeeper'], $this->db->one('SELECT resolved_by FROM sync_conflicts WHERE id = ?', [$conflict['id']])['resolved_by']);
+        $this->assertSame(1, (int) $this->db->one("SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'sync.conflict.resolve'")['n']);
+    }
 }

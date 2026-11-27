@@ -8,7 +8,7 @@ import {
   pushPending,
   type SyncTransport,
 } from '../../packages/sync/src';
-import { DEMO_PW, apiAs } from './helpers';
+import { DEMO_PW, apiAs, loginAs } from './helpers';
 
 const API = 'http://127.0.0.1:8081';
 const stamp = Date.now().toString(36);
@@ -72,6 +72,7 @@ async function offlineStation(
 }
 
 test('US28 : deux postes coupés 8 h vendent le même produit ; reprise sans doublon, somme exacte', async ({
+  page,
   request,
 }) => {
   const owner = await apiAs(request, 'owner@demo.test');
@@ -124,4 +125,16 @@ test('US28 : deux postes coupés 8 h vendent le même produit ; reprise sans dou
   const snapshot = await pullReference(second.transport);
   expect(snapshot.products.find((p) => p.id === product)?.unassignedQty).toBe(STOCK - 2 * SALES);
   expect(snapshot.lots.find((l) => l.productId === product)?.quantity).toBe(0);
+
+  // L'écart de stock se traite à l'écran.
+  await loginAs(page, 'owner@demo.test');
+  await page.getByRole('link', { name: 'Synchronisation' }).click();
+  const shortages = page.getByRole('listitem').filter({ hasText: `Hors-ligne ${stamp}` });
+  await expect(shortages.first()).toContainText('au-delà du stock connu');
+  const before = await shortages.count();
+  await shortages.first().getByRole('button', { name: 'Marquer comme vérifié' }).click();
+  await expect(shortages).toHaveCount(before - 1);
+  if (process.env.SHOTS) {
+    await page.screenshot({ path: `${process.env.SHOTS}/synchronisation.png` });
+  }
 });

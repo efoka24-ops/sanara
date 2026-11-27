@@ -33,6 +33,7 @@ import { SessionProvider } from './app/session';
 import { PharmaciesPage } from './pages/PharmaciesPage';
 import { DesktopProvider } from './app/desktop';
 import { DesktopFrame } from './app/DesktopFrame';
+import { SyncPage } from './pages/SyncPage';
 
 export function Router() {
   return (
@@ -67,6 +68,7 @@ export function Router() {
                       <Route path="stock/inventaire" element={<InventoryPage />} />
                       <Route path="caisse" element={<PosPage />} />
                       <Route path="ventes" element={<SalesPage />} />
+                      <Route path="synchronisation" element={<SyncPage />} />
                     </Route>
                   </Route>
                   <Route path="admin" element={<RequireArea area="admin" />}>

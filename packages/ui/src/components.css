@@ -224,3 +224,15 @@
 .sa-toast--error {
   background: var(--sa-red);
 }
+
+/* Au survol, chaque variante garde sa couleur : la règle générale du bouton les repeignait en vert. */
+.sa-btn.sa-btn--secondary:hover {
+  background: var(--sa-bg);
+}
+.sa-btn.sa-btn--warning:hover,
+.sa-btn.sa-btn--amber:hover {
+  background: var(--sa-amber);
+}
+.sa-btn.sa-btn--danger:hover {
+  background: var(--sa-red);
+}
