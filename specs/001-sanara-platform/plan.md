@@ -22,22 +22,23 @@ Plateforme SaaS multi-tenant hébergée sur Camoo (`sanara.trugroup.cm`) : une A
 
 ## Constitution Check
 
-| Principe | Conformité du plan |
-|---|---|
-| I. Humain décide | `packages/assistant` expose uniquement `propose()` ; les décisions passent par `AutonomyPolicy` ; liste de produits réglementés bloquante |
-| II. Offline-first | `packages/sync` + SQLite local, ids ULID générés côté client, opérations idempotentes |
-| III. Données de santé | Chiffrement enveloppe pour documents, accès journalisé, consentement stocké |
-| IV. Multi-tenant | `tenant_id` sur toutes les tables, scope global imposé par la couche d'accès (pas de RLS en MySQL), test d'isolation générique |
-| V. Multi-pays | `CountryConfig` en base, i18n, aucune constante pays dans le code |
-| VI. Audit | Intercepteur NestJS d'audit + table append-only |
-| VII. Test-first | Tâches de tests avant implémentation pour les domaines critiques |
-| VIII. Simplicité | Monorepo TypeScript, une UI pour web et desktop |
-| IX. Conditions réelles | Budgets de perf vérifiés en CI, tests sur matériel modeste |
-| X. Story par story | tasks.md organisé par user story, checkpoint après chacune |
+| Principe               | Conformité du plan                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| I. Humain décide       | `packages/assistant` expose uniquement `propose()` ; les décisions passent par `AutonomyPolicy` ; liste de produits réglementés bloquante |
+| II. Offline-first      | `packages/sync` + SQLite local, ids ULID générés côté client, opérations idempotentes                                                     |
+| III. Données de santé  | Chiffrement enveloppe pour documents, accès journalisé, consentement stocké                                                               |
+| IV. Multi-tenant       | `tenant_id` sur toutes les tables, scope global imposé par la couche d'accès (pas de RLS en MySQL), test d'isolation générique            |
+| V. Multi-pays          | `CountryConfig` en base, i18n, aucune constante pays dans le code                                                                         |
+| VI. Audit              | Intercepteur NestJS d'audit + table append-only                                                                                           |
+| VII. Test-first        | Tâches de tests avant implémentation pour les domaines critiques                                                                          |
+| VIII. Simplicité       | Monorepo TypeScript, une UI pour web et desktop                                                                                           |
+| IX. Conditions réelles | Budgets de perf vérifiés en CI, tests sur matériel modeste                                                                                |
+| X. Story par story     | tasks.md organisé par user story, checkpoint après chacune                                                                                |
 
 ## Project Structure
 
 ### Documentation
+
 ```text
 specs/001-sanara-platform/
 ├── spec.md
@@ -49,6 +50,7 @@ specs/001-sanara-platform/
 ```
 
 ### Source Code
+
 ```text
 Sanara/
 ├── apps/
@@ -95,7 +97,7 @@ Sanara/
 
 1. **Synchronisation** : journal d'opérations (`SyncOperation`) avec id client ULID, version de schéma, idempotence. Référentiels (catalogue, prix) : serveur gagnant. Mouvements (ventes, stock) : cumul d'événements, jamais d'écrasement d'état. Conflits journalisés (`SyncConflict`).
 2. **Numérotation** : préfixe poste + séquence locale (ex. `P2-000123`), puis numéro légal attribué à la synchronisation si la loi l'exige.
-3. **Assistant** : interface `AssistantProvider` (implémentation Claude vision), sortie structurée validée par Zod (lignes, confiance, anomalies), garde-fous déterministes avant/après le modèle (liste de produits réglementés, détection de symptômes graves, interdiction de conseil), évaluation sur jeu d'ordonnances annoté.
+3. **Assistant** : interface `AssistantProvider` implémentée par notre moteur (OCR local puis analyse et rapprochement catalogue, décision du 2026-11-27), sortie structurée validée par Zod (lignes, confiance, anomalies), garde-fous déterministes (liste de produits réglementés, détection de symptômes graves, interdiction de conseil), évaluation sur jeu d’ordonnances annoté. Limite connue : l’écriture manuscrite est mal lue par l’OCR ; le pharmacien lit alors l’image et saisit les lignes.
 4. **Autonomie** : `AutonomyPolicy` par tenant (N1/N2/N3, seuils), évaluée par une fonction pure testée ; toute décision automatique produit un `AuditLog` et peut être annulée.
 5. **Présence** : pas de processus permanent sur le mutualisé. Heartbeat par polling court (10 à 15 s) mis à jour en base ; chaîne d'escalade configurable (titulaire → adjoint) exécutée par un cron chaque minute lisant une table de jobs ; canaux push/SMS/appel via passerelles abstraites.
 6. **Carte publique** : Leaflet + tuiles OSM ; recherche géographique MySQL (colonnes POINT avec index spatial, ou boîte englobante + Haversine), cache des fiches publiques.
@@ -105,9 +107,9 @@ Sanara/
 
 ## Complexity Tracking
 
-| Écart | Pourquoi nécessaire | Alternative plus simple rejetée |
-|---|---|---|
-| Deux bases (PostgreSQL + SQLite) | Exigence offline-first | Cache navigateur : trop fragile pour la caisse |
-| Moteur de synchronisation maison | Besoin de règles métier par type d'objet | Outils génériques (CRDT) : sémantique de stock inadaptée |
+| Écart                                                    | Pourquoi nécessaire                                 | Alternative plus simple rejetée                                |
+| -------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------- |
+| Deux bases (PostgreSQL + SQLite)                         | Exigence offline-first                              | Cache navigateur : trop fragile pour la caisse                 |
+| Moteur de synchronisation maison                         | Besoin de règles métier par type d'objet            | Outils génériques (CRDT) : sémantique de stock inadaptée       |
 | File de jobs en base (table `jobs` + cron chaque minute) | Emails, SMS, relances d'escalade fiables sans Redis | Cron direct sans file : pas de reprise ni de relances précises |
-| Polling court à la place du temps réel | Pas de WebSocket/SSE long sur mutualisé | Serveur dédié : hors budget actuel |
+| Polling court à la place du temps réel                   | Pas de WebSocket/SSE long sur mutualisé             | Serveur dédié : hors budget actuel                             |

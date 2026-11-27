@@ -151,14 +151,19 @@ final class Routes
             return $res->withStatus(204); // même réponse que le compte existe ou non
         });
 
-        $app->get('/public/pharmacies', function (Request $req, Response $res) use ($s, $json) {
-            $q = trim((string) ($req->getQueryParams()['q'] ?? ''));
-            $region = trim((string) ($req->getQueryParams()['region'] ?? ''));
-            $city = trim((string) ($req->getQueryParams()['city'] ?? ''));
-            $limit = max(1, min(100, (int) ($req->getQueryParams()['limit'] ?? 20)));
-            $offset = max(0, (int) ($req->getQueryParams()['offset'] ?? 0));
-            return $json($res, $s->publicPharmacies->search($q, $region, $city, $limit, $offset));
-        });
+        // Réponses publiques revalidées à chaque fois : une réponse inchangée n'est pas renvoyée (réseaux lents),
+        // et une pharmacie retirée disparaît aussitôt.
+        $revalidated = static function (Request $req, Response $res, array $data) use ($json): Response {
+            $res = $json($res, $data);
+            $etag = '"' . hash('sha256', (string) $res->getBody()) . '"';
+            $res = $res->withHeader('ETag', $etag)->withHeader('Cache-Control', 'public, no-cache');
+            if (!str_contains($req->getHeaderLine('If-None-Match'), trim($etag, '"'))) {
+                return $res;
+            }
+            return $res->withStatus(304)->withBody((new \Slim\Psr7\Factory\StreamFactory())->createStream(''));
+        };
+        $app->get('/public/pharmacies', fn (Request $req, Response $res) => $revalidated($req, $res, $s->publicPharmacies->search($req->getQueryParams())));
+        $app->get('/public/geo', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->places()]));
 
         // --- Demandes d'accès (US1) ---
         $docs = static function (Request $req): array {
@@ -332,8 +337,9 @@ final class Routes
                 $s->setup->setSettings((array) ($body($q)['settings'] ?? []));
                 return $r->withStatus(204);
             })->add($perm('settings.write'));
-            $g->put('/opening-hours', function (Request $q, Response $r) use ($s, $body) {
+            $g->put('/opening-hours', function (Request $q, Response $r) use ($s, $body, $tenantId) {
                 $s->setup->setOpeningHours((array) ($body($q)['days'] ?? []));
+                $s->publicProjection->refresh($tenantId($q));
                 return $r->withStatus(204);
             })->add($perm('settings.write'));
             $g->put('/visibility', function (Request $q, Response $r) use ($s, $body, $tenantId) {

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Logo } from '@sanara/ui';
 import { useT } from '@sanara/i18n';
 import { useSession } from './session';
@@ -33,11 +33,21 @@ const ADMIN_MENU: Array<{ to: string; key: string; end?: boolean }> = [
 
 export function PublicLayout() {
   const { t, locale, setLocale } = useT();
+  const { pathname } = useLocation();
+  // La connexion et la demande d'accès ont déjà leurs propres boutons.
+  const offerApply = !/^\/(connexion|inscription|activer)/.test(pathname);
   return (
     <div className="layout layout--public">
       <header className="topbar">
         <BackButton />
-        <Logo size={30} />
+        <Link to="/" className="topbar__home" aria-label={t('home.back')}>
+          <Logo size={30} />
+        </Link>
+        <nav className="topbar__links">
+          <NavLink to="/pharmacies">{t('home.find')}</NavLink>
+          <Link to="/#comment">{t('home.how')}</Link>
+          <Link to="/#pharmaciens">{t('home.forPharmacists')}</Link>
+        </nav>
         <nav className="topbar__actions">
           <button
             className="chip"
@@ -47,6 +57,11 @@ export function PublicLayout() {
             {locale.toUpperCase()} ▾
           </button>
           <NavLink to="/connexion">{t('auth.login')}</NavLink>
+          {offerApply && (
+            <Link to="/inscription" className="sa-btn topbar__apply">
+              {t('home.apply')}
+            </Link>
+          )}
         </nav>
       </header>
       <main>

@@ -270,15 +270,15 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 16 : US18 - Recherche de pharmacies et carte (P1) 🎯 MVP 2
 
-- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table alimentée à la publication, au retrait, à la suspension et rattrapée au déploiement ; restent le point GPS et la garde)
-- [ ] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/tests/Applications/PublicPharmaciesHttpTest.php`) (visibilité, suspension et filtre texte testés (PublicProjectionHttpTest) ; restent le tri par distance et la hiérarchie département/quartier)
-- [ ] T146 [US18] Endpoints `GET /public/pharmacies` (filtres, bbox, distance) avec cache et pagination (`apps/api/app/Modules/Applications/PublicPharmacyService.php`, route dans `Routes.php`) (filtres q/région/ville + pagination faits ; bbox, distance et cache restants)
-- [ ] T147 [US18] Référentiel géographique (régions, départements, villes, quartiers) dans `CountryConfig` + sélecteurs en cascade
-- [ ] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`) (page /pharmacies : liste, recherche, appel et itinéraire ; restent la carte Leaflet et le regroupement des marqueurs)
-- [ ] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde
-- [ ] T150 [US18] Géolocalisation avec consentement et repli sur saisie du quartier
+- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table de projection avec point GPS et horaires, alimentée à chaque changement (migrations 0007 et 0014) ; reste la garde)
+- [x] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/tests/Applications/PublicPharmaciesHttpTest.php`) (PublicProjectionHttpTest, PublicPharmaciesHttpTest et PublicSearchHttpTest : visibilité, distance, région, département, ville, quartier, nom)
+- [x] T146 [US18] Endpoints `GET /public/pharmacies` (filtres, bbox, distance) avec cache et pagination (`apps/api/app/Modules/Applications/PublicPharmacyService.php`, route dans `Routes.php`) (filtres, zone visible, distance, cache par ETag et pagination ; /public/geo pour les lieux)
+- [ ] T147 [US18] Référentiel géographique (régions, départements, villes, quartiers) dans `CountryConfig` + sélecteurs en cascade (listes en cascade région puis département tirées des pharmacies publiées ; reste le référentiel officiel dans CountryConfig)
+- [x] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`) (apps/web/src/pages/PharmaciesPage.tsx et app/PharmacyMap.tsx : liste avant la carte, Leaflet, regroupement des repères)
+- [ ] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde (nom, distance et ouvert/fermé au survol ou à l'appui ; reste la garde)
+- [x] T150 [US18] Géolocalisation avec consentement et repli sur saisie du quartier (position demandée à la demande seulement, arrondie, absente de l'adresse ; repli sur le quartier saisi (HTTPS requis pour la géolocalisation))
 - [ ] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21)
-- [ ] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées
+- [ ] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées (filtre « ouvert maintenant » fait ; restent la garde et les assurances)
 - [ ] T153 [US18] SEO, performance 3G (images optimisées, tuiles légères), test Lighthouse en CI
 
 **Checkpoint US18** ✅
@@ -299,13 +299,13 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [ ] T160 [P] [US21] Modèles `PatientRequest`, `RequestDocument`, `RequestLine`, `Consent`, `AssistantRun` (`apps/api/prisma/schema.prisma`)
 - [ ] T161 **[TDD]** [US21] Tests des garde-fous : détection de symptômes graves, refus de conseil médical, formats/taille de fichiers, limite de débit (`packages/assistant/tests/guardrails.spec.ts`)
 - [ ] T162 [US21] Interface `AssistantProvider` et sortie structurée Zod (lignes, confiance, anomalies) (`packages/assistant/src/provider.ts`)
-- [ ] T163 [US21] Implémentation Claude vision de `AssistantProvider` avec prompt système et sanitisation (`packages/assistant/src/providers/claude.ts`)
+- [ ] T163 [US21] Moteur de lecture Sanara derrière `AssistantProvider` : OCR local (Tesseract, sans service externe) et analyse des lignes (nom, dosage, posologie, quantité) (`packages/assistant/src/providers/local.ts`)
 - [ ] T164 [US21] Rapprochement des lignes lues avec le catalogue de la pharmacie (similarité nom/DCI, confiance) (`packages/assistant/src/matching.ts`)
 - [ ] T165 [US21] Garde-fous déterministes avant/après le modèle : produits réglementés, symptômes graves, interdiction de conseil (`packages/assistant/src/guardrails.ts`)
 - [ ] T166 [US21] Endpoint public de dépôt (consentement explicite, upload, antivirus, conversion HEIC, plusieurs pages) (`apps/api/src/modules/requests/public.controller.ts`)
 - [ ] T167 [US21] Widget assistant : consentement, prénom/téléphone, envoi, état d'analyse (`apps/web/src/app/(public)/assistant/`)
 - [ ] T168 [US21] Cas d'échec : document illisible, demande d'une meilleure photo, transmission brute au pharmacien
-- [ ] T169 [US21] Quotas par pharmacie selon abonnement et suivi du coût IA par demande
+- [ ] T169 [US21] Quotas par pharmacie selon abonnement et nombre de lectures par demande
 - [ ] T170 [US21] Jeu d'évaluation : script `tests/assistant-eval/run.ts` mesurant précision de lecture et taux de corrections
 
 **Checkpoint US21** ✅

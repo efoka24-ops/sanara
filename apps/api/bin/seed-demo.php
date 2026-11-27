@@ -17,7 +17,7 @@ $clock = new Sanara\Common\Clock();
 $now = $clock->stamp();
 $tid = 'DEMO' . str_repeat('0', 22);
 if ($db->one('SELECT id FROM tenants WHERE id = ?', [$tid]) === null) {
-    $db->insert('tenants', ['id' => $tid, 'country_code' => 'CM', 'name' => 'Pharmacie Démo', 'slug' => 'demo', 'status' => 'active', 'public_visible' => 0, 'currency' => 'XAF', 'autonomy_level' => 1, 'created_at' => $now, 'updated_at' => $now]);
+    $db->insert('tenants', ['id' => $tid, 'country_code' => 'CM', 'name' => 'Pharmacie Démo', 'slug' => 'demo', 'status' => 'active', 'latitude' => 9.3017, 'longitude' => 13.3921, 'public_visible' => 0, 'currency' => 'XAF', 'autonomy_level' => 1, 'created_at' => $now, 'updated_at' => $now]);
 }
 $users = new Sanara\Common\Persistence\UserRepository($db, $clock);
 $hasher = new Sanara\Common\Auth\PasswordHasher();

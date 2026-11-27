@@ -97,7 +97,7 @@ final class Services
             hash_hmac('sha256', 'storage-url', $config->jwtSecret),
         );
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
-        $this->publicPharmacies = new PublicPharmacyService($db);
+        $this->publicPharmacies = new PublicPharmacyService($db, $clock);
         $this->publicProjection = new \Sanara\Modules\Applications\PublicPharmacyProjection($db, $clock);
         $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
         $this->activation = new ActivationService($db, $clock, $hasher);

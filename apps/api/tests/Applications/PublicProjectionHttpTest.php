@@ -85,9 +85,15 @@ final class PublicProjectionHttpTest extends TestCase
         $this->assertSame(204, $this->call('PUT', '/app/visibility', ['visible' => true], 'owner@t.cm')[0]);
         $items = $this->found();
         $this->assertCount(1, $items);
+        $public = array_diff_key($items[0], ['id' => 1]);
+        ksort($public);
         $this->assertSame(
-            ['pharmacy_name' => 'Pharmacie du Plateau', 'region' => 'Nord', 'city' => 'Garoua', 'district' => 'Plateau', 'address' => 'Rue 12', 'phone' => '+237600000001'],
-            array_diff_key($items[0], ['id' => 1]),
+            [
+                'address' => 'Rue 12', 'city' => 'Garoua', 'closes' => null, 'country_code' => 'CM', 'department' => 'Bénoué', 'distance_m' => null,
+                'district' => 'Plateau', 'latitude' => null, 'longitude' => null, 'next_opening' => null, 'open' => null,
+                'pharmacy_name' => 'Pharmacie du Plateau', 'phone' => '+237600000001', 'region' => 'Nord',
+            ],
+            $public,
             'ni identifiant de pharmacie ni indicateur interne',
         );
 
@@ -112,6 +118,16 @@ final class PublicProjectionHttpTest extends TestCase
         $this->s->publicProjection->refreshAll();
         $this->s->publicProjection->refreshAll();
         $this->assertCount(1, $this->found());
+    }
+
+    public function testChangedOpeningHoursAreVisibleAtOnce(): void
+    {
+        $this->call('PUT', '/app/visibility', ['visible' => true], 'owner@t.cm');
+        $this->assertNull($this->found()[0]['open']);
+        // L'horloge du test est un vendredi à 9 h à Douala.
+        $this->assertSame(204, $this->call('PUT', '/app/opening-hours', ['days' => [['weekday' => 5, 'is_open' => true, 'opens' => '08:00', 'closes' => '20:00']]], 'owner@t.cm')[0]);
+        $this->assertTrue($this->found()[0]['open']);
+        $this->assertSame('20:00', $this->found()[0]['closes']);
     }
 
     public function testSearchWildcardsAreTakenLiterally(): void
