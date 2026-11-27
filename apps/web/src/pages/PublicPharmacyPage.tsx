@@ -15,6 +15,7 @@ import {
 
 const PharmacyMap = lazy(() => import('../app/PharmacyMap'));
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
+const API = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 
 /** US19 : fiche publique d'une pharmacie (maquette P3). */
 export function PublicPharmacyPage() {
@@ -54,15 +55,30 @@ export function PublicPharmacyPage() {
 
   return (
     <article className="sheet">
-      <div className="sheet__banner">
-        <Art name="officine" />
+      <div className={`sheet__banner${sheet.photos.length ? ' sheet__banner--photo' : ''}`}>
+        {sheet.photos.length ? (
+          <img
+            src={`${API}${sheet.photos[0]}`}
+            alt={t('sheet.photo', { name: sheet.pharmacy_name })}
+          />
+        ) : (
+          <Art name="officine" />
+        )}
       </div>
+      {sheet.photos.length > 1 && (
+        <div className="sheet__photos">
+          {sheet.photos.slice(1).map((p) => (
+            <img key={p} src={`${API}${p}`} alt="" loading="lazy" />
+          ))}
+        </div>
+      )}
       <p className="sheet__badges">
         <Badge tone={sheet.open ? 'ok' : sheet.open === false ? 'wait' : 'neutral'}>
           {statusLabel(t, locale, sheet)}
         </Badge>
         {sheet.duty_badge && <Badge tone="wait">{t(`duty.badge.${sheet.duty_badge}`)}</Badge>}
         <Badge tone="ok">{t('sheet.verified')}</Badge>
+        {sheet.pharmacist_online && <Badge tone="ok">{t('sheet.online')}</Badge>}
       </p>
       <h1>{sheet.pharmacy_name}</h1>
       <p className="muted">

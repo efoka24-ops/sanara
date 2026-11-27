@@ -278,17 +278,17 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde (nom, distance et ouvert/fermé au survol ou à l'appui ; reste la garde) (nom, distance, ouvert ou fermé et garde au survol ou à l'appui)
 - [x] T150 [US18] Géolocalisation avec consentement et repli sur saisie du quartier (position demandée à la demande seulement, arrondie, absente de l'adresse ; repli sur le quartier saisi (HTTPS requis pour la géolocalisation))
 - [x] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21) (le double appui ouvre la fiche de la pharmacie ; l'assistant viendra avec US21) (le double appui sur un repère ouvre l'assistant de la pharmacie (/pharmacies/:id/envoyer))
-- [ ] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées (filtre « ouvert maintenant » fait ; restent la garde et les assurances) (filtres « ouvert maintenant » et « de garde » faits ; reste le filtre par assurance)
+- [x] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées (filtre « ouvert maintenant » fait ; restent la garde et les assurances) (filtres « ouvert maintenant » et « de garde » faits ; reste le filtre par assurance) (filtres ouvert maintenant, de garde et assurances acceptées (GET /public/insurances))
 - [ ] T153 [US18] SEO, performance 3G (images optimisées, tuiles légères), test Lighthouse en CI
 
 **Checkpoint US18** ✅
 
 ## Phase 17 : US19 - Fiche pharmacie, gardes, itinéraire (P1) 🎯 MVP 2
 
-- [ ] T154 [P] [US19] Modèles `DutySchedule`, `PharmacyService`, `PharmacyPhoto` (`apps/api/prisma/schema.prisma`) (gardes, services et assurances faits (migration 0015) ; restent les photos)
+- [x] T154 [P] [US19] Modèles `DutySchedule`, `PharmacyService`, `PharmacyPhoto` (`apps/api/prisma/schema.prisma`) (gardes, services, assurances (0015) et photos de la pharmacie (0019, trois au plus))
 - [ ] T155 **[TDD]** [US19] Tests : statut ouvert/fermé selon fuseau et jours fériés, calcul de garde (`packages/shared/src/hours/hours.spec.ts`) (ouvert ou fermé selon le fuseau et calcul des gardes testés (OpeningStatusTest, StorefrontHttpTest) ; restent les jours fériés)
 - [ ] T156 [US19] Gestion des horaires, jours fériés et gardes côté officine (`apps/web/src/app/(pharmacy)/vitrine/`) (écran « Ma vitrine » : adresse, point GPS, services, assurances, horaires, gardes ; restent les jours fériés)
-- [ ] T157 [US19] Page publique de la pharmacie (adresse, téléphone, horaires, services, assurances, photos) (`apps/web/src/app/(public)/pharmacie/[slug]/page.tsx`) (fiche /pharmacies/:id : adresse, contact, horaires, services, assurances, gardes, carte ; restent les photos)
+- [x] T157 [US19] Page publique de la pharmacie (adresse, téléphone, horaires, services, assurances, photos) (`apps/web/src/app/(public)/pharmacie/[slug]/page.tsx`) (fiche /pharmacies/:id : adresse, contact, horaires, services, assurances, gardes, photos, carte, pharmacien en ligne)
 - [x] T158 [US19] Page « pharmacies de garde » par zone et date (`apps/web/src/app/(public)/gardes/`) (page /gardes par ville et période : ce soir, cette semaine, ce week-end (maquette P9))
 - [x] T159 [US19] Lien itinéraire vers application de navigation (itinéraire OpenStreetMap vers le point GPS, ou recherche de l'adresse)
 
@@ -528,8 +528,8 @@ Le design de la maquette s'applique **à l'identique** au web et au desktop (voi
 ### Tâches issues de la maquette « Sanara Écrans » (2026-11-24)
 
 - [ ] T292 [P] Identité : logo et icônes d'application (128, 84, 48, 24 px ; version monochrome blanche à 24 px et moins), zone de protection (x = hauteur de la feuille supérieure), tailles mini (logo 120 px, symbole 16 px) dans `packages/ui`
-- [x] T293 [US19] Site public P1 (accueil : ville, pays·région, département, « Ma position », trois étapes) et P2 (liste + carte, filtres Ouvert maintenant, De garde, Assurances, Plus proche) (maquettes P1 et P2 ; le filtre « Assurances » reste à faire (T152))
-- [ ] T294 [US19] Fiche pharmacie P3 (photo, badges, services, horaires, contact, équipe de garde, Envoyer mon ordonnance, Itinéraire, Appeler) (fiche P3 faite ; restent la photo de la façade et l'équipe de garde)
+- [x] T293 [US19] Site public P1 (accueil : ville, pays·région, département, « Ma position », trois étapes) et P2 (liste + carte, filtres Ouvert maintenant, De garde, Assurances, Plus proche) (maquettes P1 et P2 ; le filtre « Assurances » reste à faire (T152)) (maquettes P1 et P2 avec les filtres Ouvert maintenant, De garde, Assurances et Plus proche)
+- [x] T294 [US19] Fiche pharmacie P3 (photo, badges, services, horaires, contact, équipe de garde, Envoyer mon ordonnance, Itinéraire, Appeler) (fiche P3 faite ; restent la photo de la façade et l'équipe de garde) (fiche P3 : photo de façade, badges (ouverte, de garde, vérifiée, pharmacien en ligne), services, horaires, contact, envoi d'ordonnance, itinéraire, appel)
 - [ ] T295 [US21] Assistant patient P4 : dépôt photo/PDF, choix Retrait en officine / Je gère ma livraison, états de présence (connecté, hors ligne, urgence), « C'est urgent », ajout de pages ; message fixe d'urgence médicale (P4 : photo ou PDF, retrait en officine, « C'est urgent », pages, message d'urgence fixe ; restent la livraison et les états de présence (US24)) (P4 avec états de présence (connecté, personne, hors horaires) et urgence ; reste « Je gère ma livraison »)
 - [ ] T296 [US22] Escalade urgente : notification à 0 min, SMS à 3 min, appel de l'adjoint à 6 min (délai réglable, voir H6) avec tests de la machine d'états (e-mail à 0 min, SMS au titulaire à 3 min, SMS à l'adjoint à 6 min (délai réglable), machine d'états testée ; l'appel téléphonique de l'adjoint attend un fournisseur)
 - [x] T297 [US23] Suivi de demande P5 et P8 (Reçue, Lue, Vérifiée, Devis prêt, Prête à retirer) ; validation, modification ou refus du devis par le patient (P5 et P8 : étapes Reçue, Vérification, Devis, Validé, Prête, Retirée ; validation partielle ou refus)

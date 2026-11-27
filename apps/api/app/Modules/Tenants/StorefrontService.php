@@ -16,10 +16,11 @@ use Sanara\Modules\Applications\DutyCalendar;
 /** US19, T156 : ce que la pharmacie montre au public (adresse, services, assurances) et ses gardes. */
 final class StorefrontService
 {
+    public const MAX_PHOTOS = 3;
     public const SERVICES = ['vitals', 'malaria_test', 'parapharmacy', 'medical_equipment', 'mobile_money'];
     private const PLACES = ['region', 'department', 'city', 'district'];
 
-    public function __construct(private readonly Db $db, private readonly TenantDb $tdb, private readonly TenantContext $ctx, private readonly Clock $clock)
+    public function __construct(private readonly Db $db, private readonly TenantDb $tdb, private readonly TenantContext $ctx, private readonly Clock $clock, private readonly \Sanara\Common\Storage\EncryptedStorage $storage)
     {
     }
 
@@ -51,7 +52,8 @@ final class StorefrontService
         foreach ($this->upcoming() as $d) {
             $duties[] = ['id' => (string) $d['id'], 'starts' => DutyCalendar::local((string) $d['starts_at'], $zone), 'ends' => DutyCalendar::local((string) $d['ends_at'], $zone)];
         }
-        return ['profile' => $profile, 'duties' => $duties, 'available_services' => self::SERVICES, 'visible' => (int) $tenant['public_visible'] === 1];
+        $photos = array_map(static fn (array $p) => ['id' => $p['id']], $this->tdb->select('pharmacy_photos', [], 'created_at'));
+        return ['profile' => $profile, 'duties' => $duties, 'available_services' => self::SERVICES, 'visible' => (int) $tenant['public_visible'] === 1, 'photos' => $photos];
     }
 
     /** @param array<string, mixed> $input */
@@ -161,6 +163,32 @@ final class StorefrontService
         $id = Ulid::generate();
         $this->tdb->insert('duty_periods', ['id' => $id, 'starts_at' => $startsAt, 'ends_at' => $endsAt, 'created_at' => $this->clock->stamp()]);
         return $id;
+    }
+
+    /** Photo de la façade ou de l'officine (JPEG ou PNG), trois au plus. */
+    public function addPhoto(string $name, string $base64): string
+    {
+        $bytes = base64_decode($base64, true);
+        if ($bytes === false || $bytes === '') {
+            throw new ApiException('validation_failed', 422, ['fields' => ['photo' => 'required']]);
+        }
+        if (!in_array((string) (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes), ['image/jpeg', 'image/png'], true)) {
+            throw new ApiException('file_type_not_allowed', 422);
+        }
+        if (count($this->tdb->select('pharmacy_photos')) >= self::MAX_PHOTOS) {
+            throw new ApiException('validation_failed', 422, ['fields' => ['photo' => 'too_many']]);
+        }
+        $stored = $this->storage->put($bytes, $name);
+        $id = Ulid::generate();
+        $this->tdb->insert('pharmacy_photos', ['id' => $id, 'storage_id' => $stored['id'], 'mime' => $stored['mime'], 'created_at' => $this->clock->stamp()]);
+        return $id;
+    }
+
+    public function deletePhoto(string $id): void
+    {
+        if ($this->tdb->delete('pharmacy_photos', ['id' => $id]) === 0) {
+            throw new ApiException('not_found', 404);
+        }
     }
 
     public function deleteDuty(string $id): void

@@ -40,6 +40,7 @@ final class PublicPharmacyProjection
             'latitude' => $point['latitude'] ?? null, 'longitude' => $point['longitude'] ?? null, 'hours' => $this->hours($tenantId),
             'duties' => json_encode(array_map(static fn (array $d) => [$d['starts_at'], $d['ends_at']], $duties)),
             'services' => $profile['services'] ?? null, 'insurances' => $profile['insurances'] ?? null, 'email' => $profile['public_email'] ?? null,
+            'photos' => json_encode(array_column($this->db->all('SELECT id FROM pharmacy_photos WHERE tenant_id = ? ORDER BY created_at', [$tenantId]), 'id')),
         ];
         $this->db->transaction(function () use ($tenantId, $row): void {
             $existing = $this->db->one('SELECT id FROM public_pharmacies WHERE tenant_id = ?', [$tenantId]);

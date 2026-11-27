@@ -940,5 +940,13 @@
   "store.urgencyHint": "Quand un patient signale une urgence : e-mail aux pharmaciens tout de suite, puis SMS au titulaire, puis SMS aux adjoints, à chaque délai. La chaîne s’arrête dès qu’un pharmacien prend la demande.",
   "store.urgencyMinutes": "Délai entre deux alertes (minutes)",
   "store.urgencyOutside": "Alerter aussi hors des horaires d’ouverture",
-  "store.error.range": "Entre 1 et 30"
+  "store.error.range": "Entre 1 et 30",
+  "pub.insurance": "Assurances",
+  "sheet.photo": "Façade de {name}",
+  "sheet.online": "Pharmacien en ligne",
+  "store.photos": "Photos",
+  "store.photosHint": "Une photo de la façade aide les patients à vous trouver. Trois photos au plus ; la première apparaît en haut de votre fiche.",
+  "store.photoN": "Photo {n}",
+  "store.addPhoto": "Ajouter une photo",
+  "store.photoRemoved": "Photo supprimée"
 }

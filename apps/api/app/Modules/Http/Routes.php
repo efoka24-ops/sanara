@@ -165,6 +165,13 @@ final class Routes
         };
         $app->get('/public/pharmacies', fn (Request $req, Response $res) => $revalidated($req, $res, $s->publicPharmacies->search($req->getQueryParams())));
         $app->get('/public/pharmacies/{id}', fn (Request $req, Response $res, array $a) => $revalidated($req, $res, $s->publicPharmacies->find($a['id'])));
+        $app->get('/public/pharmacies/{id}/photos/{photo}', function (Request $req, Response $res, array $a) use ($s) {
+            $p = $s->publicPharmacies->photo($a['id'], $a['photo']);
+            $res->getBody()->write($p['bytes']);
+            // Une photo ne change jamais sous le même identifiant.
+            return $res->withHeader('Content-Type', $p['mime'])->withHeader('X-Content-Type-Options', 'nosniff')->withHeader('Cache-Control', 'public, max-age=604800, immutable');
+        });
+        $app->get('/public/insurances', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->insurances()]));
         $app->get('/public/geo', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->places()]));
 
         // --- Demandes patients (US21, US23, US26) : sans compte, protégées par le code de suivi ---
@@ -391,6 +398,17 @@ final class Routes
             $g->get('/storefront', fn (Request $q, Response $r) => $json($r, $s->storefront->get()))->add($perm('settings.write'));
             $g->put('/storefront', function (Request $q, Response $r) use ($s, $body, $tenantId) {
                 $s->storefront->save($body($q));
+                $s->publicProjection->refresh($tenantId($q));
+                return $r->withStatus(204);
+            })->add($perm('settings.write'));
+            $g->post('/storefront/photos', function (Request $q, Response $r) use ($s, $body, $json, $tenantId) {
+                $b = $body($q);
+                $id = $s->storefront->addPhoto((string) ($b['name'] ?? 'photo'), (string) ($b['base64'] ?? ''));
+                $s->publicProjection->refresh($tenantId($q));
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('settings.write'));
+            $g->delete('/storefront/photos/{id}', function (Request $q, Response $r, array $a) use ($s, $tenantId) {
+                $s->storefront->deletePhoto($a['id']);
                 $s->publicProjection->refresh($tenantId($q));
                 return $r->withStatus(204);
             })->add($perm('settings.write'));

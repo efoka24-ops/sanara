@@ -6,6 +6,7 @@ import { api, ApiError } from '../api/client';
 import { HoursEditor, savedDays, type Day } from '../app/HoursEditor';
 import { useErrorText } from '../lib/common';
 import { dutyLabel } from '../lib/publicSearch';
+import { shrink, toBase64 } from '../lib/requests';
 
 const TEXT = ['region', 'department', 'city', 'district', 'address', 'phone', 'email'] as const;
 type TextKey = (typeof TEXT)[number];
@@ -20,6 +21,7 @@ interface Storefront {
   duties: { id: string; starts: string; ends: string }[];
   available_services: string[];
   visible: boolean;
+  photos: { id: string }[];
 }
 type Form = Record<TextKey | 'latitude' | 'longitude' | 'insurances', string> & {
   services: string[];
@@ -214,6 +216,52 @@ export function StorefrontPage() {
           <Button type="submit">{t('store.save')}</Button>
         </div>
       </form>
+
+      <section className="panel stack">
+        <h2>{t('store.photos')}</h2>
+        <p className="muted">{t('store.photosHint')}</p>
+        <ul className="storefront__list">
+          {data.photos.map((p, i) => (
+            <li key={p.id} className="row">
+              <span>{t('store.photoN', { n: i + 1 })}</span>
+              <button
+                type="button"
+                className="link-strong"
+                onClick={() =>
+                  void run(async () => {
+                    await api('DELETE', `/app/storefront/photos/${p.id}`);
+                    await reload();
+                  }, t('store.photoRemoved'))
+                }
+              >
+                {t('store.remove')}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {data.photos.length < 3 && (
+          <label className="sa-btn sa-btn--secondary chat__pick">
+            {t('store.addPhoto')}
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (!file) return;
+                void run(async () => {
+                  const blob = await shrink(file);
+                  await api('POST', '/app/storefront/photos', {
+                    name: file.name,
+                    base64: await toBase64(blob),
+                  });
+                  await reload();
+                });
+              }}
+            />
+          </label>
+        )}
+      </section>
 
       <section className="stack">
         <h2>{t('sheet.hours')}</h2>

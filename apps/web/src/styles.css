@@ -958,6 +958,22 @@ textarea.sa-field__input {
   background: var(--sa-green-900) url('/images/motif-feuilles.svg');
   border-radius: var(--sa-r-modal);
 }
+.sheet__banner--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sheet__photos {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.sheet__photos img {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--sa-r-field);
+}
 .sheet__banner .art {
   width: auto;
   height: 100%;

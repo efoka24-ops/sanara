@@ -940,5 +940,13 @@
   "store.urgencyHint": "When a patient reports an emergency: e-mail to the pharmacists at once, then a text to the owner, then to the deputies, at each delay. It stops as soon as a pharmacist takes the request.",
   "store.urgencyMinutes": "Delay between alerts (minutes)",
   "store.urgencyOutside": "Also alert outside opening hours",
-  "store.error.range": "Between 1 and 30"
+  "store.error.range": "Between 1 and 30",
+  "pub.insurance": "Insurance",
+  "sheet.photo": "{name} storefront",
+  "sheet.online": "Pharmacist online",
+  "store.photos": "Photos",
+  "store.photosHint": "A photo of the storefront helps patients find you. Up to three photos; the first one appears at the top of your page.",
+  "store.photoN": "Photo {n}",
+  "store.addPhoto": "Add a photo",
+  "store.photoRemoved": "Photo removed"
 }

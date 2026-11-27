@@ -103,7 +103,7 @@ final class Services
             hash_hmac('sha256', 'storage-url', $config->jwtSecret),
         );
         $this->applications = new ApplicationService($db, $clock, $this->storage, $this->jobs);
-        $this->publicPharmacies = new PublicPharmacyService($db, $clock);
+        $this->publicPharmacies = new PublicPharmacyService($db, $clock, $this->storage);
         $this->publicProjection = new \Sanara\Modules\Applications\PublicPharmacyProjection($db, $clock);
         $this->review = new ReviewService($db, $clock, $this->jobs, $config->appUrl);
         $this->activation = new ActivationService($db, $clock, $hasher);
@@ -119,7 +119,7 @@ final class Services
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
         $tdb = new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant, new \Sanara\Common\Tenancy\ChangeLog($db, $clock));
         $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, $tdb, $this->tenant, $clock);
-        $this->storefront = new \Sanara\Modules\Tenants\StorefrontService($db, $tdb, $this->tenant, $clock);
+        $this->storefront = new \Sanara\Modules\Tenants\StorefrontService($db, $tdb, $this->tenant, $clock, $this->storage);
         $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, $tdb, $clock);
         $this->catalogTransfer = new \Sanara\Modules\Catalog\CatalogTransfer($this->catalog);
         $this->reference = new \Sanara\Modules\Catalog\ReferenceCatalog($db, $this->catalog);

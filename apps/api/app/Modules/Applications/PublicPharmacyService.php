@@ -20,7 +20,7 @@ final class PublicPharmacyService
     private const PLACES = ['country' => 'country_code', 'region' => 'region', 'department' => 'department', 'city' => 'city', 'district' => 'district'];
     private const FALLBACK_ZONE = 'Africa/Douala';
 
-    public function __construct(private readonly Db $db, private readonly Clock $clock)
+    public function __construct(private readonly Db $db, private readonly Clock $clock, private readonly ?\Sanara\Common\Storage\EncryptedStorage $storage = null)
     {
     }
 
@@ -73,7 +73,11 @@ final class PublicPharmacyService
         }
 
         $items = [];
+        $insurance = mb_strtolower($text('insurance'));
         foreach ($rows as $r) {
+            if ($insurance !== '' && !in_array($insurance, array_map('mb_strtolower', json_decode((string) $r['insurances'], true) ?? []), true)) {
+                continue;
+            }
             $item = $this->present($r, $period);
             if ((!empty($query['open']) && $item['open'] !== true) || ($period !== '' && $item['duty'] === null)) {
                 continue;
@@ -112,7 +116,15 @@ final class PublicPharmacyService
             static fn (array $d) => ['weekday' => $d[0], 'opens' => $d[1], 'closes' => $d[2]],
             json_decode((string) $r['hours'], true),
         );
+        $since = $this->clock->stamp($this->clock->now()->modify('-45 seconds'));
+        $online = $this->db->one(
+            "SELECT COUNT(*) AS n FROM presence p JOIN users u ON u.id = p.user_id JOIN public_pharmacies pp ON pp.tenant_id = p.tenant_id
+             WHERE pp.id = ? AND p.available = 1 AND p.last_seen_at >= ? AND u.role_code IN ('owner', 'pharmacist') AND u.status = 'active'",
+            [$id, $since],
+        );
+        $photos = array_map(static fn (string $photo) => "/public/pharmacies/$id/photos/$photo", json_decode((string) $r['photos'], true) ?? []);
         return $this->present($r, '') + [
+            'pharmacist_online' => (int) ($online['n'] ?? 0) > 0, 'photos' => $photos,
             'distance_m' => null, 'week' => $week, 'duties' => $duties, 'email' => $r['email'],
             'services' => json_decode((string) $r['services'], true) ?? [],
             'insurances' => json_decode((string) $r['insurances'], true) ?? [],
@@ -124,7 +136,7 @@ final class PublicPharmacyService
     {
         return $this->db->all(
             'SELECT p.id, p.pharmacy_name, p.country_code, p.region, p.department, p.city, p.district, p.address, p.phone,'
-            . ' p.latitude, p.longitude, p.hours, p.duties, p.services, p.insurances, p.email, c.timezone'
+            . ' p.latitude, p.longitude, p.hours, p.duties, p.services, p.insurances, p.email, p.photos, c.timezone'
             . ' FROM public_pharmacies p LEFT JOIN countries c ON c.code = p.country_code'
             . ' WHERE ' . implode(' AND ', $where),
             $params,
@@ -150,8 +162,40 @@ final class PublicPharmacyService
 
         $r['latitude'] = $r['latitude'] === null ? null : (float) $r['latitude'];
         $r['longitude'] = $r['longitude'] === null ? null : (float) $r['longitude'];
-        unset($r['hours'], $r['duties'], $r['services'], $r['insurances'], $r['email'], $r['timezone']);
+        unset($r['hours'], $r['duties'], $r['services'], $r['insurances'], $r['email'], $r['photos'], $r['timezone']);
         return $r + $status + ['duty' => $duty, 'duty_badge' => $badge];
+    }
+
+    /**
+     * Photo d'une pharmacie publiée : la pharmacie est celle de la fiche, jamais une autre.
+     *
+     * @return array{bytes: string, mime: string}
+     */
+    public function photo(string $id, string $photoId): array
+    {
+        $row = $this->db->one(
+            'SELECT ph.storage_id, ph.mime FROM pharmacy_photos ph JOIN public_pharmacies p ON p.tenant_id = ph.tenant_id WHERE p.id = ? AND p.visible = ? AND ph.id = ?',
+            [$id, 1, $photoId],
+        ) ?? throw new ApiException('not_found', 404);
+        return ['bytes' => ($this->storage ?? throw new ApiException('not_found', 404))->get((string) $row['storage_id']), 'mime' => (string) $row['mime']];
+    }
+
+    /**
+     * Assurances acceptées par au moins une pharmacie publiée, pour le filtre de la recherche.
+     *
+     * @return list<string>
+     */
+    public function insurances(): array
+    {
+        $names = [];
+        foreach ($this->db->all("SELECT insurances FROM public_pharmacies WHERE visible = ? AND insurances IS NOT NULL", [1]) as $r) {
+            foreach (json_decode((string) $r['insurances'], true) ?? [] as $name) {
+                $names[mb_strtolower((string) $name)] ??= (string) $name;
+            }
+        }
+        $out = array_values($names);
+        sort($out, SORT_FLAG_CASE | SORT_STRING);
+        return $out;
     }
 
     /**

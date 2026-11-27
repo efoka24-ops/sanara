@@ -36,6 +36,9 @@ export interface PublicSheet extends PublicPharmacy {
   services: string[];
   insurances: string[];
   email: string | null;
+  /** Chemins des photos, à préfixer par l'adresse de l'API. */
+  photos: string[];
+  pharmacist_online: boolean;
 }
 
 export interface SearchResult {

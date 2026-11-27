@@ -29,6 +29,13 @@ export function PharmaciesPage() {
   const department = params.get('department') ?? '';
   const near = params.get('near') ?? '';
   const openOnly = params.get('open') === '1';
+  const insurance = params.get('insurance') ?? '';
+  const [insurances, setInsurances] = useState<string[]>([]);
+  useEffect(() => {
+    api<{ items: string[] }>('GET', '/public/insurances')
+      .then((r) => setInsurances(r.items))
+      .catch(() => undefined);
+  }, []);
   const dutyOnly = params.get('duty') === '1';
   const navigate = useNavigate();
   // La position n'apparaît pas dans l'adresse : elle ne se partage pas avec le lien.
@@ -54,6 +61,7 @@ export function PharmaciesPage() {
     if (region) query.set('region', region);
     if (department) query.set('department', department);
     if (openOnly) query.set('open', '1');
+    if (insurance) query.set('insurance', insurance);
     if (dutyOnly) query.set('duty', 'tonight');
     if (position) {
       query.set('lat', String(position.lat));
@@ -79,7 +87,7 @@ export function PharmaciesPage() {
       live = false;
       window.clearTimeout(wait);
     };
-  }, [q, region, department, near, openOnly, dutyOnly, position]);
+  }, [q, region, department, near, openOnly, dutyOnly, insurance, position]);
 
   async function nearest() {
     if (position) {
@@ -136,6 +144,19 @@ export function PharmaciesPage() {
           >
             {t('pub.onDuty')}
           </button>
+          {insurances.length > 0 && (
+            <select
+              className={`chip${insurance ? ' chip--on' : ''}`}
+              aria-label={t('pub.insurance')}
+              value={insurance}
+              onChange={(e) => change({ insurance: e.target.value })}
+            >
+              <option value="">{t('pub.insurance')}</option>
+              {insurances.map((i) => (
+                <option key={i}>{i}</option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             className={`chip${position ? ' chip--on' : ''}`}

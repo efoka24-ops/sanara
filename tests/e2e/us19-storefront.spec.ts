@@ -10,10 +10,20 @@ const TILE = Buffer.from(
 const todayInDouala = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Douala' }).format(new Date());
 
+/** Photo de façade ajoutée depuis « Ma vitrine ». */
+async function staffPhoto(page: import('@playwright/test').Page) {
+  await page
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'facade.png', mimeType: 'image/png', buffer: TILE });
+  await expect(page.getByText('Photo 1')).toBeVisible();
+}
+
 test.afterEach(async ({ request }) => {
   const owner = await apiAs(request, 'owner@demo.test');
   const store = await owner<{ duties: { id: string }[] }>('GET', '/app/storefront');
   for (const d of store.duties) await owner('DELETE', `/app/storefront/duties/${d.id}`);
+  for (const p of (store as unknown as { photos: { id: string }[] }).photos)
+    await owner('DELETE', `/app/storefront/photos/${p.id}`);
   await owner('PUT', '/app/visibility', { visible: false });
 });
 
@@ -41,6 +51,8 @@ test('US19 : le titulaire tient sa vitrine et sa garde ; le visiteur les voit', 
   await page.getByLabel(/Assurances et mutuelles/).fill('Mutuelle de test');
   await page.getByRole('button', { name: 'Enregistrer la vitrine' }).click();
   await expect(page.getByText('Enregistré').first()).toBeVisible();
+
+  await staffPhoto(page);
 
   // Garde qui couvre toute la journée en cours.
   await page.getByLabel('Date de début').fill(todayInDouala());
@@ -72,6 +84,7 @@ test('US19 : le titulaire tient sa vitrine et sa garde ; le visiteur les voit', 
   await expect(page.getByText('Mutuelle de test')).toBeVisible();
   await expect(page.getByRole('link', { name: '+237 6 00 00 00 09' })).toBeVisible();
   await expect(page.locator('.map-pin')).toHaveCount(1);
+  await expect(page.getByRole('img', { name: 'Façade de Pharmacie Démo' })).toBeVisible();
   if (process.env.SHOTS)
     await page.screenshot({ path: `${process.env.SHOTS}/fiche.png`, fullPage: true });
 
@@ -81,6 +94,8 @@ test('US19 : le titulaire tient sa vitrine et sa garde ; le visiteur les voit', 
     'aria-pressed',
     'true',
   );
+  await page.getByRole('combobox', { name: 'Assurances' }).selectOption('Mutuelle de test');
+  await expect(page).toHaveURL(/insurance=Mutuelle/);
   await page.getByRole('link', { name: 'Pharmacie Démo' }).click();
   await expect(page).toHaveURL(/\/pharmacies\/[0-9A-Z]{26}$/);
 });

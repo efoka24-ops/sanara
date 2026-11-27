@@ -146,6 +146,59 @@ final class StorefrontHttpTest extends TestCase
         $this->assertNull($this->call('GET', '/public/pharmacies?q=march')[1]['items'][0]['duty']);
     }
 
+    public function testFrontPhotosAreShownOnThePublicPage(): void
+    {
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        [$status, $added] = $this->call('POST', '/app/storefront/photos', ['name' => 'facade.png', 'base64' => base64_encode($png)], 'owner@t1.cm');
+        $this->assertSame(201, $status);
+        $pdf = base64_encode("%PDF-1.4\n%%EOF");
+        $this->assertSame('file_type_not_allowed', $this->call('POST', '/app/storefront/photos', ['name' => 'a.pdf', 'base64' => $pdf], 'owner@t1.cm')[1]['error']['code']);
+        $this->assertSame(403, $this->call('POST', '/app/storefront/photos', ['name' => 'f.png', 'base64' => base64_encode($png)], 'cashier@t1.cm')[0]);
+        $this->call('POST', '/app/storefront/photos', ['name' => 'b.png', 'base64' => base64_encode($png)], 'owner@t1.cm');
+        $this->call('POST', '/app/storefront/photos', ['name' => 'c.png', 'base64' => base64_encode($png)], 'owner@t1.cm');
+        $this->assertSame(422, $this->call('POST', '/app/storefront/photos', ['name' => 'd.png', 'base64' => base64_encode($png)], 'owner@t1.cm')[0], 'trois photos au plus');
+        $this->assertCount(3, $this->call('GET', '/app/storefront', null, 'owner@t1.cm')[1]['photos']);
+
+        $id = $this->call('GET', '/public/pharmacies?q=march')[1]['items'][0]['id'];
+        $page = $this->call('GET', "/public/pharmacies/$id")[1];
+        $this->assertCount(3, $page['photos']);
+        $res = $this->app->handle((new ServerRequestFactory())->createServerRequest('GET', $page['photos'][0]));
+        $this->assertSame(200, $res->getStatusCode());
+        $this->assertSame('image/png', $res->getHeaderLine('Content-Type'));
+        $this->assertSame($png, (string) $res->getBody());
+
+        // Une photo d'une autre pharmacie ne s'obtient pas par cette fiche.
+        $other = $this->call('GET', '/public/pharmacies?q=palmiers')[1]['items'][0]['id'];
+        $wrong = (new ServerRequestFactory())->createServerRequest('GET', "/public/pharmacies/$other/photos/{$added['id']}");
+        $this->assertSame(404, $this->app->handle($wrong)->getStatusCode());
+
+        $this->assertSame(204, $this->call('DELETE', "/app/storefront/photos/{$added['id']}", null, 'owner@t1.cm')[0]);
+        $this->assertCount(2, $this->call('GET', "/public/pharmacies/$id")[1]['photos']);
+        $this->assertSame(404, $this->call('DELETE', "/app/storefront/photos/{$added['id']}", null, 'owner@t2.cm')[0]);
+    }
+
+    public function testThePublicPageSaysWhetherAPharmacistIsConnected(): void
+    {
+        $id = $this->call('GET', '/public/pharmacies?q=march')[1]['items'][0]['id'];
+        $this->assertFalse($this->call('GET', "/public/pharmacies/$id")[1]['pharmacist_online']);
+        $this->call('POST', '/app/presence', ['available' => true], 'owner@t1.cm');
+        $this->assertTrue($this->call('GET', "/public/pharmacies/$id")[1]['pharmacist_online']);
+    }
+
+    public function testVisitorsFilterByAcceptedInsurance(): void
+    {
+        $this->call('PUT', '/app/storefront', $this->profile(['insurances' => ['Mutuelle des enseignants', 'CNPS']]), 'owner@t1.cm');
+        $this->call('PUT', '/app/storefront', $this->profile(['insurances' => ['Ascoma'], 'latitude' => null, 'longitude' => null]), 'owner@t2.cm');
+
+        $this->assertSame(['Pharmacie du Marché'], $this->names('?insurance=' . urlencode('cnps')));
+        $this->assertSame(['Pharmacie des Palmiers'], $this->names('?insurance=Ascoma'));
+        $this->assertSame([], $this->names('?insurance=Inconnue'));
+        $this->assertSame(['Ascoma', 'CNPS', 'Mutuelle des enseignants'], $this->call('GET', '/public/insurances')[1]['items']);
+
+        $this->call('PUT', '/app/visibility', ['visible' => false], 'owner@t2.cm');
+        $this->assertSame(['CNPS', 'Mutuelle des enseignants'], $this->call('GET', '/public/insurances')[1]['items'], 'seulement les pharmacies publiées');
+    }
+
     public function testDutyPeriodsFollowTonightWeekAndWeekend(): void
     {
         $this->duty('2026-11-29', '08:00', '20:00'); // dimanche
