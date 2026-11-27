@@ -112,6 +112,24 @@ final class SyncPullHttpTest extends TestCase
         $this->assertSame(['id', 'productId', 'lotNumber', 'expiry', 'status', 'receivedAt', 'quantity'], array_keys($page['lots'][0]), 'aucun prix d’achat');
     }
 
+    public function testTheFirstPageCarriesAFingerprintOfTheWholeStock(): void
+    {
+        $a = $this->product('Paracétamol', 12);
+        $b = $this->product('Ibuprofène', 5);
+        $this->product('Sans stock');
+        $this->product('Produit étranger', 3, 'other');
+        $ids = [$a => 12, $b => 5];
+        ksort($ids, SORT_STRING);
+        $expected = hash('sha256', implode("\n", array_map(static fn (string $id, int $q) => "$id:$q", array_keys($ids), $ids)));
+
+        $digest = $this->call('GET', '/sync/pull', null, 'cashier')[1]['settings']['stockDigest'];
+        $this->assertSame($expected, $digest, 'produits en stock seulement, triés, de cette pharmacie seulement');
+
+        $this->call('POST', '/app/cash/open', ['station' => 'C1', 'opening_float' => 0], 'cashier');
+        $this->call('POST', '/app/sales', ['lines' => [['product_id' => $a, 'qty' => 1]], 'payments' => [['method' => 'cash', 'amount' => 1500]]], 'cashier');
+        $this->assertNotSame($digest, $this->call('GET', '/sync/pull', null, 'cashier')[1]['settings']['stockDigest']);
+    }
+
     public function testLaterPullsCarryOnlyWhatChangedSinceByTimeOfReception(): void
     {
         $sold = $this->product('Vendu', 10);

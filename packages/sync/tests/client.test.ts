@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   LocalQueue,
@@ -5,6 +6,7 @@ import {
   createHttpTransport,
   pullReference,
   pushPending,
+  stockDigest,
   synchronise,
   type PullPage,
   type PushRequest,
@@ -258,6 +260,61 @@ describe('téléchargement des seuls changements', () => {
     const target = sink();
     await synchronise(queueOf(), server2(true).transport, target, who);
     expect(target.calls[0]![0]).toBe('replace');
+  });
+});
+
+describe('contrôle d’intégrité du stock (T140)', () => {
+  const withDigest = (digest: string, full: boolean): SyncTransport => ({
+    ...server().transport,
+    pull: async (cursor, since) => {
+      const first = page(['A'], null, true);
+      return {
+        ...first,
+        // Une copie complète est demandée sans date ; sinon seuls les changements arrivent.
+        full: full || since === undefined,
+        settings: cursor === '' ? { ...first.settings!, stockDigest: digest } : null,
+      };
+    },
+  });
+  const sink = (totals: Record<string, number>) => {
+    const calls: string[] = [];
+    return {
+      calls,
+      since: () => '2026-11-27T09:00:00.000Z',
+      replace: () => void calls.push('replace'),
+      merge: () => void calls.push('merge'),
+      stockTotals: () => totals,
+    };
+  };
+
+  it('calcule la même empreinte que le serveur : produits en stock, triés', async () => {
+    const digest = await stockDigest({ B: 5, A: 12, C: 0 });
+    const expected = createHash('sha256').update('A:12\nB:5').digest('hex');
+    expect(digest).toBe(expected);
+  });
+
+  it('accepte une mise à jour partielle dont le stock concorde', async () => {
+    const target = sink({ A: 12 });
+    const report = await synchronise(
+      queueOf(),
+      withDigest(await stockDigest({ A: 12 }), false),
+      target,
+      who,
+    );
+    expect(target.calls).toEqual(['merge']);
+    expect(report.repaired).toBe(false);
+  });
+
+  it('refait une copie complète quand le stock du poste diverge, et le signale', async () => {
+    const target = sink({ A: 11 });
+    const report = await synchronise(
+      queueOf(),
+      withDigest(await stockDigest({ A: 12 }), false),
+      target,
+      who,
+    );
+    expect(target.calls).toEqual(['merge', 'replace']);
+    expect(report).toMatchObject({ refreshed: true, repaired: true });
   });
 });
 

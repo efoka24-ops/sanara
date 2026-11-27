@@ -959,5 +959,6 @@
   "adm.plans.readings": "Automatic readings per month",
   "adm.plans.unlimited": "Empty: unlimited",
   "reader.quota": "{used} of {limit} readings this month",
-  "err.reading_quota_reached": "Monthly automatic reading quota reached: enter the lines by hand."
+  "err.reading_quota_reached": "Monthly automatic reading quota reached: enter the lines by hand.",
+  "req.offline": "This computer is offline: patient requests are unavailable. They come back as soon as the network does."
 }

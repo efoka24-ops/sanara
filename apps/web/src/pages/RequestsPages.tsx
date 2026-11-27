@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Badge, Button, Field, Modal, Table, useToast } from '@sanara/ui';
 import { accessHeader, api, ApiError } from '../api/client';
+import { useDesktop } from '../app/desktop';
 import { money, ProductSearch, useErrorText, type ProductLite } from '../lib/common';
 import { when, type RequestStatus } from '../lib/requests';
 import {
@@ -79,7 +80,7 @@ export function StatusBadge({ status }: { status: RequestStatus }) {
 }
 
 /** US22 : file des demandes, urgences d'abord, rafraîchie toutes les 10 s. */
-export function RequestsPage() {
+function RequestsList() {
   const { t, locale } = useT();
   const errText = useErrorText();
   const [closed, setClosed] = useState(false);
@@ -200,7 +201,7 @@ function DocumentView({ path, mime, name }: { path: string; mime: string; name: 
 }
 
 /** US22 : traitement d'une demande, du document au devis, puis préparation. */
-export function RequestPage() {
+function RequestDetail() {
   const { id = '' } = useParams();
   const { t, locale } = useT();
   const toast = useToast();
@@ -702,5 +703,35 @@ export function RequestPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+/** T308 : sur le poste hors ligne, les demandes des patients n'arrivent pas : on le dit. */
+function OnlineOnly({ children }: { children: React.ReactNode }) {
+  const { t } = useT();
+  const { status } = useDesktop();
+  if (status && !status.online)
+    return (
+      <div className="stack">
+        <h1>{t('req.title')}</h1>
+        <p className="notice">{t('req.offline')}</p>
+      </div>
+    );
+  return <>{children}</>;
+}
+
+export function RequestsPage() {
+  return (
+    <OnlineOnly>
+      <RequestsList />
+    </OnlineOnly>
+  );
+}
+
+export function RequestPage() {
+  return (
+    <OnlineOnly>
+      <RequestDetail />
+    </OnlineOnly>
   );
 }

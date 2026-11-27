@@ -959,5 +959,6 @@
   "adm.plans.readings": "Lectures automatiques par mois",
   "adm.plans.unlimited": "Vide : sans limite",
   "reader.quota": "{used} lectures sur {limit} ce mois",
-  "err.reading_quota_reached": "Quota de lectures automatiques du mois atteint : saisissez les lignes à la main."
+  "err.reading_quota_reached": "Quota de lectures automatiques du mois atteint : saisissez les lignes à la main.",
+  "req.offline": "Ce poste est hors ligne : les demandes des patients ne sont pas disponibles. Elles reviennent dès le retour du réseau."
 }

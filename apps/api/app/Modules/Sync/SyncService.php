@@ -131,7 +131,25 @@ final class SyncService
     /** @return array<string, mixed> */
     private function settings(string $tid): array
     {
-        return ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters(), 'pharmacy' => $this->pharmacy($tid)];
+        return ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters(), 'pharmacy' => $this->pharmacy($tid), 'stockDigest' => $this->stockDigest($tid)];
+    }
+
+    /** T140 : même calcul que stockDigest() du poste (lots détruits exclus, comme dans le référentiel). */
+    private function stockDigest(string $tid): string
+    {
+        $rows = $this->db->all(
+            "SELECT m.product_id, SUM(m.qty) AS qty FROM stock_movements m LEFT JOIN lots l ON l.id = m.lot_id
+             WHERE m.tenant_id = ? AND (l.id IS NULL OR l.status <> 'destroyed') GROUP BY m.product_id",
+            [$tid],
+        );
+        $totals = [];
+        foreach ($rows as $r) {
+            if ((int) $r['qty'] !== 0) {
+                $totals[(string) $r['product_id']] = (int) $r['qty'];
+            }
+        }
+        ksort($totals, SORT_STRING);
+        return hash('sha256', implode("\n", array_map(static fn (string $id, int $q) => "$id:$q", array_keys($totals), $totals)));
     }
 
     /** @return array{0: string, 1: list<string>} condition « modifié depuis », sur la colonne id */

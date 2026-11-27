@@ -45,6 +45,24 @@ export class SqliteReference implements ReferenceSink {
     })();
   }
 
+  /** Stock du référentiel par produit (lots non détruits et quantité sans lot), comme le serveur le compte. */
+  stockTotals(): Record<string, number> {
+    const totals: Record<string, number> = {};
+    for (const row of this.db.prepare('SELECT data_json FROM ref_products').all() as {
+      data_json: string;
+    }[]) {
+      const p = JSON.parse(row.data_json) as { id: string; unassignedQty?: number };
+      totals[p.id] = (totals[p.id] ?? 0) + (p.unassignedQty ?? 0);
+    }
+    for (const row of this.db.prepare('SELECT data_json FROM ref_lots').all() as {
+      data_json: string;
+    }[]) {
+      const l = JSON.parse(row.data_json) as { productId: string; quantity: number };
+      totals[l.productId] = (totals[l.productId] ?? 0) + l.quantity;
+    }
+    return totals;
+  }
+
   merge(snapshot: ReferenceSnapshot): void {
     this.db.transaction(() => {
       // Tout retirer d'abord : un code-barres peut être passé d'un produit reçu à un autre.

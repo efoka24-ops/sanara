@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { ReferenceProduct, ReferenceSnapshot } from '@sanara/sync';
+import { stockDigest, type ReferenceProduct, type ReferenceSnapshot } from '@sanara/sync';
 import { SqliteReference, openLocalDatabase, type LocalDatabase } from '.';
 
 const product = (id: string, name: string, over: Partial<ReferenceProduct> = {}) => ({
@@ -143,5 +143,17 @@ describe('fusion des changements et clients', () => {
     expect(timed.since()).toBe('2026-11-26T20:00:00.000Z');
     now = new Date('2026-11-27T08:00:01.000Z');
     expect(timed.since()).toBeUndefined();
+  });
+});
+
+describe('contrôle d’intégrité du stock (T140)', () => {
+  it('compte le stock par produit comme le serveur, quantité sans lot comprise', async () => {
+    reference.replace(
+      snapshot({
+        products: [product('P1', 'Paracétamol'), product('P2', 'Sirop', { unassignedQty: -2 })],
+      }),
+    );
+    expect(reference.stockTotals()).toEqual({ P1: 12, P2: -2 });
+    expect(await stockDigest(reference.stockTotals())).toBe(await stockDigest({ P2: -2, P1: 12 }));
   });
 });

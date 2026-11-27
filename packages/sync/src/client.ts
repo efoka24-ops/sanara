@@ -30,6 +30,8 @@ export interface ReferenceSettings {
   saleCounters: Record<string, number>;
   /** En-tête des tickets imprimés sur le poste. */
   pharmacy?: PharmacyHeader;
+  /** T140 : empreinte du stock de toute la pharmacie (voir stockDigest). */
+  stockDigest?: string;
 }
 export interface PharmacyHeader {
   name: string;
@@ -102,6 +104,8 @@ export interface ReferenceSink {
   replace(snapshot: ReferenceSnapshot): void;
   /** Applique les seuls produits (avec leurs lots) et clients reçus, en une seule transaction. */
   merge(snapshot: ReferenceSnapshot): void;
+  /** Stock connu du poste par produit, pour le contrôle d'intégrité. */
+  stockTotals?(): Record<string, number>;
 }
 
 export interface SyncIdentity {
@@ -198,23 +202,50 @@ export async function pullReference(
 }
 
 /** Envoie d'abord, puis rafraîchit le référentiel, qui tient ainsi compte de ce qui vient de partir. */
+/**
+ * T140 : empreinte du stock, calculée de la même façon par le serveur et par le poste : lignes
+ * « produit:quantité » des produits en stock, triées par identifiant, puis SHA-256.
+ */
+export async function stockDigest(totals: Record<string, number>): Promise<string> {
+  const text = Object.keys(totals)
+    .filter((id) => totals[id] !== 0)
+    .sort()
+    .map((id) => `${id}:${totals[id]}`)
+    .join('\n');
+  const hash = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function synchronise(
   queue: OperationQueue,
   transport: SyncTransport,
   sink: ReferenceSink,
   identity: SyncIdentity,
-): Promise<PushReport & { refreshed: boolean }> {
+): Promise<PushReport & { refreshed: boolean; repaired: boolean }> {
   const report = await pushPending(queue, transport, identity);
-  if (!report.online) return { ...report, refreshed: false };
+  if (!report.online) return { ...report, refreshed: false, repaired: false };
   let snapshot: ReferenceSnapshot;
   try {
     snapshot = await pullReference(transport, sink.since());
   } catch {
-    return { ...report, refreshed: false };
+    return { ...report, refreshed: false, repaired: false };
   }
-  if (snapshot.full) sink.replace(snapshot);
-  else sink.merge(snapshot);
-  return { ...report, refreshed: true };
+  if (snapshot.full) {
+    sink.replace(snapshot);
+    return { ...report, refreshed: true, repaired: false };
+  }
+  sink.merge(snapshot);
+  // Après une mise à jour partielle, le stock du poste doit être celui du serveur ; sinon copie complète.
+  const expected = snapshot.settings.stockDigest;
+  if (!expected || !sink.stockTotals || (await stockDigest(sink.stockTotals())) === expected) {
+    return { ...report, refreshed: true, repaired: false };
+  }
+  try {
+    sink.replace(await pullReference(transport));
+  } catch {
+    return { ...report, refreshed: true, repaired: false };
+  }
+  return { ...report, refreshed: true, repaired: true };
 }
 
 export function createHttpTransport(options: {
