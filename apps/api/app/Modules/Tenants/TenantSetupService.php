@@ -14,7 +14,7 @@ use Sanara\Common\Ulid;
 final class TenantSetupService
 {
     public const STEPS = ['hours', 'team', 'catalog', 'visibility'];
-    private const SETTING_KEYS = ['ticket_footer', 'vat_default_bp', 'rounding', 'printer', 'logo_storage_id', 'locale', 'urgent_escalation_minutes', 'pickup_hold_hours', 'max_discount_bp', 'allow_negative_stock', 'ticket_width', 'invoice_header', 'station_code', 'expiry_alert_days', 'return_days'];
+    private const SETTING_KEYS = ['ticket_footer', 'vat_default_bp', 'rounding', 'printer', 'logo_storage_id', 'locale', 'urgent_escalation_minutes', 'pickup_hold_hours', 'max_discount_bp', 'allow_negative_stock', 'ticket_width', 'invoice_header', 'station_code', 'expiry_alert_days', 'return_days', 'urgent_outside_hours'];
 
     public function __construct(private readonly Db $db, private readonly TenantDb $tdb, private readonly TenantContext $ctx, private readonly Clock $clock)
     {
@@ -36,6 +36,13 @@ final class TenantSetupService
         $bad = array_diff(array_keys($values), self::SETTING_KEYS);
         if ($bad !== []) {
             throw new ApiException('validation_failed', 422, ['fields' => array_fill_keys($bad, 'unknown')]);
+        }
+        $minutes = $values['urgent_escalation_minutes'] ?? 3;
+        if (!is_int($minutes) || $minutes < 1 || $minutes > 30) {
+            throw new ApiException('validation_failed', 422, ['fields' => ['urgent_escalation_minutes' => 'range']]);
+        }
+        if (array_key_exists('urgent_outside_hours', $values) && !is_bool($values['urgent_outside_hours'])) {
+            throw new ApiException('validation_failed', 422, ['fields' => ['urgent_outside_hours' => 'boolean']]);
         }
         foreach ($values as $k => $v) {
             $json = json_encode($v, JSON_UNESCAPED_UNICODE);

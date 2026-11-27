@@ -43,6 +43,7 @@ export function StorefrontPage() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [duty, setDuty] = useState({ date: '', from: '20:00', to: '08:00' });
   const [error, setError] = useState<string | null>(null);
+  const [urgency, setUrgency] = useState({ minutes: '3', outside: false });
 
   const reload = () => api<Storefront>('GET', '/app/storefront').then(setData);
 
@@ -51,13 +52,17 @@ export function StorefrontPage() {
     let live = true;
     Promise.all([
       api<Storefront>('GET', '/app/storefront'),
-      api<{ opening_hours: Day[] }>('GET', '/app/settings'),
+      api<{ opening_hours: Day[]; settings: Record<string, unknown> }>('GET', '/app/settings'),
     ])
       .then(([store, settings]) => {
         if (!live) return;
         setData(store);
         setForm(toForm(store.profile));
         setDays(savedDays(settings.opening_hours));
+        setUrgency({
+          minutes: String(settings.settings.urgent_escalation_minutes ?? 3),
+          outside: settings.settings.urgent_outside_hours === true,
+        });
       })
       .catch((e) => live && setError(errText(e)));
     return () => {
@@ -216,6 +221,44 @@ export function StorefrontPage() {
         <div>
           <Button onClick={() => void run(() => api('PUT', '/app/opening-hours', { days }))}>
             {t('store.saveHours')}
+          </Button>
+        </div>
+      </section>
+
+      <section className="panel stack">
+        <h2>{t('store.urgency')}</h2>
+        <p className="muted">{t('store.urgencyHint')}</p>
+        <div className="storefront__duty">
+          <Field
+            label={t('store.urgencyMinutes')}
+            type="number"
+            min={1}
+            max={30}
+            value={urgency.minutes}
+            error={problem('urgent_escalation_minutes')}
+            onChange={(e) => setUrgency({ ...urgency, minutes: e.target.value })}
+          />
+          <label className="check">
+            <Switch
+              checked={urgency.outside}
+              onChange={(outside) => setUrgency({ ...urgency, outside })}
+              label={t('store.urgencyOutside')}
+            />
+            <span>{t('store.urgencyOutside')}</span>
+          </label>
+          <Button
+            onClick={() =>
+              void run(() =>
+                api('PUT', '/app/settings', {
+                  settings: {
+                    urgent_escalation_minutes: Number(urgency.minutes),
+                    urgent_outside_hours: urgency.outside,
+                  },
+                }),
+              )
+            }
+          >
+            {t('common.save')}
           </Button>
         </div>
       </section>

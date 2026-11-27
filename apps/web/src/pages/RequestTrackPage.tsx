@@ -38,7 +38,8 @@ function PickupQr({ code }: { code: string }) {
 /** US26, US23 : suivi d'une demande, devis et code de retrait (maquettes P8, P5, P7). */
 export function RequestTrackPage() {
   const { code = '' } = useParams();
-  const sent = (useLocation().state as { sent?: boolean } | null)?.sent === true;
+  const arrival = useLocation().state as { sent?: boolean; limited?: boolean } | null;
+  const sent = arrival?.sent === true;
   const { t, locale } = useT();
   const errText = useErrorText();
   const [view, setView] = useState<PatientView | null>(null);
@@ -164,8 +165,29 @@ export function RequestTrackPage() {
             ? t('track.processing')
             : view.pharmacy.open === false
               ? t('track.waitClosed', { status: statusLabel(t, locale, pharmacy) })
-              : t('track.wait')}
+              : view.pharmacy.online
+                ? t('track.online')
+                : t('track.offline')}
         </p>
+      )}
+      {arrival?.limited && <p className="notice">{t('track.limited')}</p>}
+      {(view.escalation === 'alerted' || view.escalation === 'texted') && (
+        <p role="status" className="notice">
+          {t(`track.escalation.${view.escalation}`)}
+        </p>
+      )}
+      {(view.escalation === 'exhausted' || view.escalation === 'closed') && (
+        <div role="alert" className="form-error track__emergency">
+          <b>{t(`track.escalation.${view.escalation}`)}</b>
+          <p>
+            {view.pharmacy.phone && (
+              <a href={telLink(view.pharmacy.phone)}>
+                {t('pub.call')} {view.pharmacy.phone}
+              </a>
+            )}{' '}
+            · <Link to="/gardes">{t('home.duties')}</Link>
+          </p>
+        </div>
       )}
       {view.status === 'photo_needed' && (
         <p role="alert" className="notice">

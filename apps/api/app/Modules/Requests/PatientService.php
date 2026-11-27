@@ -23,6 +23,7 @@ final class PatientService
 {
     public const CONSENT_VERSION = '1';
     public const MAX_PAGES = 5;
+    private const URGENT_PER_DAY = 3;
     private const TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
     public function __construct(
@@ -35,6 +36,8 @@ final class PatientService
         private readonly Sequences $seq,
         private readonly RequestLedger $ledger,
         private readonly PublicPharmacyService $pharmacies,
+        private readonly PresenceService $presence,
+        private readonly EscalationService $escalation,
     ) {
     }
 
@@ -68,35 +71,48 @@ final class PatientService
         $files = $this->files($in['documents'] ?? null, self::MAX_PAGES);
 
         $advice = Guardrails::severe($message) ? 'emergency' : null;
-        $urgent = ($in['urgent'] ?? false) === true || $advice !== null;
+        $phoneKey = substr((string) preg_replace('/\D/', '', $phone), -9);
+        $wanted = ($in['urgent'] ?? false) === true || $advice !== null;
+        // T190 : au-delà de trois urgences en 24 h pour un même numéro, la demande reste normale.
+        $limited = $wanted && $this->urgentCount($phoneKey) >= self::URGENT_PER_DAY;
+        $urgent = $wanted && !$limited;
         $id = Ulid::generate();
         $code = strtoupper(bin2hex(random_bytes(20)));
         $now = $this->clock->stamp();
-        $number = (string) $this->db->transaction(function () use ($id, $code, $now, $firstName, $phone, $message, $urgent, $advice, $files, $in, $ip): string {
+        $number = (string) $this->db->transaction(function () use ($id, $code, $now, $firstName, $phone, $message, $urgent, $advice, $files, $in, $ip, $phoneKey): string {
             $number = sprintf('SAN-%05d', $this->seq->next('request'));
             $this->tdb->insert('patient_requests', [
-                'id' => $id, 'code' => $code, 'number' => $number, 'first_name' => $firstName, 'phone' => $phone, 'status' => 'received',
+                'id' => $id, 'code' => $code, 'number' => $number, 'first_name' => $firstName, 'phone' => $phone, 'phone_key' => $phoneKey, 'status' => 'received',
                 'urgent' => $urgent ? 1 : 0, 'advice' => $advice, 'locale' => ($in['locale'] ?? 'fr') === 'en' ? 'en' : 'fr',
                 'consent_version' => self::CONSENT_VERSION, 'consent_at' => $now, 'consent_ip_hash' => hash('sha256', $ip),
                 'created_at' => $now, 'updated_at' => $now,
             ]);
             $this->store($id, $files);
             $this->ledger->event($id, 'received');
+            if ($urgent) {
+                $this->ledger->event($id, 'urgent');
+            }
             if ($message !== '') {
                 $this->ledger->event($id, 'message', null, $message);
             }
             return $number;
         });
         if ($urgent) {
-            $this->warn($number);
+            $this->escalation->start($id);
+        } elseif (!$this->presence->anyoneOnline()) {
+            // US24 : personne n'est connecté, la pharmacie est prévenue de la nouvelle demande.
+            $this->escalation->notifyByMail($number, 'request_new');
         }
-        return ['code' => $code, 'number' => $number, 'status' => 'received', 'advice' => $advice];
+        return ['code' => $code, 'number' => $number, 'status' => 'received', 'advice' => $advice, 'urgent_limited' => $limited];
     }
 
     /** @return array<string, mixed> */
     public function view(string $code): array
     {
         $r = $this->find($code);
+        if ($this->escalation->advance((string) $r['id'])) {
+            $r = $this->tdb->select('patient_requests', ['id' => $r['id']], null, 1)[0];
+        }
         $pharmacy = $this->db->one('SELECT p.id, t.name, t.phone FROM tenants t LEFT JOIN public_pharmacies p ON p.tenant_id = t.id WHERE t.id = ?', [$this->ctx->require()]);
         $sheet = null;
         try {
@@ -109,10 +125,11 @@ final class PatientService
         $held = in_array($r['status'], ['accepted', 'ready'], true);
         return [
             'number' => $r['number'], 'status' => $r['status'], 'urgent' => (int) $r['urgent'] === 1, 'advice' => $r['advice'],
-            'first_name' => $r['first_name'], 'created_at' => $r['created_at'],
+            'first_name' => $r['first_name'], 'created_at' => $r['created_at'], 'escalation' => $r['escalation_state'],
             'pages' => count($this->tdb->select('request_documents', ['request_id' => $r['id']])),
             'pharmacy' => [
                 'id' => $sheet === null ? null : $sheet['id'], 'name' => $pharmacy['name'], 'phone' => $pharmacy['phone'],
+                'online' => $this->presence->anyoneOnline(),
                 'open' => $sheet['open'] ?? null, 'closes' => $sheet['closes'] ?? null, 'next_opening' => $sheet['next_opening'] ?? null,
             ],
             'events' => array_map(static fn (array $e) => ['kind' => $e['kind'], 'at' => $e['created_at']], $events),
@@ -227,9 +244,12 @@ final class PatientService
     /** @param array<string, mixed> $r */
     private function raise(array $r): void
     {
+        if ((int) $r['urgent'] === 1 || $this->urgentCount((string) $r['phone_key']) >= self::URGENT_PER_DAY) {
+            return;
+        }
         if ($this->tdb->update('patient_requests', ['urgent' => 1, 'updated_at' => $this->clock->stamp()], ['id' => $r['id'], 'urgent' => 0]) === 1) {
             $this->ledger->event((string) $r['id'], 'urgent');
-            $this->warn((string) $r['number']);
+            $this->escalation->start((string) $r['id']);
         }
     }
 
@@ -309,15 +329,16 @@ final class PatientService
         }
     }
 
-    /** Prévient les pharmaciens d'une urgence, sans aucune donnée du patient dans le message. */
-    private function warn(string $number): void
+    /** Urgences déclarées par ce numéro dans la pharmacie ces dernières 24 h. */
+    private function urgentCount(string $phoneKey): int
     {
-        $users = $this->db->all(
-            "SELECT u.email, u.locale, t.name FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.tenant_id = ? AND u.role_code IN ('owner', 'pharmacist') AND u.status = 'active'",
-            [$this->ctx->require()],
-        );
-        foreach ($users as $u) {
-            $this->jobs->push('mail', ['template' => 'request_urgent', 'to' => $u['email'], 'locale' => $u['locale'] ?? 'fr', 'vars' => ['numero' => $number, 'pharmacie' => $u['name']]]);
+        if ($phoneKey === '') {
+            return 0;
         }
+        $since = $this->clock->stamp($this->clock->now()->modify('-24 hours'));
+        return count(array_filter(
+            $this->tdb->select('patient_requests', ['phone_key' => $phoneKey, 'urgent' => 1]),
+            static fn (array $r) => $r['created_at'] >= $since,
+        ));
     }
 }

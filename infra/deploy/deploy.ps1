@@ -93,6 +93,8 @@ MAIL_ENCRYPTION=tls
 MAIL_USERNAME='$($cfg['MAIL_USERNAME'])'
 MAIL_PASSWORD='$($cfg['MAIL_PASSWORD'] -replace "'", "\x27")'
 MAIL_FROM_NAME=Sanara
+SMS_URL='$($cfg['SMS_URL'])'
+SMS_API_KEY='$($cfg['SMS_API_KEY'])'
 $(if ($SeedDemo) { "STAGING_DEMO_PASSWORD='" + $cfg['STAGING_DEMO_PASSWORD'] + "'" })
 "@
 [IO.File]::WriteAllText("$stage\api-core\.env", ($envServer -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding($false)))

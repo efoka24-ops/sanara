@@ -35,6 +35,8 @@ export interface PatientView {
   status: RequestStatus;
   urgent: boolean;
   advice: 'emergency' | null;
+  /** Chaîne d'alerte d'une urgence. */
+  escalation: 'alerted' | 'texted' | 'handled' | 'exhausted' | 'closed' | null;
   first_name: string;
   created_at: string;
   pages: number;
@@ -42,6 +44,8 @@ export interface PatientView {
     id: string | null;
     name: string;
     phone: string | null;
+    /** Un pharmacien est connecté et disponible. */
+    online: boolean;
     open: boolean | null;
     closes: string | null;
     next_opening: { weekday: number; opens: string; in_days: number } | null;

@@ -49,6 +49,12 @@ final class EmailTemplates
             'en' => ['subject' => 'Urgent request {{numero}}',
                 'body' => "Hello,\n\nA patient reports an emergency: request {{numero}} for {{pharmacie}}. Open Sanara to handle it."],
         ],
+        'request_new' => [
+            'fr' => ['subject' => 'Nouvelle demande {{numero}}',
+                'body' => "Bonjour,\n\nUne nouvelle ordonnance attend {{pharmacie}} : demande {{numero}}. Aucun pharmacien n'est connecté pour l'instant. Ouvrez Sanara pour la traiter."],
+            'en' => ['subject' => 'New request {{numero}}',
+                'body' => "Hello,\n\nA new prescription is waiting for {{pharmacie}}: request {{numero}}. No pharmacist is connected right now. Open Sanara to handle it."],
+        ],
         'account_locked' => [
             'fr' => ['subject' => 'Compte Sanara verrouillé temporairement',
                 'body' => "Bonjour,\n\nLe compte {{compte}} a été verrouillé 15 minutes après plusieurs échecs de connexion. S'il ne s'agit pas de vous ou d'un membre de l'équipe, changez le mot de passe."],

@@ -61,14 +61,21 @@ export function SendPrescriptionPage() {
       const documents = await Promise.all(
         pages.map(async (p) => ({ name: p.name, base64: await toBase64(p.blob) })),
       );
-      const done = await api<{ code: string }>('POST', `/public/pharmacies/${id}/requests`, {
-        ...form,
-        urgent,
-        consent: true,
-        locale,
-        documents,
+      const done = await api<{ code: string; urgent_limited: boolean }>(
+        'POST',
+        `/public/pharmacies/${id}/requests`,
+        {
+          ...form,
+          urgent,
+          consent: true,
+          locale,
+          documents,
+        },
+      );
+      navigate(`/suivi/${done.code}`, {
+        replace: true,
+        state: { sent: true, limited: done.urgent_limited },
       });
-      navigate(`/suivi/${done.code}`, { replace: true, state: { sent: true } });
     } catch (err) {
       const invalid =
         err instanceof ApiError ? (err.details.fields as Record<string, string> | undefined) : null;

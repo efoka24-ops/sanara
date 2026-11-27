@@ -1309,6 +1309,21 @@ img.rx-doc {
   }
 }
 
+/* Disponibilité du pharmacien */
+.presence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 10px 12px;
+  border-top: 1px solid var(--sa-line);
+  font-size: 13px;
+  font-weight: 600;
+}
+.presence .sa-switch {
+  margin-left: auto;
+}
+
 /* Lecture automatique */
 .reader {
   display: flex;

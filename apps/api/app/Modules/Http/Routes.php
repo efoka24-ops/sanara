@@ -52,7 +52,8 @@ final class Routes
                 throw new ApiException('forbidden', 403);
             }
             $daily = $s->limiter->hit('daily-stock', 1, 3600)['allowed'] ? $s->runDaily() : 0;
-            return $json($res, ['mails_sent' => $s->mail->drain(20), 'daily_alerts' => $daily]);
+            $escalations = $s->escalation->run();
+            return $json($res, ['mails_sent' => $s->mail->drain(20), 'daily_alerts' => $daily, 'escalations' => $escalations]);
         });
 
         // --- Authentification ---
@@ -168,7 +169,9 @@ final class Routes
 
         // --- Demandes patients (US21, US23, US26) : sans compte, protégées par le code de suivi ---
         $app->post('/public/pharmacies/{id}/requests', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $body) {
-            $limit($req, 'patient-request', 5, 3600);
+            // Les scénarios de bout en bout envoient tous depuis la machine locale : limite levée pour eux seuls.
+            $local = $s->config->env === 'testing' && ($req->getServerParams()['REMOTE_ADDR'] ?? '') === '127.0.0.1';
+            $limit($req, 'patient-request', $local ? 1000 : 5, 3600);
             // Une ordonnance est une donnée de santé : jamais en clair en production.
             if ($s->config->env === 'production' && $req->getUri()->getScheme() !== 'https' && ($req->getServerParams()['HTTPS'] ?? '') !== 'on') {
                 throw new ApiException('https_required', 403);
@@ -430,6 +433,11 @@ final class Routes
                 $s->requests->quote($a['id'], $actor($q), (array) ($body($q)['lines'] ?? []));
                 return $json($r, $s->requests->get($a['id'], $actor($q)), 201);
             })->add($perm('requests.process'));
+            $g->post('/presence', function (Request $q, Response $r) use ($s, $body, $actor) {
+                $s->presence->beat($actor($q), ($body($q)['available'] ?? true) !== false);
+                return $r->withStatus(204);
+            })->add($perm('requests.process'));
+            $g->get('/presence', fn (Request $q, Response $r) => $json($r, ['items' => $s->presence->team()]))->add($perm('requests.process'));
             $g->get('/assistant/lexicon', fn (Request $q, Response $r) => $json($r, $s->requests->lexicon()))->add($perm('requests.process'));
             $g->get('/pickups/{code}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->pickup($a['code'])))->add($perm('pickup.validate'));
 

@@ -337,14 +337,14 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 21 : US24 - Présence et escalade urgente (P1) 🎯 MVP 2
 
-- [ ] T186 [P] [US24] Modèles `PresenceSession`, `EscalationPolicy`, `EscalationAttempt` (`apps/api/prisma/schema.prisma`)
-- [ ] T187 **[TDD]** [US24] Tests de la chaîne d'escalade : titulaire puis adjoint, délais, arrêt à la prise en charge, message de repli, hors horaires, limitation d'abus (`apps/api/test/escalation.spec.ts`)
-- [ ] T188 [US24] Présence par heartbeat HTTP toutes les 10 à 15 s (mise à jour en base, expiration au-delà de 45 s) et statut « en ligne » par pharmacien (`apps/api/src/modules/presence/`)
-- [ ] T189 [US24] Messages d'état adaptés à la présence (en traitement / en attente d'un pharmacien / hors horaires) (`packages/assistant/src/status-messages.ts`)
-- [ ] T190 [US24] Déclaration d'urgence par le patient avec confirmation anti-abus
-- [ ] T191 [US24] Orchestrateur d'escalade (job en base traité par le cron chaque minute) : notification, SMS, appel/WhatsApp via `NotificationChannel`, relances, repli final (`apps/api/src/modules/presence/EscalationProcessor.php`) ; documenter la granularité de 1 minute du cron
-- [ ] T192 [US24] Réglages d'escalade par pharmacie (ordre, délais, canaux, numéros)
-- [ ] T193 [US24] Indicateur de présence et réglage de disponibilité dans l'interface pharmacie
+- [x] T186 [P] [US24] Modèles `PresenceSession`, `EscalationPolicy`, `EscalationAttempt` (`apps/api/prisma/schema.prisma`) (migration 0018 : presence, état de la chaîne sur patient_requests, escalation_attempts)
+- [x] T187 **[TDD]** [US24] Tests de la chaîne d'escalade : titulaire puis adjoint, délais, arrêt à la prise en charge, message de repli, hors horaires, limitation d'abus (`apps/api/test/escalation.spec.ts`) (EscalationHttpTest : titulaire puis adjoint, délais réglables, arrêt à la prise en charge, repli, hors horaires, limite par numéro, cron)
+- [x] T188 [US24] Présence par heartbeat HTTP toutes les 10 à 15 s (mise à jour en base, expiration au-delà de 45 s) et statut « en ligne » par pharmacien (`apps/api/src/modules/presence/`) (signe de vie toutes les 15 s depuis l'espace pharmacie, absent après 45 s (Modules/Requests/PresenceService.php))
+- [x] T189 [US24] Messages d'état adaptés à la présence (en traitement / en attente d'un pharmacien / hors horaires) (`packages/assistant/src/status-messages.ts`) (page de suivi : pharmacien connecté, personne de connecté, hors horaires, urgence alertée, repli)
+- [x] T190 [US24] Déclaration d'urgence par le patient avec confirmation anti-abus (« C'est urgent » avec confirmation ; au-delà de trois urgences en 24 h pour un numéro, la demande reste normale)
+- [ ] T191 [US24] Orchestrateur d'escalade (job en base traité par le cron chaque minute) : notification, SMS, appel/WhatsApp via `NotificationChannel`, relances, repli final (`apps/api/src/modules/presence/EscalationProcessor.php`) ; documenter la granularité de 1 minute du cron (e-mail à 0 min, SMS au titulaire puis aux adjoints, repli au patient, par le cron et la page de suivi ; restent l'appel et WhatsApp (pas de fournisseur), SMS réels avec la clé du fournisseur)
+- [ ] T192 [US24] Réglages d'escalade par pharmacie (ordre, délais, canaux, numéros) (délai entre alertes et alerte hors horaires réglables dans « Ma vitrine » ; l'ordre et les canaux restent fixes)
+- [x] T193 [US24] Indicateur de présence et réglage de disponibilité dans l'interface pharmacie (interrupteur « Disponible pour les patients » dans la barre latérale)
 - [ ] T194 [US24] Suivi des temps de prise en charge d'urgence pour le super admin
 
 **Checkpoint US24** ✅
@@ -530,8 +530,8 @@ Le design de la maquette s'applique **à l'identique** au web et au desktop (voi
 - [ ] T292 [P] Identité : logo et icônes d'application (128, 84, 48, 24 px ; version monochrome blanche à 24 px et moins), zone de protection (x = hauteur de la feuille supérieure), tailles mini (logo 120 px, symbole 16 px) dans `packages/ui`
 - [x] T293 [US19] Site public P1 (accueil : ville, pays·région, département, « Ma position », trois étapes) et P2 (liste + carte, filtres Ouvert maintenant, De garde, Assurances, Plus proche) (maquettes P1 et P2 ; le filtre « Assurances » reste à faire (T152))
 - [ ] T294 [US19] Fiche pharmacie P3 (photo, badges, services, horaires, contact, équipe de garde, Envoyer mon ordonnance, Itinéraire, Appeler) (fiche P3 faite ; restent la photo de la façade et l'équipe de garde)
-- [ ] T295 [US21] Assistant patient P4 : dépôt photo/PDF, choix Retrait en officine / Je gère ma livraison, états de présence (connecté, hors ligne, urgence), « C'est urgent », ajout de pages ; message fixe d'urgence médicale (P4 : photo ou PDF, retrait en officine, « C'est urgent », pages, message d'urgence fixe ; restent la livraison et les états de présence (US24))
-- [ ] T296 [US22] Escalade urgente : notification à 0 min, SMS à 3 min, appel de l'adjoint à 6 min (délai réglable, voir H6) avec tests de la machine d'états
+- [ ] T295 [US21] Assistant patient P4 : dépôt photo/PDF, choix Retrait en officine / Je gère ma livraison, états de présence (connecté, hors ligne, urgence), « C'est urgent », ajout de pages ; message fixe d'urgence médicale (P4 : photo ou PDF, retrait en officine, « C'est urgent », pages, message d'urgence fixe ; restent la livraison et les états de présence (US24)) (P4 avec états de présence (connecté, personne, hors horaires) et urgence ; reste « Je gère ma livraison »)
+- [ ] T296 [US22] Escalade urgente : notification à 0 min, SMS à 3 min, appel de l'adjoint à 6 min (délai réglable, voir H6) avec tests de la machine d'états (e-mail à 0 min, SMS au titulaire à 3 min, SMS à l'adjoint à 6 min (délai réglable), machine d'états testée ; l'appel téléphonique de l'adjoint attend un fournisseur)
 - [x] T297 [US23] Suivi de demande P5 et P8 (Reçue, Lue, Vérifiée, Devis prêt, Prête à retirer) ; validation, modification ou refus du devis par le patient (P5 et P8 : étapes Reçue, Vérification, Devis, Validé, Prête, Retirée ; validation partielle ou refus)
 - [ ] T298 [US24] Réservation du stock à la validation du devis ; **libération automatique après 24 h sans réponse** (job cron) ; mouvement « Libération » tracé (réservation au devis, libération automatique après 24 h sans réponse ; reste le mouvement « Libération » dans le journal de stock)
 - [ ] T299 [US24] Code de retrait (ex. K7429) valable le jour même, QR code, écran P7 ; validé seulement après paiement au comptoir (code (ex. K7429) et QR, écran P7, remis après paiement ; validité de 24 h réglable (pickup_hold_hours) plutôt que le jour même)

@@ -29,6 +29,8 @@ final class Config
         public readonly string $mailDir = '',
         public readonly bool $enforceAdminMfa = true,
         public readonly bool $captchaEnabled = false,
+        public readonly string $smsUrl = '',
+        public readonly string $smsKey = '',
     ) {
     }
 
@@ -61,6 +63,8 @@ final class Config
             mailDir: $get('MAIL_DIR'),
             enforceAdminMfa: filter_var($get('MFA_ADMIN', $appEnv === 'testing' ? '0' : '1'), FILTER_VALIDATE_BOOLEAN),
             captchaEnabled: filter_var($get('CAPTCHA_ENABLED', $appEnv === 'production' ? '1' : '0'), FILTER_VALIDATE_BOOLEAN),
+            smsUrl: $get('SMS_URL'),
+            smsKey: $get('SMS_API_KEY'),
         );
     }
 }

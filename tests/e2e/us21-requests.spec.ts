@@ -270,3 +270,57 @@ test('T163 : le moteur Sanara lit une ordonnance sur le poste et retient le choi
 
   await owner('PUT', '/app/visibility', { visible: false });
 });
+
+test('US24 : le patient voit si un pharmacien est connecté ; une urgence alerte la pharmacie', async ({
+  page,
+  browser,
+  request,
+}) => {
+  const owner = await apiAs(request, 'owner@demo.test');
+  await owner('PUT', '/app/visibility', { visible: true });
+  await owner('PUT', '/app/opening-hours', {
+    days: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+      weekday,
+      is_open: true,
+      opens: '00:00',
+      closes: '23:59',
+    })),
+  });
+  const found = await (
+    await request.get('http://127.0.0.1:8081/public/pharmacies?q=d%C3%A9mo')
+  ).json();
+
+  const staff = await (await browser.newContext({ locale: 'fr-FR' })).newPage();
+  await loginAs(staff, 'pharmacist@demo.test');
+  await expect(staff.getByText('Disponible pour les patients')).toBeVisible();
+
+  const send = async (urgent: boolean) => {
+    await page.goto(`/pharmacies/${found.items[0].id}/envoyer`);
+    await page
+      .locator('input[type=file]')
+      .setInputFiles({ name: 'p.png', mimeType: 'image/png', buffer: PHOTO });
+    await page.getByLabel('Votre prénom').fill('Ibrahim');
+    await page
+      .getByLabel('Votre téléphone')
+      .fill(`+237 699 ${String(Date.now() % 100).padStart(2, '0')} 00 0${urgent ? 1 : 2}`);
+    if (urgent) await page.getByLabel('C’est urgent').check();
+    await page.getByLabel(/J’accepte que mon ordonnance/).check();
+    await page.getByRole('button', { name: 'Envoyer au pharmacien' }).click();
+    await expect(page.getByRole('heading', { name: 'Demande reçue' })).toBeVisible();
+  };
+
+  await send(false);
+  await expect(page.getByText(/Un pharmacien est connecté/)).toBeVisible();
+
+  await staff.getByRole('switch', { name: 'Disponible pour les demandes des patients' }).click();
+  await expect(staff.getByText('Indisponible')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/Aucun pharmacien n’est connecté/)).toBeVisible();
+
+  await send(true);
+  await expect(page.getByText(/les pharmaciens ont été alertés/)).toBeVisible();
+  await staff.getByRole('link', { name: 'Demandes patients' }).click();
+  await expect(staff.getByText('Urgent').first()).toBeVisible();
+
+  await owner('PUT', '/app/visibility', { visible: false });
+});

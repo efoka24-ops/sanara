@@ -383,9 +383,8 @@ final class PatientRequestHttpTest extends TestCase
 
     public function testThePharmacyIsWarnedByMailOfAnUrgentRequest(): void
     {
-        $before = (int) $this->db->one('SELECT COUNT(*) AS n FROM jobs')['n'];
         $this->send();
-        $this->assertSame($before, (int) $this->db->one('SELECT COUNT(*) AS n FROM jobs')['n']);
+        $this->assertSame([], $this->db->all("SELECT id FROM jobs WHERE payload LIKE '%request_urgent%'"));
         $this->send(['urgent' => true]);
         $jobs = $this->db->all("SELECT payload FROM jobs WHERE payload LIKE '%request_urgent%'");
         $this->assertCount(2, $jobs, 'le titulaire et le pharmacien adjoint');

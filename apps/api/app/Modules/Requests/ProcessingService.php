@@ -28,6 +28,7 @@ final class ProcessingService
         private readonly EncryptedStorage $storage,
         private readonly StockService $stock,
         private readonly RequestLedger $ledger,
+        private readonly EscalationService $escalation,
     ) {
     }
 
@@ -114,6 +115,7 @@ final class ProcessingService
             if ($r['locked_by'] !== $userId) {
                 $this->ledger->event($id, 'taken', $userId);
             }
+            $this->escalation->stopIfTaken($id);
         });
     }
 
