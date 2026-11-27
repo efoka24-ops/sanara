@@ -45,6 +45,14 @@ export interface GatewayStatus {
   printers?: number;
   /** Envoi en cours. */
   progress: { sent: number; total: number } | null;
+  /** Mise à jour de l'application (T128). */
+  update?: { status: string; version: string | null; reason: string | null };
+}
+
+/** Ce que la passerelle sait des mises à jour, fourni par le processus principal. */
+export interface UpdateControl {
+  state(): { status: string; version: string | null; reason: string | null };
+  install(): void;
 }
 
 interface Session {
@@ -128,6 +136,7 @@ export class Gateway {
   private report: PushReport | null = null;
   private progress: GatewayStatus['progress'] = null;
   private printers: number | undefined;
+  private updates: UpdateControl | null = null;
 
   constructor(private readonly options: GatewayOptions) {
     this.queue = new SqliteQueue(options.db);
@@ -152,7 +161,21 @@ export class Gateway {
       version: this.options.version ?? '',
       printers: this.printers,
       progress: this.progress,
+      update: this.updates?.state(),
     };
+  }
+
+  setUpdates(control: UpdateControl): void {
+    this.updates = control;
+  }
+
+  /** Une caisse est ouverte sur ce poste, quel que soit le compte. */
+  tillOpen(): boolean {
+    return (
+      this.options.db
+        .prepare('SELECT 1 FROM pos_sessions WHERE closed_at IS NULL LIMIT 1')
+        .get() !== undefined
+    );
   }
 
   setPrinters(count: number): void {
@@ -220,6 +243,12 @@ export class Gateway {
       this.current = session;
 
       if (route === '/_desktop/station') return await this.register(session, body());
+      if (route === '/_desktop/update/install') {
+        if (!this.updates) return fail('no_update', 409);
+        if (this.tillOpen()) return fail('till_open', 409);
+        this.updates.install();
+        return json({ restarting: true });
+      }
 
       const local = await this.local(session, method, route, url.searchParams, body);
       if (local) return local;

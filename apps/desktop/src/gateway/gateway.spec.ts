@@ -345,6 +345,28 @@ describe('barre d’état et activation du poste', () => {
   });
 });
 
+describe('mise à jour de l’application (T128)', () => {
+  it('annonce la mise à jour et refuse de l’installer pendant qu’une caisse est ouverte', async () => {
+    const { access } = (await signIn()).body;
+    let installed = 0;
+    gateway.setUpdates({
+      state: () => ({ status: 'ready', version: '0.2.0', reason: null }),
+      install: () => void installed++,
+    });
+    expect(gateway.status().update).toEqual({ status: 'ready', version: '0.2.0', reason: null });
+
+    await call('POST', '/app/cash/open', { station: 'C1', opening_float: 0 }, access);
+    const refused = await call('POST', '/_desktop/update/install', {}, access);
+    expect([refused.status, refused.body.error.code, installed]).toEqual([409, 'till_open', 0]);
+
+    const { session } = (await call('GET', '/app/cash/current', undefined, access)).body;
+    await call('POST', `/app/cash/sessions/${session.id}/close`, { counts: [] }, access);
+    const done = await call('POST', '/_desktop/update/install', {}, access);
+    expect([done.status, installed]).toEqual([200, 1]);
+    expect((await call('POST', '/_desktop/update/install', {})).status).toBe(401);
+  });
+});
+
 describe('caisse du poste', () => {
   it('vend sans réseau puis synchronise au retour', async () => {
     const { access } = (await signIn()).body;

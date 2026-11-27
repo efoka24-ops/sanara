@@ -38,3 +38,7 @@ nsis:
   include: build/installer.nsh
   # Les ventes pas encore envoyées restent sur le poste après une désinstallation.
   deleteAppDataOnUninstall: false
+# T128 : latest.yml et l'installateur se déposent dans /desktop-releases/ du serveur (voir docs/desktop-updates.md).
+publish:
+  provider: generic
+  url: https://sanara.trugroup.cm/desktop-releases/

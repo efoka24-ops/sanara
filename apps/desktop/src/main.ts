@@ -7,6 +7,8 @@ import path from 'node:path';
 import { BrowserWindow, app, dialog, protocol, shell } from 'electron';
 import { ulid } from '@sanara/shared';
 import { Gateway } from './gateway/gateway';
+import { autoUpdater } from 'electron-updater';
+import { Updater } from './updater/updater';
 import { SqliteState, openLocalDatabase } from './local-db';
 import { externalAllowed, serveFile } from './shell/files';
 
@@ -113,6 +115,17 @@ function start(): void {
   window.webContents.once('did-finish-load', printers);
   const watch = setInterval(printers, 60_000);
   app.on('will-quit', () => clearInterval(watch));
+  // T128 : téléchargées en arrière-plan, installées hors caisse ouverte.
+  const updater = new Updater({
+    updater: autoUpdater,
+    serverUrl: serverUrl(),
+    packaged: app.isPackaged,
+    tillOpen: () => gateway.tillOpen(),
+    log: (message) => console.error(message),
+  });
+  gateway.setUpdates(updater);
+  updater.start();
+  app.on('will-quit', () => updater.stop());
   const timer = setInterval(() => void gateway.syncNow(), SYNC_EVERY_MS);
   app.on('will-quit', () => clearInterval(timer));
 }

@@ -23,6 +23,7 @@
   "dependencies": {
     "@sanara/shared": "workspace:*",
     "@sanara/sync": "workspace:*",
-    "better-sqlite3": "^12.11.1"
+    "better-sqlite3": "^12.11.1",
+    "electron-updater": "^6.8.11"
   }
 }

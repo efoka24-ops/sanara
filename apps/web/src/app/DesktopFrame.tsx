@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Logo } from '@sanara/ui';
+import { api, ApiError } from '../api/client';
 import { useDesktop, type DesktopState } from './desktop';
 
 /** Cadre de l'application de bureau (maquette D1) : barre de titre, bandeau hors ligne, barre d'état. */
@@ -77,6 +78,29 @@ function StatusBar({ status }: { status: DesktopState }) {
         {status.printers !== undefined &&
           `${status.printers > 0 ? t('desk.printers', { n: status.printers }) : t('desk.noPrinter')} · `}
         {t('desk.version', { v: status.version })}
+        {status.update?.status === 'downloading' &&
+          ` · ${t('desk.updateDownloading', { v: status.update.version ?? '' })}`}
+        {status.update?.status === 'ready' && (
+          <>
+            {' · '}
+            <button
+              className="link-strong"
+              onClick={() =>
+                void api('POST', '/_desktop/update/install').catch((e: unknown) =>
+                  window.alert(
+                    t(
+                      e instanceof ApiError && e.code === 'till_open'
+                        ? 'desk.updateTillOpen'
+                        : 'errors.server_error',
+                    ),
+                  ),
+                )
+              }
+            >
+              {t('desk.updateReady', { v: status.update.version ?? '' })}
+            </button>
+          </>
+        )}
       </span>
     </footer>
   );

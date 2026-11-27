@@ -16,6 +16,7 @@ export interface DesktopState {
   version: string;
   printers?: number;
   progress: { sent: number; total: number } | null;
+  update?: { status: string; version: string | null; reason: string | null };
 }
 
 declare global {

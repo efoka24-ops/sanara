@@ -960,5 +960,8 @@
   "adm.plans.unlimited": "Empty: unlimited",
   "reader.quota": "{used} of {limit} readings this month",
   "err.reading_quota_reached": "Monthly automatic reading quota reached: enter the lines by hand.",
-  "req.offline": "This computer is offline: patient requests are unavailable. They come back as soon as the network does."
+  "req.offline": "This computer is offline: patient requests are unavailable. They come back as soon as the network does.",
+  "desk.updateDownloading": "downloading version {v}",
+  "desk.updateReady": "Restart to update to {v}",
+  "desk.updateTillOpen": "Close the till before updating. Otherwise the update installs when Sanara closes."
 }

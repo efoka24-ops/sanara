@@ -960,5 +960,8 @@
   "adm.plans.unlimited": "Vide : sans limite",
   "reader.quota": "{used} lectures sur {limit} ce mois",
   "err.reading_quota_reached": "Quota de lectures automatiques du mois atteint : saisissez les lignes à la main.",
-  "req.offline": "Ce poste est hors ligne : les demandes des patients ne sont pas disponibles. Elles reviennent dès le retour du réseau."
+  "req.offline": "Ce poste est hors ligne : les demandes des patients ne sont pas disponibles. Elles reviennent dès le retour du réseau.",
+  "desk.updateDownloading": "téléchargement de la version {v}",
+  "desk.updateReady": "Redémarrer pour passer à la version {v}",
+  "desk.updateTillOpen": "Clôturez la caisse avant de mettre à jour. Sinon, la mise à jour s’installera à la fermeture de Sanara."
 }
