@@ -731,19 +731,6 @@ textarea.sa-field__input {
   flex-wrap: wrap;
   gap: 20px;
 }
-/* État de synchronisation du poste (application de bureau). */
-.desktop-status {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-}
-.desktop-status__line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
 /* Panneaux verts illustrés (maquette A1, A7) */
 .home__brand,
@@ -838,4 +825,118 @@ textarea.sa-field__input {
 .directory .sa-field {
   background: var(--sa-surface);
   border-color: var(--sa-line);
+}
+
+/* Application de bureau (maquette D1) */
+.desktop-frame {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.titlebar {
+  flex: none;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 150px 0 14px;
+  background: var(--sa-ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+.offline-banner {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--sa-amber);
+  color: var(--sa-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.desktop-frame__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.desktop-frame__body :is(.layout, .home, .brand-split, .setup) {
+  min-height: 100%;
+}
+.statusbar {
+  flex: none;
+  min-height: 34px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding: 6px 20px;
+  background: var(--sa-surface);
+  border-top: 1px solid var(--sa-line);
+  color: var(--sa-muted);
+  font-size: 12px;
+}
+.statusbar__sync {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.statusbar__sync b {
+  color: var(--sa-ink);
+  margin-left: -6px;
+}
+.statusbar__alert {
+  color: var(--sa-red);
+  font-weight: 600;
+}
+.statusbar button {
+  font-size: 12px;
+}
+/* Sur le poste, la connexion occupe la fenêtre : seul le choix de la langue reste de la barre publique. */
+.desktop-frame .layout--public {
+  position: relative;
+  height: 100%;
+}
+.desktop-frame .layout--public > main {
+  height: 100%;
+}
+.desktop-frame .layout--public .topbar {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  height: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.desktop-frame .topbar > span,
+.desktop-frame .topbar__actions a {
+  display: none;
+}
+.desktop-frame .brand-panel {
+  padding: 24px 40px;
+}
+.desktop-frame .brand-panel .art {
+  width: auto;
+  max-width: 100%;
+  max-height: 40vh;
+}
+.desktop-frame .topbar > span {
+  display: none !important;
+}
+.desktop-frame .card-form {
+  margin: 56px auto 16px;
+  padding: 24px 28px;
+  gap: 10px;
+}
+.desktop-frame .card-form h1 {
+  font-size: 26px;
 }

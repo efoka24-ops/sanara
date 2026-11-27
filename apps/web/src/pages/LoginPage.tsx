@@ -5,6 +5,7 @@ import { Button, Field } from '@sanara/ui';
 import { api, ApiError, setTokens } from '../api/client';
 import { useSession, type Role } from '../app/session';
 import { BrandPanel } from '../app/BrandPanel';
+import { useDesktop } from '../app/desktop';
 
 interface Tokens {
   access: string;
@@ -23,6 +24,10 @@ export function LoginPage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { desktop, status, refresh } = useDesktop();
+  const [station, setStation] = useState('');
+  // D2 : un poste pas encore nommé s'active à la première connexion.
+  const activation = desktop && status !== null && status.station === null;
 
   async function finish(r: Tokens) {
     setTokens(r.access, r.refresh);
@@ -30,6 +35,10 @@ export function LoginPage() {
       'GET',
       '/auth/me',
     );
+    if (activation && station.trim() !== '' && me.permissions.includes('sales.create')) {
+      await api('POST', '/_desktop/station', { name: station });
+      await refresh();
+    }
     signIn({ role: me.role, permissions: me.permissions, mfaSetupRequired: me.mfa_setup_required });
     nav(me.mfa_setup_required ? '/securite' : me.role === 'super_admin' ? '/admin' : '/app', {
       replace: true,
@@ -61,9 +70,14 @@ export function LoginPage() {
 
   return (
     <div className="brand-split brand-split--login">
-      <BrandPanel image="officine" title={t('home.title')} lead={t('home.lead')} />
+      <BrandPanel
+        image={desktop ? 'hors-ligne' : 'officine'}
+        title={t('home.title')}
+        lead={t('home.lead')}
+      />
       <form className="card-form" onSubmit={submit}>
-        <h1>{mfaToken ? t('mfa.title') : t('login.title')}</h1>
+        <h1>{mfaToken ? t('mfa.title') : t(activation ? 'desk.activate' : 'login.title')}</h1>
+        {activation && !mfaToken && <p className="muted">{t('desk.activateHint')}</p>}
         {!mfaToken && (
           <>
             <Field
@@ -83,6 +97,14 @@ export function LoginPage() {
               required
             />
           </>
+        )}
+        {activation && !mfaToken && (
+          <Field
+            label={t('desk.stationName')}
+            value={station}
+            maxLength={20}
+            onChange={(e) => setStation(e.target.value)}
+          />
         )}
         {mfaToken && (
           <Field

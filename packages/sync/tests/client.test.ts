@@ -79,6 +79,20 @@ const queueOf = (...ops: SyncOperation[]) => {
 const who = { deviceId: 'poste-1', userId: 'u1' };
 
 describe('envoi des opérations', () => {
+  it('signale la progression lot par lot', async () => {
+    const seen: [number, number][] = [];
+    await pushPending(queueOf(op(1), op(2), op(3)), server().transport, {
+      ...who,
+      batchSize: 2,
+      onProgress: (sent, total) => seen.push([sent, total]),
+    });
+    expect(seen).toEqual([
+      [0, 3],
+      [2, 3],
+      [3, 3],
+    ]);
+  });
+
   it('envoie par lots dans l’ordre, acquitte et rapporte les écarts', async () => {
     const q = queueOf(op(3), op(1), op(2));
     const s = server();

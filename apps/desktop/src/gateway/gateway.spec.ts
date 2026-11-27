@@ -65,6 +65,10 @@ function fakeServer() {
         mfa_enabled: state.mfa,
       });
     }
+    if (route === '/sync/device') {
+      if (body.name === 'PRIS') return json({ error: { code: 'station_name_taken' } }, 409);
+      return json({ id: 'D1', name: String(body.name).toUpperCase() });
+    }
     if (route === '/sync/push') {
       state.pushed.push(...body.operations);
       return json({
@@ -145,6 +149,7 @@ const make = () =>
     db,
     deviceId: 'poste-1',
     serverUrl: SERVER,
+    version: '9.9.9',
     fetch: server.fetch,
     now: () => clock,
   });
@@ -301,6 +306,42 @@ describe('connexion', () => {
     const r = await call('GET', '/app/team', undefined, access);
     expect([r.status, r.body.error.code]).toEqual([503, 'offline']);
     expect((await call('GET', '/app/cash/current', undefined, 'inconnu')).status).toBe(401);
+  });
+});
+
+describe('barre d’état et activation du poste', () => {
+  it('annonce la pharmacie, le compte, la version et l’imprimante', async () => {
+    expect(gateway.status()).toMatchObject({ user: null, pharmacy: null, station: null });
+    await signIn();
+    gateway.setPrinters(2);
+    expect(gateway.status()).toMatchObject({
+      user: { email: 'c@t.cm', role: 'cashier' },
+      pharmacy: 'Pharmacie <du> Plateau',
+      station: null,
+      version: '9.9.9',
+      printers: 2,
+      progress: null,
+    });
+  });
+
+  it('enregistre le poste auprès du serveur et garde son nom', async () => {
+    const { access } = (await signIn()).body;
+    const taken = await call('POST', '/_desktop/station', { name: 'PRIS' }, access);
+    expect([taken.status, taken.body.error.code]).toEqual([409, 'station_name_taken']);
+    expect(gateway.status().station).toBeNull();
+
+    const done = await call('POST', '/_desktop/station', { name: 'caisse2' }, access);
+    expect(done.status).toBe(200);
+    gateway = make();
+    expect(gateway.status().station).toBe('CAISSE2');
+  });
+
+  it('refuse l’enregistrement sans session ou sans réseau', async () => {
+    expect((await call('POST', '/_desktop/station', { name: 'A' })).status).toBe(401);
+    const { access } = (await signIn()).body;
+    server.state.down = true;
+    const r = await call('POST', '/_desktop/station', { name: 'A' }, access);
+    expect([r.status, r.body.error.code]).toEqual([503, 'offline']);
   });
 });
 

@@ -10,6 +10,8 @@ import { Gateway } from './gateway/gateway';
 import { SqliteState, openLocalDatabase } from './local-db';
 import { externalAllowed, serveFile } from './shell/files';
 
+declare const __APP_VERSION__: string;
+
 const ORIGIN = 'app://sanara';
 const DEFAULT_SERVER = 'http://sanara.trugroup.cm/api';
 const SYNC_EVERY_MS = 30_000;
@@ -49,7 +51,7 @@ function openGateway(): Gateway {
     state.set('device_id', deviceId);
   }
   app.on('will-quit', () => db.close());
-  return new Gateway({ db, deviceId, serverUrl: serverUrl() });
+  return new Gateway({ db, deviceId, serverUrl: serverUrl(), version: __APP_VERSION__ });
 }
 
 function createWindow(): BrowserWindow {
@@ -57,7 +59,11 @@ function createWindow(): BrowserWindow {
     width: 1280,
     height: 800,
     show: false,
+    minWidth: 1024,
+    minHeight: 680,
     autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#14201a', symbolColor: '#ffffff', height: 38 },
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -95,7 +101,17 @@ function start(): void {
       ? gateway.handle(request)
       : serveFile(web, url.pathname);
   });
-  createWindow();
+  const window = createWindow();
+  const printers = () => {
+    if (window.isDestroyed()) return;
+    void window.webContents
+      .getPrintersAsync()
+      .then((list) => gateway.setPrinters(list.length))
+      .catch(() => undefined);
+  };
+  window.webContents.once('did-finish-load', printers);
+  const watch = setInterval(printers, 60_000);
+  app.on('will-quit', () => clearInterval(watch));
   const timer = setInterval(() => void gateway.syncNow(), SYNC_EVERY_MS);
   app.on('will-quit', () => clearInterval(timer));
 }

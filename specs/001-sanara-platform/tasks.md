@@ -243,7 +243,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T126 [US27] Chargement de l'interface partagée (build Next.js export ou serveur local) et fenêtre de connexion (interface web inchangée chargée par app://sanara, passerelle locale apps/desktop/src/gateway/, écran de connexion, connexion hors-ligne (30 jours, verrou après 5 échecs ; jamais pour un compte à double vérification))
 - [ ] T127 [US27] Configuration electron-builder : installateur NSIS `Sanara-Setup.exe` sans droits admin, raccourcis, lancement au démarrage optionnel (`apps/desktop/electron-builder.yml`)
 - [ ] T128 [US27] Mises à jour automatiques signées (electron-updater), installation différée, retour arrière (`apps/desktop/src/updater/`)
-- [ ] T129 [US27] Enregistrement du poste (`Device`) au premier lancement et initialisation de la base locale (`apps/desktop/src/local-db/`) (identifiant de poste créé et base locale initialisée au premier lancement ; restent l'enregistrement côté serveur et le nom de poste unique)
+- [x] T129 [US27] Enregistrement du poste (`Device`) au premier lancement et initialisation de la base locale (`apps/desktop/src/local-db/`) (POST /sync/device : nom de poste unique par pharmacie, limite de postes de l'abonnement, révocation ; écran « Connectez ce poste » à la première connexion)
 - [ ] T130 [US27] Signature de code Windows et pipeline de publication des versions (`.github/workflows/release-desktop.yml`)
 - [ ] T131 [US27] Test d'installation/désinstallation propre sur machine virtuelle Windows vierge (checklist `tests/desktop/install-checklist.md`)
 - [ ] T132 [US27] Mesure du démarrage (< 5 s) sur PC 4 Go de RAM
@@ -543,8 +543,8 @@ Le design de la maquette s'applique **à l'identique** au web et au desktop (voi
 - [ ] T305 [US12] Achats H9 : suggestions (stock, minimum, ventes 30 j), bon de commande, réception BL avec écart et reliquat, lot, péremption, prix d'achat
 - [ ] T306 [US25] Réglages de l'assistant H6 : niveaux N1/N2/N3, règles du niveau 2 (confiance minimale, familles autorisées, stupéfiants toujours validés, délai d'escalade), indicateurs 30 jours, corrections propres à la pharmacie, partage anonymisé sur accord
 - [ ] T307 [US11] Reçu thermique 80 mm R1 (agrément, n° de ticket, caissier, caisse, client, code de retrait, rendu) et facture A4 R2 (n° `F-AAAA-NNNNNN`, ordonnance, vérificateur, cachet) ; mentions légales par pays
-- [ ] T308 [US27] Desktop D1 : bandeau « Mode hors ligne », compteur d'opérations en attente, MoMo et demandes patients désactivés hors ligne, barre d'état (imprimante, scanner, version)
-- [ ] T309 [US28] Desktop D2 : installateur (dossier, raccourci, démarrage Windows), activation du poste (nom du poste), progression de synchronisation, **écran de conflit de stock** (« corriger » ou « plus tard »)
+- [ ] T308 [US27] Desktop D1 : bandeau « Mode hors ligne », compteur d'opérations en attente, MoMo et demandes patients désactivés hors ligne, barre d'état (imprimante, scanner, version) (barre de titre, bandeau hors ligne avec compteur, barre d'état (compte, envoi, imprimantes Windows, version), Mobile Money désactivé hors ligne ; restent les demandes patients (lot 3) ; l'état d'un scanner clavier ne peut pas être détecté)
+- [ ] T309 [US28] Desktop D2 : installateur (dossier, raccourci, démarrage Windows), activation du poste (nom du poste), progression de synchronisation, **écran de conflit de stock** (« corriger » ou « plus tard ») (activation du poste et progression d'envoi faites ; restent l'installateur et l'écran de conflit de stock)
 - [ ] T310 [US2] Console super admin S1 (indicateurs, file de validation) et S2 (examen : vérifications cochées, aperçu des documents, formule, e-mail généré avec lien de 48 h)
 
 ### Compléments issus de l'atlas des écrans (2026-11-24)

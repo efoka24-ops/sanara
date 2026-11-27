@@ -17,6 +17,8 @@ export interface GatewayOptions {
   serverUrl: string;
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
   now?: () => Date;
+  /** Version de l’application, affichée dans la barre d’état. */
+  version?: string;
 }
 
 export interface GatewayStatus {
@@ -29,6 +31,15 @@ export interface GatewayStatus {
   conflicts: number;
   lastSyncAt: string | null;
   clockSkewSeconds: number | null;
+  /** Nom sous lequel ce poste est enregistré. */
+  station: string | null;
+  pharmacy: string | null;
+  user: { email: string; role: string } | null;
+  version: string;
+  /** Nombre d’imprimantes vues par Windows ; absent : pas encore connu. */
+  printers?: number;
+  /** Envoi en cours. */
+  progress: { sent: number; total: number } | null;
 }
 
 interface Session {
@@ -49,6 +60,7 @@ interface Body {
   mfa_token?: string;
   refresh?: string;
   pin?: string;
+  name?: string;
   station?: string;
   opening_float?: number;
   counts?: { denomination: number; qty: number }[];
@@ -105,6 +117,8 @@ export class Gateway {
   private running: Promise<void> | null = null;
   private again = false;
   private report: PushReport | null = null;
+  private progress: GatewayStatus['progress'] = null;
+  private printers: number | undefined;
 
   constructor(private readonly options: GatewayOptions) {
     this.queue = new SqliteQueue(options.db);
@@ -123,7 +137,17 @@ export class Gateway {
       conflicts: this.report?.conflicts.length ?? 0,
       lastSyncAt: this.state.get('last_sync_at'),
       clockSkewSeconds: this.report?.clockSkewSeconds ?? null,
+      station: this.state.get('station_name'),
+      pharmacy: this.reference.settings()?.pharmacy?.name ?? null,
+      user: this.current && { email: this.current.email, role: this.current.profile.role },
+      version: this.options.version ?? '',
+      printers: this.printers,
+      progress: this.progress,
     };
+  }
+
+  setPrinters(count: number): void {
+    this.printers = count;
   }
 
   /** Attend la fin de la synchronisation en cours. */
@@ -179,12 +203,14 @@ export class Gateway {
       const session = this.sessions.get(bearer);
       // Pages publiques (inscription, annuaire, activation) : relayées sans identité.
       if (!session) {
-        if (bearer || route.startsWith('/app') || route.startsWith('/admin')) {
+        if (bearer || /^\/(app|admin|_desktop)/.test(route)) {
           return fail('unauthorized', 401);
         }
         return await this.forward(route + url.search, request, text, null);
       }
       this.current = session;
+
+      if (route === '/_desktop/station') return await this.register(session, body());
 
       const local = await this.local(session, method, route, url.searchParams, body);
       if (local) return local;
@@ -406,12 +432,29 @@ export class Gateway {
       const report = await synchronise(this.queue, transport, this.reference, {
         deviceId: this.options.deviceId,
         userId: session.profile.id,
+        onProgress: (sent, total) => {
+          this.progress = { sent, total };
+        },
       });
       this.report = report;
       if (report.refreshed) this.state.set('last_sync_at', this.now().toISOString());
     } catch (e) {
       console.error('synchronisation', e);
+    } finally {
+      this.progress = null;
     }
+  }
+
+  /** T129 : le serveur attribue le nom du poste ; il est conservé pour les ventes hors-ligne. */
+  private async register(session: Session, body: Body): Promise<Response> {
+    const response = await this.authorized(session, '/sync/device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ deviceId: this.options.deviceId, name: String(body.name ?? '') }),
+    });
+    const data = (await response.json()) as { name?: string };
+    if (response.ok && data.name) this.state.set('station_name', data.name);
+    return json(data, response.status);
   }
 
   /** Routes traitées sur le poste. null : à relayer au serveur. */

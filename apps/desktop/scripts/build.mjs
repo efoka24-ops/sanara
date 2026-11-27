@@ -42,7 +42,13 @@ function nativeBinding() {
   return file;
 }
 
-fs.rmSync(dist, { recursive: true, force: true });
+try {
+  fs.rmSync(dist, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+} catch (error) {
+  // Windows verrouille les fichiers d'une application encore ouverte.
+  console.error('Fermez Sanara (et ses processus electron.exe) avant de reconstruire.');
+  throw error;
+}
 fs.mkdirSync(path.join(dist, 'native'), { recursive: true });
 
 if (!process.argv.includes('--skip-web')) {
@@ -64,6 +70,7 @@ const common = {
   format: 'cjs',
   target: 'node22',
   external: ['electron'],
+  define: { __APP_VERSION__: JSON.stringify(require('./package.json').version) },
   // Les chemins fondés sur import.meta sont fournis explicitement par main.ts.
   logOverride: { 'empty-import-meta': 'silent' },
 };

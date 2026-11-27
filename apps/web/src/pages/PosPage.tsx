@@ -5,6 +5,7 @@ import { Badge, Button, Field, Modal, Table, useToast } from '@sanara/ui';
 import { saleLine, settle, type PayMethod } from '@sanara/shared';
 import { api, ApiError } from '../api/client';
 import { useSession } from '../app/session';
+import { useDesktop } from '../app/desktop';
 import { DocModal, ProductSearch, fmt, money, useErrorText, type ProductLite } from '../lib/common';
 
 interface CashSession {
@@ -50,8 +51,12 @@ export function PosPage() {
   const nav = useNavigate();
   const { can } = useSession();
   const search = useRef<HTMLInputElement>(null);
+  const { desktop, status: post } = useDesktop();
+  const offline = post !== null && !post.online;
   const [session, setSession] = useState<CashSession | null | undefined>(undefined);
-  const [openForm, setOpenForm] = useState({ station: 'CAISSE1', float: '0' });
+  const [openForm, setOpenForm] = useState({ station: '', float: '0' });
+  // Le poste enregistré propose son nom ; la saisie l'emporte.
+  const station = openForm.station || post?.station || (desktop ? '' : 'CAISSE1');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [sel, setSel] = useState(0);
   const [customer, setCustomer] = useState('');
@@ -245,7 +250,7 @@ export function PosPage() {
   async function openCash() {
     try {
       await api('POST', '/app/cash/open', {
-        station: openForm.station,
+        station,
         opening_float: Number(openForm.float || 0),
       });
       await loadSession();
@@ -294,7 +299,7 @@ export function PosPage() {
             <p className="muted">{t('pos.mustOpen')}</p>
             <Field
               label={t('pos.station')}
-              value={openForm.station}
+              value={station}
               onChange={(e) => setOpenForm({ ...openForm, station: e.target.value })}
             />
             <Field
@@ -564,8 +569,9 @@ export function PosPage() {
                     }
                   >
                     {METHODS.map((m) => (
-                      <option key={m} value={m}>
+                      <option key={m} value={m} disabled={offline && m.startsWith('momo')}>
                         {t(`pay.method.${m}`)}
+                        {offline && m.startsWith('momo') ? ` (${t('desk.onlineOnly')})` : ''}
                       </option>
                     ))}
                   </select>
@@ -601,7 +607,11 @@ export function PosPage() {
                 onClick={() =>
                   setRows([
                     ...rows,
-                    { method: 'momo_mtn', amount: String(remaining), reference: '' },
+                    {
+                      method: offline ? 'card' : 'momo_mtn',
+                      amount: String(remaining),
+                      reference: '',
+                    },
                   ])
                 }
               >
@@ -619,6 +629,7 @@ export function PosPage() {
                 ) : null}
               </span>
             </div>
+            {offline && <p className="notice">{t('desk.momoOffline')}</p>}
             {appr.needed && (
               <fieldset className="panel stack">
                 <legend>{t('appr.who')}</legend>

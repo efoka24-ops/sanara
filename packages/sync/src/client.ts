@@ -90,6 +90,8 @@ export interface SyncIdentity {
   deviceId: string;
   userId: string;
   batchSize?: number;
+  /** Opérations traitées sur le total à envoyer, avant puis après chaque lot. */
+  onProgress?: (sent: number, total: number) => void;
 }
 
 export interface PushReport {
@@ -105,7 +107,7 @@ export interface PushReport {
 export async function pushPending(
   queue: OperationQueue,
   transport: SyncTransport,
-  { deviceId, userId, batchSize = 100 }: SyncIdentity,
+  { deviceId, userId, batchSize = 100, onProgress }: SyncIdentity,
 ): Promise<PushReport> {
   const pending = queue.pending();
   const mine = pending.filter((o) => o.userId === userId);
@@ -118,6 +120,7 @@ export async function pushPending(
     waitingForOtherUsers: pending.length - mine.length,
   };
   // Au moins un appel, même vide : il donne l'écart d'horloge avec le serveur.
+  if (mine.length > 0) onProgress?.(0, mine.length);
   for (let i = 0; i === 0 || i < mine.length; i += batchSize) {
     let response: PushResponse;
     try {
@@ -143,6 +146,7 @@ export async function pushPending(
       report.conflicts.push(...r.conflicts.map((c) => ({ ...c, operationId: r.id })));
     }
     queue.acknowledge(done);
+    if (mine.length > 0) onProgress?.(Math.min(i + batchSize, mine.length), mine.length);
   }
   return report;
 }

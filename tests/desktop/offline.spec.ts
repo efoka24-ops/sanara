@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, '..', '..');
 const desktop = path.join(root, 'apps', 'desktop');
 const electron = createRequire(path.join(desktop, 'package.json'))('electron') as string;
 const stamp = Date.now().toString(36);
+const station = `B${stamp.slice(-6)}`.toUpperCase();
 
 /** Relais TCP vers l'API : le couper simule la panne de réseau du poste. */
 function network(port: number) {
@@ -50,7 +51,11 @@ async function launch(data: string, port: number) {
   return { app, page };
 }
 
-async function signIn(page: Page) {
+async function signIn(page: Page, station?: string) {
+  if (station) {
+    await expect(page.getByRole('heading', { name: 'Connectez ce poste' })).toBeVisible();
+    await page.getByLabel('Nom du poste').fill(station);
+  }
   await page.getByLabel('E-mail').fill('cashier@demo.test');
   await page.getByLabel('Mot de passe').fill(DEMO_PW);
   await page.getByRole('button', { name: 'Se connecter' }).click();
@@ -66,7 +71,7 @@ async function sell(page: Page, name: string) {
   await page.keyboard.press('F9');
   await page.getByRole('dialog', { name: 'Règlement' }).getByLabel('Montant').fill('1000');
   await page.getByRole('button', { name: 'Valider la vente' }).click();
-  const ticket = page.frameLocator('iframe[title^="V-BUREAU-"]');
+  const ticket = page.frameLocator(`iframe[title^="V-${station}-"]`);
   await expect(ticket.getByText('TOTAL TTC')).toBeVisible();
   await expect(ticket.getByText(name)).toBeVisible();
   await page.getByRole('button', { name: 'Fermer' }).click();
@@ -102,10 +107,11 @@ test('poste de bureau : vente en ligne puis hors-ligne, redémarrage sans résea
   try {
     let { app, page } = await launch(data, port);
     running = app;
-    await signIn(page);
+    await page.screenshot({ path: path.join(root, 'test-results', 'poste-activation.png') });
+    await signIn(page, station);
     await expect(page.getByText('En ligne', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Caisse' }).click();
-    await page.getByLabel('Nom du poste').fill('Bureau');
+    await expect(page.getByLabel('Nom du poste')).toHaveValue(station);
     await page.getByRole('button', { name: 'Ouvrir la caisse' }).click();
     await sell(page, name);
     await expect(page.getByText('Tout est envoyé')).toBeVisible({ timeout: 20_000 });
@@ -115,6 +121,7 @@ test('poste de bureau : vente en ligne puis hors-ligne, redémarrage sans résea
     await link.down();
     await sell(page, name);
     await expect(page.getByText('Mode hors ligne')).toBeVisible();
+    await page.screenshot({ path: path.join(root, 'test-results', 'poste-hors-ligne.png') });
     await expect(page.getByText('Opérations à envoyer : 1')).toBeVisible();
 
     // Coupure de courant et redémarrage, toujours sans réseau.
@@ -148,7 +155,7 @@ test('poste de bureau : vente en ligne puis hors-ligne, redémarrage sans résea
       'GET',
       `/app/sales?date=${new Date().toISOString().slice(0, 10)}`,
     );
-    expect(sales.items.filter((s) => s.number.startsWith('V-BUREAU-'))).toHaveLength(3);
+    expect(sales.items.filter((s) => s.number.startsWith(`V-${station}-`))).toHaveLength(3);
   } finally {
     await running?.close();
     await link.down();
