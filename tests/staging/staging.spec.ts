@@ -87,6 +87,9 @@ test('les boutons de l’accueil mènent à la demande d’accès et à l’annu
   await page.getByRole('link', { name: 'Trouver une pharmacie' }).click();
   await expect(page.getByText(/Pharmacies trouvées : \d+/)).toBeVisible();
   await page.goto('/');
+  await page.getByRole('link', { name: 'Pharmacies de garde' }).click();
+  await expect(page.getByText(/Pharmacies trouvées : \d+/)).toBeVisible();
+  await page.goto('/');
   await page.getByRole('link', { name: 'Digitaliser ma pharmacie' }).click();
   await expect(page.getByLabel(/Nom de l’officine/)).toBeVisible();
 });

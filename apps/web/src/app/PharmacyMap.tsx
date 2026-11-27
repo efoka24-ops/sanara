@@ -112,6 +112,7 @@ export default function PharmacyMap({
       detail.textContent = [
         first.distance_m === null ? null : distanceLabel(first.distance_m, locale),
         statusLabel(t, locale, first),
+        first.duty_badge ? t(`duty.badge.${first.duty_badge}`) : null,
       ]
         .filter(Boolean)
         .join(' · ');

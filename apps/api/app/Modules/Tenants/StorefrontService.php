@@ -23,7 +23,7 @@ final class StorefrontService
     {
     }
 
-    /** @return array{profile: array<string, mixed>, duties: list<array<string, string>>, available_services: list<string>} */
+    /** @return array{profile: array<string, mixed>, duties: list<array<string, string>>, available_services: list<string>, visible: bool} */
     public function get(): array
     {
         $tenant = $this->tenant();
@@ -51,7 +51,7 @@ final class StorefrontService
         foreach ($this->upcoming() as $d) {
             $duties[] = ['id' => (string) $d['id'], 'starts' => DutyCalendar::local((string) $d['starts_at'], $zone), 'ends' => DutyCalendar::local((string) $d['ends_at'], $zone)];
         }
-        return ['profile' => $profile, 'duties' => $duties, 'available_services' => self::SERVICES];
+        return ['profile' => $profile, 'duties' => $duties, 'available_services' => self::SERVICES, 'visible' => (int) $tenant['public_visible'] === 1];
     }
 
     /** @param array<string, mixed> $input */
@@ -187,7 +187,7 @@ final class StorefrontService
     private function tenant(): array
     {
         return $this->db->one(
-            'SELECT t.address, t.phone, t.latitude, t.longitude, c.timezone FROM tenants t JOIN countries c ON c.code = t.country_code WHERE t.id = ?',
+            'SELECT t.address, t.phone, t.latitude, t.longitude, t.public_visible, c.timezone FROM tenants t JOIN countries c ON c.code = t.country_code WHERE t.id = ?',
             [$this->ctx->require()],
         ) ?? throw new ApiException('not_found', 404);
     }

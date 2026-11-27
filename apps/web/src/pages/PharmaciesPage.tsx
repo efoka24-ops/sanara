@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Badge, Button, Field } from '@sanara/ui';
 import { api } from '../api/client';
@@ -29,6 +29,8 @@ export function PharmaciesPage() {
   const department = params.get('department') ?? '';
   const near = params.get('near') ?? '';
   const openOnly = params.get('open') === '1';
+  const dutyOnly = params.get('duty') === '1';
+  const navigate = useNavigate();
   // La position n'apparaît pas dans l'adresse : elle ne se partage pas avec le lien.
   const state = useLocation().state as { position?: Position; denied?: boolean } | null;
   const [position, setPosition] = useState<Position | null>(state?.position ?? null);
@@ -52,6 +54,7 @@ export function PharmaciesPage() {
     if (region) query.set('region', region);
     if (department) query.set('department', department);
     if (openOnly) query.set('open', '1');
+    if (dutyOnly) query.set('duty', 'tonight');
     if (position) {
       query.set('lat', String(position.lat));
       query.set('lng', String(position.lng));
@@ -76,7 +79,7 @@ export function PharmaciesPage() {
       live = false;
       window.clearTimeout(wait);
     };
-  }, [q, region, department, near, openOnly, position]);
+  }, [q, region, department, near, openOnly, dutyOnly, position]);
 
   async function nearest() {
     if (position) {
@@ -127,6 +130,14 @@ export function PharmaciesPage() {
           </button>
           <button
             type="button"
+            className={`chip${dutyOnly ? ' chip--on' : ''}`}
+            aria-pressed={dutyOnly}
+            onClick={() => change({ duty: dutyOnly ? '' : '1' })}
+          >
+            {t('pub.onDuty')}
+          </button>
+          <button
+            type="button"
             className={`chip${position ? ' chip--on' : ''}`}
             aria-pressed={!!position}
             onClick={nearest}
@@ -173,12 +184,11 @@ export function PharmaciesPage() {
               key={p.id}
               id={`pharmacy-${p.id}`}
               className={`panel found${p.id === selected ? ' found--on' : ''}`}
+              onClick={() => setSelected(p.id)}
             >
               <div className="found__head">
                 <h2>
-                  <button type="button" onClick={() => setSelected(p.id)}>
-                    {p.pharmacy_name}
-                  </button>
+                  <Link to={`/pharmacies/${p.id}`}>{p.pharmacy_name}</Link>
                 </h2>
                 {p.distance_m !== null && <b>{distanceLabel(p.distance_m, locale)}</b>}
               </div>
@@ -187,7 +197,8 @@ export function PharmaciesPage() {
               </p>
               <Badge tone={p.open ? 'ok' : p.open === false ? 'wait' : 'neutral'}>
                 {statusLabel(t, locale, p)}
-              </Badge>
+              </Badge>{' '}
+              {p.duty_badge && <Badge tone="wait">{t(`duty.badge.${p.duty_badge}`)}</Badge>}
               <p className="found__actions">
                 {p.phone && (
                   <a href={telLink(p.phone)}>
@@ -215,7 +226,7 @@ export function PharmaciesPage() {
               position={position}
               selected={selected}
               onSelect={choose}
-              onOpen={choose}
+              onOpen={(id) => navigate(`/pharmacies/${id}`)}
             />
           </Suspense>
         )}

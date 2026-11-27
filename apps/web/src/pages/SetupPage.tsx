@@ -4,6 +4,7 @@ import { useT } from '@sanara/i18n';
 import { Button, Field, Switch } from '@sanara/ui';
 import { api } from '../api/client';
 import { Art } from '../app/BrandPanel';
+import { defaultDays, HoursEditor, savedDays, type Day } from '../app/HoursEditor';
 
 const STEPS = ['hours', 'team', 'catalog', 'visibility'] as const;
 type Step = (typeof STEPS)[number];
@@ -13,26 +14,12 @@ interface Onboarding {
   percent: number;
   finished: boolean;
 }
-interface Day {
-  weekday: number;
-  is_open: boolean;
-  opens: string;
-  closes: string;
-}
-const defaults = (): Day[] =>
-  Array.from({ length: 7 }, (_, i) => ({
-    weekday: i + 1,
-    is_open: i < 6,
-    opens: '07:30',
-    closes: '21:00',
-  }));
-
 export function SetupPage() {
   const { t } = useT();
   const nav = useNavigate();
   const [o, setO] = useState<Onboarding | null>(null);
   const [step, setStep] = useState<Step>('hours');
-  const [days, setDays] = useState<Day[]>(defaults());
+  const [days, setDays] = useState<Day[]>(defaultDays());
   const [visible, setVisible] = useState(false);
   const [refDone, setRefDone] = useState(false);
   const [invite, setInvite] = useState({ name: '', email: '', role: 'cashier' });
@@ -44,14 +31,7 @@ export function SetupPage() {
       if (r.current) setStep(r.current);
     });
     api<{ opening_hours: Day[] }>('GET', '/app/settings').then((r) => {
-      if (r.opening_hours.length)
-        setDays(
-          r.opening_hours.map((d) => ({
-            ...d,
-            opens: d.opens ?? '07:30',
-            closes: d.closes ?? '21:00',
-          })),
-        );
+      setDays(savedDays(r.opening_hours));
     });
   }, []);
 
@@ -70,8 +50,6 @@ export function SetupPage() {
       setError(t('errors.server_error'));
     }
   }
-  const setDay = (i: number, p: Partial<Day>) =>
-    setDays((d) => d.map((x, j) => (j === i ? { ...x, ...p } : x)));
 
   return (
     <div className="setup">
@@ -96,35 +74,7 @@ export function SetupPage() {
           <>
             <h1>{t('setup.hoursTitle')}</h1>
             <p className="muted">{t('setup.hoursHint')}</p>
-            <div className="panel">
-              {days.map((d, i) => (
-                <div key={d.weekday} className="hours-row">
-                  <b>{t(`day.${d.weekday}`)}</b>
-                  <input
-                    type="time"
-                    value={d.opens}
-                    disabled={!d.is_open}
-                    onChange={(e) => setDay(i, { opens: e.target.value })}
-                    aria-label="open"
-                  />
-                  <input
-                    type="time"
-                    value={d.closes}
-                    disabled={!d.is_open}
-                    onChange={(e) => setDay(i, { closes: e.target.value })}
-                    aria-label="close"
-                  />
-                  <span>
-                    {t('setup.open')}{' '}
-                    <Switch
-                      checked={d.is_open}
-                      onChange={(v) => setDay(i, { is_open: v })}
-                      label={t(`day.${d.weekday}`)}
-                    />
-                  </span>
-                </div>
-              ))}
-            </div>
+            <HoursEditor days={days} onChange={setDays} />
           </>
         )}
         {step === 'team' && (

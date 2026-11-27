@@ -270,27 +270,27 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 16 : US18 - Recherche de pharmacies et carte (P1) 🎯 MVP 2
 
-- [ ] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table de projection avec point GPS et horaires, alimentée à chaque changement (migrations 0007 et 0014) ; reste la garde)
+- [x] T144 [P] [US18] Table de lecture publique `public_pharmacies` (nom, point GPS, horaires, garde, visibilité) alimentée à chaque changement, avec index spatial MySQL ou boîte englobante + Haversine (`apps/api/database/migrations/0007_public_pharmacies.sql`) (table de projection avec point GPS, horaires et gardes, alimentée à chaque changement ; boîte englobante et Haversine (migrations 0007, 0014 à 0016))
 - [x] T145 **[TDD]** [US18] Tests : pharmacies suspendues/non publiques absentes, tri par distance, recherche par région/département/ville/nom (`apps/api/tests/Applications/PublicPharmaciesHttpTest.php`) (PublicProjectionHttpTest, PublicPharmaciesHttpTest et PublicSearchHttpTest : visibilité, distance, région, département, ville, quartier, nom)
 - [x] T146 [US18] Endpoints `GET /public/pharmacies` (filtres, bbox, distance) avec cache et pagination (`apps/api/app/Modules/Applications/PublicPharmacyService.php`, route dans `Routes.php`) (filtres, zone visible, distance, cache par ETag et pagination ; /public/geo pour les lieux)
 - [ ] T147 [US18] Référentiel géographique (régions, départements, villes, quartiers) dans `CountryConfig` + sélecteurs en cascade (listes en cascade région puis département tirées des pharmacies publiées ; reste le référentiel officiel dans CountryConfig)
 - [x] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`) (apps/web/src/pages/PharmaciesPage.tsx et app/PharmacyMap.tsx : liste avant la carte, Leaflet, regroupement des repères)
-- [ ] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde (nom, distance et ouvert/fermé au survol ou à l'appui ; reste la garde)
+- [x] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde (nom, distance et ouvert/fermé au survol ou à l'appui ; reste la garde) (nom, distance, ouvert ou fermé et garde au survol ou à l'appui)
 - [x] T150 [US18] Géolocalisation avec consentement et repli sur saisie du quartier (position demandée à la demande seulement, arrondie, absente de l'adresse ; repli sur le quartier saisi (HTTPS requis pour la géolocalisation))
-- [ ] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21)
-- [ ] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées (filtre « ouvert maintenant » fait ; restent la garde et les assurances)
+- [ ] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21) (le double appui ouvre la fiche de la pharmacie ; l'assistant viendra avec US21)
+- [ ] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées (filtre « ouvert maintenant » fait ; restent la garde et les assurances) (filtres « ouvert maintenant » et « de garde » faits ; reste le filtre par assurance)
 - [ ] T153 [US18] SEO, performance 3G (images optimisées, tuiles légères), test Lighthouse en CI
 
 **Checkpoint US18** ✅
 
 ## Phase 17 : US19 - Fiche pharmacie, gardes, itinéraire (P1) 🎯 MVP 2
 
-- [ ] T154 [P] [US19] Modèles `DutySchedule`, `PharmacyService`, `PharmacyPhoto` (`apps/api/prisma/schema.prisma`)
-- [ ] T155 **[TDD]** [US19] Tests : statut ouvert/fermé selon fuseau et jours fériés, calcul de garde (`packages/shared/src/hours/hours.spec.ts`)
-- [ ] T156 [US19] Gestion des horaires, jours fériés et gardes côté officine (`apps/web/src/app/(pharmacy)/vitrine/`)
-- [ ] T157 [US19] Page publique de la pharmacie (adresse, téléphone, horaires, services, assurances, photos) (`apps/web/src/app/(public)/pharmacie/[slug]/page.tsx`)
-- [ ] T158 [US19] Page « pharmacies de garde » par zone et date (`apps/web/src/app/(public)/gardes/`)
-- [ ] T159 [US19] Lien itinéraire vers application de navigation
+- [ ] T154 [P] [US19] Modèles `DutySchedule`, `PharmacyService`, `PharmacyPhoto` (`apps/api/prisma/schema.prisma`) (gardes, services et assurances faits (migration 0015) ; restent les photos)
+- [ ] T155 **[TDD]** [US19] Tests : statut ouvert/fermé selon fuseau et jours fériés, calcul de garde (`packages/shared/src/hours/hours.spec.ts`) (ouvert ou fermé selon le fuseau et calcul des gardes testés (OpeningStatusTest, StorefrontHttpTest) ; restent les jours fériés)
+- [ ] T156 [US19] Gestion des horaires, jours fériés et gardes côté officine (`apps/web/src/app/(pharmacy)/vitrine/`) (écran « Ma vitrine » : adresse, point GPS, services, assurances, horaires, gardes ; restent les jours fériés)
+- [ ] T157 [US19] Page publique de la pharmacie (adresse, téléphone, horaires, services, assurances, photos) (`apps/web/src/app/(public)/pharmacie/[slug]/page.tsx`) (fiche /pharmacies/:id : adresse, contact, horaires, services, assurances, gardes, carte ; restent les photos)
+- [x] T158 [US19] Page « pharmacies de garde » par zone et date (`apps/web/src/app/(public)/gardes/`) (page /gardes par ville et période : ce soir, cette semaine, ce week-end (maquette P9))
+- [x] T159 [US19] Lien itinéraire vers application de navigation (itinéraire OpenStreetMap vers le point GPS, ou recherche de l'adresse)
 
 **Checkpoint US19** ✅
 

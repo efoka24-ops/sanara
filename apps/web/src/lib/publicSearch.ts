@@ -18,6 +18,24 @@ export interface PublicPharmacy {
   closes: string | null;
   next_opening: { weekday: number; opens: string; in_days: number } | null;
   distance_m: number | null;
+  duty: Duty | null;
+  /** De garde en ce moment, ou ce soir. */
+  duty_badge: 'now' | 'tonight' | null;
+}
+
+/** Heures locales « 2026-11-27T20:00 ». */
+export interface Duty {
+  starts: string;
+  ends: string;
+  now: boolean;
+}
+
+export interface PublicSheet extends PublicPharmacy {
+  week: { weekday: number; opens: string; closes: string }[] | null;
+  duties: Duty[];
+  services: string[];
+  insurances: string[];
+  email: string | null;
 }
 
 export interface SearchResult {
@@ -58,6 +76,20 @@ export function statusLabel(t: Translate, locale: string, p: PublicPharmacy): st
     Date.UTC(2024, 0, next.weekday),
   );
   return t('pub.opensDay', { day, time });
+}
+
+export function dutyLabel(t: Translate, locale: string, duty: Duty): string {
+  const day = (local: string) =>
+    new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    }).format(new Date(`${local}Z`));
+  const time = (local: string) => hour(local.slice(11), locale);
+  return duty.now
+    ? t('duty.until', { day: day(duty.ends), time: time(duty.ends) })
+    : t('duty.from', { day: day(duty.starts), from: time(duty.starts), to: time(duty.ends) });
 }
 
 export function distanceLabel(metres: number, locale: string): string {

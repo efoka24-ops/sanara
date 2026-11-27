@@ -91,6 +91,7 @@ test('P1 : l’accueil sur téléphone garde la recherche et la demande d’acc�
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Rechercher une pharmacie' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Demander mon accès' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Pharmacies de garde' })).toBeVisible();
   // Aucun défilement horizontal.
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   if (process.env.SHOTS)

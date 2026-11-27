@@ -96,6 +96,7 @@ final class StorefrontHttpTest extends TestCase
         $this->assertSame('Garoua', $mine['profile']['city']);
         $this->assertSame(['Mutuelle des enseignants'], $mine['profile']['insurances']);
         $this->assertContains('vitals', $mine['available_services']);
+        $this->assertTrue($mine['visible']);
 
         $id = $this->call('GET', '/public/pharmacies?city=Garoua')[1]['items'][0]['id'];
         [$status, $page] = $this->call('GET', "/public/pharmacies/$id");

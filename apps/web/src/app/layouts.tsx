@@ -15,6 +15,7 @@ const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
   { to: '/app/clients', key: 'nav.customers', permission: 'customers.read' },
   { to: '/app/synchronisation', key: 'nav.sync', permission: 'stock.read' },
   { to: '/app/equipe', key: 'nav.team', permission: 'team.manage' },
+  { to: '/app/vitrine', key: 'nav.storefront', permission: 'settings.write' },
   { to: '/securite', key: 'nav.security' },
 ];
 
@@ -45,8 +46,13 @@ export function PublicLayout() {
         </Link>
         <nav className="topbar__links">
           <NavLink to="/pharmacies">{t('home.find')}</NavLink>
-          <Link to="/#comment">{t('home.how')}</Link>
-          <Link to="/#pharmaciens">{t('home.forPharmacists')}</Link>
+          <NavLink to="/gardes">{t('home.duties')}</NavLink>
+          <Link to="/#comment" className="topbar__how">
+            {t('home.how')}
+          </Link>
+          <Link to="/#pharmaciens" className="topbar__pro">
+            {t('home.forPharmacists')}
+          </Link>
         </nav>
         <nav className="topbar__actions">
           <button
