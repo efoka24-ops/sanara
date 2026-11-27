@@ -5,6 +5,13 @@ import { Badge, Button, Field, Modal, Table, useToast } from '@sanara/ui';
 import { accessHeader, api, ApiError } from '../api/client';
 import { money, ProductSearch, useErrorText, type ProductLite } from '../lib/common';
 import { when, type RequestStatus } from '../lib/requests';
+import {
+  loadLexicon,
+  readPrescription,
+  readText,
+  type LearnedState,
+  type Proposal,
+} from '../lib/reader';
 
 interface Item {
   id: string;
@@ -47,6 +54,7 @@ interface Draft {
   label: string;
   quantity: number;
   read_text: string;
+  read_confidence: number | null;
   available: boolean;
 }
 
@@ -200,6 +208,62 @@ export function RequestPage() {
   const [freeLabel, setFreeLabel] = useState('');
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [learned, setLearned] = useState<LearnedState | null>(null);
+  const [reader, setReader] = useState<{
+    busy: boolean;
+    progress: number;
+    proposals: Proposal[] | null;
+    anomalies: string[];
+    failed: boolean;
+  }>({ busy: false, progress: 0, proposals: null, anomalies: [], failed: false });
+
+  /** Lecture des photos sur ce poste, puis rapprochement avec le catalogue et ce que la pharmacie a appris. */
+  async function read(docs: Detail['documents']) {
+    setReader({ busy: true, progress: 0, proposals: null, anomalies: [], failed: false });
+    try {
+      // Relu à chaque fois : il inclut les choix faits sur les demandes précédentes.
+      const lexicon = await loadLexicon();
+      setLearned(lexicon);
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
+      const pages = await Promise.all(
+        docs
+          .filter((x) => x.mime !== 'application/pdf')
+          .map((x) =>
+            fetch(`${base}/app/requests/${id}/documents/${x.id}`, { headers: accessHeader() }).then(
+              (r) => r.blob(),
+            ),
+          ),
+      );
+      const { reading, proposals } = await readPrescription(pages, lexicon.links, (p) =>
+        setReader((r) => ({ ...r, progress: p })),
+      );
+      setReader({
+        busy: false,
+        progress: 1,
+        proposals,
+        anomalies: reading.anomalies,
+        failed: false,
+      });
+    } catch (e) {
+      console.error('lecture de l’ordonnance', e);
+      setReader({ busy: false, progress: 0, proposals: null, anomalies: [], failed: true });
+    }
+  }
+
+  function propose(p: Proposal, chosen: ProductLite | null) {
+    setLines((ls) => [
+      ...ls,
+      {
+        product: chosen,
+        label: chosen?.name ?? p.line.name,
+        quantity: p.line.quantity ?? 1,
+        read_text: readText(p.line),
+        read_confidence: p.line.confidence,
+        available: chosen !== null,
+      },
+    ]);
+    setReader((r) => ({ ...r, proposals: r.proposals?.filter((x) => x !== p) ?? null }));
+  }
 
   const load = () =>
     api<Detail>('GET', `/app/requests/${id}`)
@@ -332,13 +396,81 @@ export function RequestPage() {
           {mine && (
             <>
               <h2>{t('req.quote')}</h2>
+              <section className="reader">
+                <div className="row">
+                  <b>{t('reader.title')}</b>
+                  {learned?.reliability.accepted_rate != null && (
+                    <span className="muted">
+                      {t('reader.reliability', {
+                        rate: learned.reliability.accepted_rate,
+                        n: learned.reliability.lines,
+                      })}
+                    </span>
+                  )}
+                </div>
+                <p className="muted">{t('reader.hint')}</p>
+                {d.documents.every((x) => x.mime === 'application/pdf') ? (
+                  <p className="muted">{t('reader.pdf')}</p>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    disabled={reader.busy}
+                    onClick={() => void read(d.documents)}
+                  >
+                    {reader.busy
+                      ? t('reader.busy', { n: Math.round(reader.progress * 100) })
+                      : t('reader.run')}
+                  </Button>
+                )}
+                {reader.failed && <p className="form-error">{t('reader.failed')}</p>}
+                {reader.anomalies.map((a) => (
+                  <p key={a} className="notice">
+                    {t(`reader.anomaly.${a}`)}
+                  </p>
+                ))}
+                {reader.proposals?.map((p, i) => (
+                  <div key={i} className="reader__line">
+                    <div>
+                      <b>{readText(p.line)}</b>{' '}
+                      <span className="muted">
+                        {t('reader.confidence', { n: p.line.confidence })}
+                        {p.line.posology && ` · ${p.line.posology}`}
+                        {p.line.quantity && ` · ${t('reader.boxes', { n: p.line.quantity })}`}
+                      </span>
+                    </div>
+                    <div className="reader__choices">
+                      {p.matches.map((m) => (
+                        <button
+                          key={m.product.id}
+                          type="button"
+                          className="chip"
+                          onClick={() => propose(p, m.product as unknown as ProductLite)}
+                        >
+                          {m.product.name} · {m.score} %
+                          {m.learned ? ` · ${t('reader.learned')}` : ''}
+                        </button>
+                      ))}
+                      <button type="button" className="link" onClick={() => propose(p, null)}>
+                        {t('reader.missing')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </section>
               <p className="muted">{t('req.quoteHint')}</p>
               <ProductSearch
                 label={t('req.addProduct')}
                 onPick={(p) =>
                   setLines((ls) => [
                     ...ls,
-                    { product: p, label: p.name, quantity: 1, read_text: '', available: true },
+                    {
+                      product: p,
+                      label: p.name,
+                      quantity: 1,
+                      read_text: '',
+                      read_confidence: null,
+                      available: true,
+                    },
                   ])
                 }
               />
@@ -354,6 +486,7 @@ export function RequestPage() {
                       label: freeLabel.trim(),
                       quantity: 1,
                       read_text: '',
+                      read_confidence: null,
                       available: false,
                     },
                   ]);
@@ -439,6 +572,7 @@ export function RequestPage() {
                         quantity: l.quantity,
                         available: l.available,
                         read_text: l.read_text || undefined,
+                        read_confidence: l.read_confidence ?? undefined,
                       })),
                     },
                     t('req.quoteSent'),

@@ -9,3 +9,5 @@ allowBuilds:
   esbuild: true
   # Non utilisé : l’installateur est un assistant NSIS, pas Squirrel.
   electron-winstaller: false
+  # Script de financement seulement, rien à construire.
+  tesseract.js: false

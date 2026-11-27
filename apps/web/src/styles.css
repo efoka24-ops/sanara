@@ -1309,6 +1309,33 @@ img.rx-doc {
   }
 }
 
+/* Lecture automatique */
+.reader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--sa-green-100);
+  border-radius: var(--sa-r-card);
+}
+.reader p {
+  margin: 0;
+}
+.reader__line {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--sa-surface);
+  border-radius: var(--sa-r-field);
+}
+.reader__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 /* Ma vitrine */
 .storefront__services {
   display: flex;

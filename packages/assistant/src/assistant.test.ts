@@ -202,3 +202,14 @@ describe('apprentissage par les corrections', () => {
     expect(matchCatalogue(amox!, CATALOGUE, 3, links).some((m) => m.learned)).toBe(false);
   });
 });
+
+describe('apprentissage, cas d’égalité', () => {
+  it('signale comme appris un produit aussi bien trouvé par son nom', () => {
+    const [amox] = parsePrescription(SCAN, 80);
+    const links = [{ read: 'Amoxicilline 500 mg', uses: 2, product: CATALOGUE[0]! }];
+    expect(matchCatalogue(amox!, CATALOGUE, 3, links)[0]).toMatchObject({
+      product: { id: 'a' },
+      learned: true,
+    });
+  });
+});

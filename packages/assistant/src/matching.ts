@@ -93,9 +93,15 @@ export function matchCatalogue(
     return { product, score: Math.round(Math.max(0, Math.min(100, score))) };
   });
   const byProduct = new Map<string, Match>();
-  for (const found of [...scored, ...learnedMatches(line, learned, similarity)]) {
+  const all: Match[] = [...scored, ...learnedMatches(line, learned, similarity)];
+  for (const found of all) {
     const known = byProduct.get(found.product.id);
-    if (!known || known.score < found.score) byProduct.set(found.product.id, found);
+    // Même produit trouvé par le nom et par l'apprentissage : meilleur score, et la mention reste.
+    byProduct.set(found.product.id, {
+      product: found.product,
+      score: Math.max(known?.score ?? 0, found.score),
+      learned: Boolean(known?.learned || found.learned) || undefined,
+    });
   }
   return (
     [...byProduct.values()]

@@ -35,3 +35,5 @@ playwright-report/
 .native/
 # Ressources de l’installateur (versionnées)
 !apps/desktop/build/
+# Moteur de lecture copié à la construction (scripts/ocr-assets.mjs)
+apps/web/public/ocr/

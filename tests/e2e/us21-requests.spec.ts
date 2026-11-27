@@ -174,3 +174,99 @@ test('US21 : des signes graves déclenchent le message d’urgence, sans aucun a
   );
   await expect(page.getByText('Urgence signalée à la pharmacie')).toBeVisible();
 });
+
+test('T163 : le moteur Sanara lit une ordonnance sur le poste et retient le choix du pharmacien', async ({
+  page,
+  browser,
+  request,
+}) => {
+  test.setTimeout(180_000);
+  const name = `Ciprofloxacine 500 mg ${stamp}`;
+  const owner = await apiAs(request, 'owner@demo.test');
+  await owner('PUT', '/app/visibility', { visible: true });
+  const product = await owner<{ id: string }>('POST', '/app/products', {
+    name,
+    regulatory_status: 'free',
+    sale_price: 3000,
+    purchase_price: 2000,
+    vat_bp: 0,
+  });
+  await owner('POST', '/app/stock/receipts', {
+    product_id: product.id,
+    lot_number: `OCR-${stamp}`,
+    expiry: '2031-06-30',
+    quantity: 10,
+    unit_cost: 2000,
+  });
+  const found = await (
+    await request.get('http://127.0.0.1:8081/public/pharmacies?q=d%C3%A9mo')
+  ).json();
+
+  // Ordonnance dactylographiée, dessinée dans le navigateur (données fictives).
+  await page.goto('/');
+  const photo = Buffer.from(
+    (
+      await page.evaluate(() => {
+        const c = document.createElement('canvas');
+        c.width = 1400;
+        c.height = 900;
+        const g = c.getContext('2d')!;
+        g.fillStyle = '#fff';
+        g.fillRect(0, 0, c.width, c.height);
+        g.fillStyle = '#000';
+        g.font = '44px Arial';
+        [
+          'Dr Exemple, médecin',
+          'Douala, le 12/11/2026',
+          '1) Ciprofloxacine 500 mg comprimés',
+          '1 cp matin et soir pendant 7 jours',
+          '2 boîtes',
+        ].forEach((t, i) => g.fillText(t, 80, 120 + i * 140));
+        return c.toDataURL('image/png');
+      })
+    ).split(',')[1]!,
+    'base64',
+  );
+
+  const send = async () => {
+    await page.goto(`/pharmacies/${found.items[0].id}/envoyer`);
+    await page
+      .locator('input[type=file]')
+      .setInputFiles({ name: 'ordo.png', mimeType: 'image/png', buffer: photo });
+    await page.getByLabel('Votre prénom').fill('Awa');
+    await page.getByLabel('Votre téléphone').fill('+237 690 00 00 02');
+    await page.getByLabel(/J’accepte que mon ordonnance/).check();
+    await page.getByRole('button', { name: 'Envoyer au pharmacien' }).click();
+    await expect(page.getByRole('heading', { name: 'Demande reçue' })).toBeVisible();
+    return (await page.locator('.eyebrow').first().innerText()).replace(/^DEMANDE\s+/i, '');
+  };
+
+  const staff = await (await browser.newContext({ locale: 'fr-FR' })).newPage();
+  await loginAs(staff, 'pharmacist@demo.test');
+  const readAndQuote = async (number: string) => {
+    await staff.getByRole('link', { name: 'Demandes patients' }).click();
+    await staff.getByRole('link', { name: number }).click();
+    await staff.getByRole('button', { name: 'Prendre en charge' }).click();
+    await staff.getByRole('button', { name: 'Lire l’ordonnance' }).click();
+    const proposal = staff.locator('.reader__line').filter({ hasText: /Ciprofloxacine 500 mg/i });
+    await expect(proposal).toBeVisible({ timeout: 120_000 });
+    await expect(proposal).toContainText('2 boîte(s)');
+    return proposal;
+  };
+
+  const first = await readAndQuote(await send());
+  if (process.env.SHOTS)
+    await staff.screenshot({ path: `${process.env.SHOTS}/lecture.png`, fullPage: true });
+  await first.getByRole('button', { name: new RegExp(name) }).click();
+  await expect(staff.getByLabel('Lu sur l’ordonnance')).toHaveValue(/Ciprofloxacine 500 mg/i);
+  await expect(staff.getByLabel('Qté')).toHaveValue('2');
+  await staff.getByRole('button', { name: 'Envoyer le devis au patient' }).click();
+  await expect(staff.getByText('Devis envoyé au patient.')).toBeVisible();
+
+  // Deuxième ordonnance : le produit retenu est proposé comme déjà choisi.
+  const second = await readAndQuote(await send());
+  await expect(second.getByRole('button', { name: new RegExp(name) })).toContainText('déjà choisi');
+  await expect(staff.getByText(/des lectures acceptées sans correction/)).toBeVisible();
+
+  await owner('PUT', '/app/visibility', { visible: false });
+});

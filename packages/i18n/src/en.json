@@ -905,5 +905,20 @@
   "pickup.find": "Find the order",
   "pickup.unknown": "Unknown, used or expired code.",
   "pickup.banner": "Pickup {number} · {name}",
-  "pickup.drop": "Cancel pickup"
+  "pickup.drop": "Cancel pickup",
+  "reader.title": "Automatic reading",
+  "reader.hint": "The Sanara engine reads photos on this computer and learns from your choices. Always check against the image: handwriting is often misread.",
+  "reader.run": "Read the prescription",
+  "reader.busy": "Reading… {n}%",
+  "reader.pdf": "Automatic reading works on photos only.",
+  "reader.failed": "Reading failed on this computer. Enter the lines by hand.",
+  "reader.anomaly.unreadable_page": "A page is unreadable: ask for a sharper photo if needed.",
+  "reader.anomaly.low_confidence": "Low-confidence reading: check every line.",
+  "reader.anomaly.no_medicine_found": "No medicine recognised: enter the lines by hand.",
+  "reader.anomaly.empty": "No text found on the photos.",
+  "reader.confidence": "{n}% confident",
+  "reader.boxes": "{n} box(es)",
+  "reader.learned": "chosen before",
+  "reader.missing": "Not in the catalogue",
+  "reader.reliability": "{rate}% of readings accepted unchanged ({n} lines, 90 days)"
 }

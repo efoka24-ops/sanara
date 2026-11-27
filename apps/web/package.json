@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "node ../../scripts/ocr-assets.mjs && vite",
+    "build": "node ../../scripts/ocr-assets.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
@@ -13,11 +13,15 @@
     "@sanara/i18n": "workspace:*",
     "@sanara/shared": "workspace:*",
     "@sanara/ui": "workspace:*",
+    "@tesseract.js-data/fra": "^1.0.0",
     "leaflet": "^1.9.4",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.0.0"
+    "react-router-dom": "^7.0.0",
+    "tesseract.js": "^7.0.0",
+    "tesseract.js-core": "^7.0.0",
+    "@sanara/assistant": "workspace:*"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.23",

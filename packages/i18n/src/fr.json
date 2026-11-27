@@ -905,5 +905,20 @@
   "pickup.find": "Retrouver la commande",
   "pickup.unknown": "Code inconnu, déjà utilisé ou expiré.",
   "pickup.banner": "Retrait {number} · {name}",
-  "pickup.drop": "Annuler le retrait"
+  "pickup.drop": "Annuler le retrait",
+  "reader.title": "Lecture automatique",
+  "reader.hint": "Le moteur Sanara lit les photos sur ce poste et apprend de vos choix. Vérifiez toujours avec l’image : l’écriture manuscrite est souvent mal lue.",
+  "reader.run": "Lire l’ordonnance",
+  "reader.busy": "Lecture… {n} %",
+  "reader.pdf": "Lecture automatique disponible pour les photos seulement.",
+  "reader.failed": "Lecture impossible sur ce poste. Saisissez les lignes à la main.",
+  "reader.anomaly.unreadable_page": "Une page est illisible : demandez une photo plus nette si besoin.",
+  "reader.anomaly.low_confidence": "Lecture peu sûre : vérifiez chaque ligne.",
+  "reader.anomaly.no_medicine_found": "Aucun médicament reconnu : saisissez les lignes à la main.",
+  "reader.anomaly.empty": "Aucun texte trouvé sur les photos.",
+  "reader.confidence": "lecture sûre à {n} %",
+  "reader.boxes": "{n} boîte(s)",
+  "reader.learned": "déjà choisi",
+  "reader.missing": "Absent du catalogue",
+  "reader.reliability": "{rate} % des lectures acceptées sans correction ({n} lignes, 90 jours)"
 }
