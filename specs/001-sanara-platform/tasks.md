@@ -210,7 +210,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T108 [US10] Contrôle des produits réglementés : saisie/rattachement d'ordonnance et pharmacien délivrant
 - [x] T109 [US10] Suggestions de génériques en rupture
 - [x] T110 [US10] Numérotation par poste sans collision (`packages/shared/src/sales/numbering.ts`) avec tests de collision
-- [ ] T111 [US10] Budget de performance : test automatique « ajout article < 200 ms » (`tests/perf/pos.spec.ts`) (non fait)
+- [x] T111 [US10] Budget de performance : test automatique « ajout article < 200 ms » (`tests/perf/pos.spec.ts`) (tests/e2e/us10-perf.spec.ts : de la touche Entrée à la ligne du panier, médiane mesurée dans la page sur 1 500 produits ; corrige un scan perdu quand le lecteur validait avant la réponse de la recherche)
 
 **Checkpoint US10** ✅
 

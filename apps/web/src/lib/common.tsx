@@ -78,6 +78,14 @@ export function DocModal({
 }
 
 /** Recherche de produit par nom, DCI ou code-barres ; Entrée choisit le premier résultat. */
+const searchProducts = async (q: string) =>
+  (
+    await api<{ items: ProductLite[] }>(
+      'GET',
+      `/app/products?${new URLSearchParams({ q, limit: '8', picker: '1' })}`,
+    )
+  ).items;
+
 export function ProductSearch({
   label,
   onPick,
@@ -92,24 +100,38 @@ export function ProductSearch({
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   const [q, setQ] = useState('');
-  const [items, setItems] = useState<ProductLite[]>([]);
+  // Résultats et saisie à laquelle ils répondent.
+  const [found, setFound] = useState<{ q: string; items: ProductLite[] }>({ q: '', items: [] });
+  const items = found.q === q ? found.items : [];
+  // Une réponse arrivée après coup appelle la version courante de onPick (panier à jour).
+  const latest = useRef(onPick);
+  latest.current = onPick;
   useEffect(() => {
-    if (q.trim().length < 1) {
-      setItems([]);
-      return;
-    }
+    if (q.trim().length < 1) return;
+    let live = true;
     const h = window.setTimeout(() => {
-      api<{ items: ProductLite[] }>(
-        'GET',
-        `/app/products?${new URLSearchParams({ q, limit: '8', picker: '1' })}`,
-      ).then((r) => setItems(r.items));
+      void searchProducts(q).then((r) => live && setFound({ q, items: r }));
     }, 120);
-    return () => window.clearTimeout(h);
+    return () => {
+      live = false;
+      window.clearTimeout(h);
+    };
   }, [q]);
   const pick = (p: ProductLite) => {
-    onPick(p);
+    latest.current(p);
     if (clearOnPick) setQ('');
-    setItems([]);
+    setFound({ q: '', items: [] });
+  };
+  /** Un lecteur de codes-barres valide avant que la recherche différée ait répondu. */
+  const submit = async () => {
+    if (items[0]) return pick(items[0]);
+    const term = q;
+    if (term.trim() === '') return;
+    // Le champ est libéré aussitôt pour le scan suivant.
+    if (clearOnPick) setQ('');
+    const [first] = await searchProducts(term);
+    if (first) latest.current(first);
+    else setQ((now) => now || term);
   };
   return (
     <div className="picker">
@@ -122,9 +144,9 @@ export function ProductSearch({
         autoFocus={autoFocus}
         onChange={(e) => setQ(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && items[0]) {
+          if (e.key === 'Enter') {
             e.preventDefault();
-            pick(items[0]);
+            void submit();
           }
         }}
       />
