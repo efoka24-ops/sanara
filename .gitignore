@@ -37,3 +37,6 @@ playwright-report/
 !apps/desktop/build/
 # Moteur de lecture copié à la construction (scripts/ocr-assets.mjs)
 apps/web/public/ocr/
+
+# Captures produites à chaque passage du test visuel (T280)
+tests/desktop/visual.spec.ts-snapshots/

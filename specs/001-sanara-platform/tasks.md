@@ -512,7 +512,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 Le design de la maquette s'applique **à l'identique** au web et au desktop (voir `docs/design-system.md`).
 
 - [ ] T279 [P] Composants `@sanara/ui` fidèles à la maquette : `Button` (primaire, secondaire, danger, ambre), `Field` (étiquette en capitales, focus vert), `Stepper` (4 segments), `Switch`, `Badge` (ok, attente, danger, neutre), `Table`, `Modal` (rayon 20 px), `Sidebar` pharmacie (blanche) et `Sidebar` admin (sombre avec pastille ADMIN)
-- [ ] T280 [P] Test visuel de non-régression (captures Playwright comparées) des écrans A1, A7, B1 et C1 sur web et dans la fenêtre Electron : le rendu desktop doit être identique au web
+- [x] T280 [P] Test visuel de non-régression (captures Playwright comparées) des écrans A1, A7, B1 et C1 sur web et dans la fenêtre Electron : le rendu desktop doit être identique au web (tests/desktop/visual.spec.ts : demande d'accès, tableau de bord, catalogue et caisse capturés dans la fenêtre Electron et dans un navigateur à la même taille et densité, comparés (3 % toléré pour le lissage des lettres) ; les réglages compacts propres au poste ont été retirés)
 - [ ] T281 [US1] Formulaire d'accès en 4 étapes fidèle à A1 à A3 (stepper, carte avec repère glissable, récapitulatif) et écrans A4 (confirmation `PH-AAAA-NNNN`, suivi avec complément)
 - [ ] T282 [US2] Décision « Demander un complément » (B2) : documents concernés, message au demandeur, renvoi depuis le lien de suivi ; rejet avec motifs prédéfinis et option « autoriser une nouvelle demande »
 - [ ] T283 [US2] Choix de la formule et des postes autorisés à la validation (B2)

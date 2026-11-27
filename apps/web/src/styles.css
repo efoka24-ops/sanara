@@ -1674,13 +1674,9 @@ img.rx-doc {
 .desktop-frame .topbar > span {
   display: none !important;
 }
+/* T280 : même formulaire que sur le site ; seul l'espace laissé au bouton de langue diffère. */
 .desktop-frame .card-form {
-  margin: 56px auto 16px;
-  padding: 24px 28px;
-  gap: 10px;
-}
-.desktop-frame .card-form h1 {
-  font-size: 26px;
+  margin-top: 56px;
 }
 
 /* Synchronisation et écarts à vérifier (maquette D2) */
