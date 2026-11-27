@@ -136,7 +136,7 @@ final class Services
             : new \Sanara\Modules\Notifications\Sms\ConsoleSmsProvider());
         $this->presence = new \Sanara\Modules\Requests\PresenceService($db, $tdb, $this->tenant, $clock);
         $this->escalation = new \Sanara\Modules\Requests\EscalationService($db, $tdb, $this->tenant, $clock, $this->jobs, $this->sms, $ledger);
-        $this->requests = new \Sanara\Modules\Requests\ProcessingService($db, $tdb, $clock, $this->storage, $this->stock, $ledger, $this->escalation);
+        $this->requests = new \Sanara\Modules\Requests\ProcessingService($db, $tdb, $clock, $this->storage, $this->stock, $ledger, $this->escalation, $this->tenant);
         $this->patients = new \Sanara\Modules\Requests\PatientService($db, $tdb, $this->tenant, $clock, $this->storage, $this->jobs, $seq, $ledger, $this->publicPharmacies, $this->presence, $this->escalation);
         $this->returns = new \Sanara\Modules\Sales\ReturnsService($db, $tdb, $clock, $this->sales, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers);
         $this->devices = new \Sanara\Modules\Sync\DeviceService($db, $tdb, $clock, $this->audit, $this->tenant);

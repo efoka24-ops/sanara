@@ -28,12 +28,15 @@ export interface QuoteLine {
   total: number;
   available: boolean;
   accepted: boolean | null;
+  /** Générique proposé à la place de ce produit prescrit. */
+  replaces: string | null;
 }
 
 export interface PatientView {
   number: string;
   status: RequestStatus;
   urgent: boolean;
+  mode: 'pickup' | 'own_delivery';
   advice: 'emergency' | null;
   /** Chaîne d'alerte d'une urgence. */
   escalation: 'alerted' | 'texted' | 'handled' | 'exhausted' | 'closed' | null;

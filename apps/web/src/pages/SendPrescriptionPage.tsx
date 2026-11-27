@@ -25,6 +25,7 @@ export function SendPrescriptionPage() {
   const [pages, setPages] = useState<Page[]>([]);
   const [form, setForm] = useState({ first_name: '', phone: '', message: '' });
   const [urgent, setUrgent] = useState(false);
+  const [mode, setMode] = useState<'pickup' | 'own_delivery'>('pickup');
   const [consent, setConsent] = useState(false);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export function SendPrescriptionPage() {
         {
           ...form,
           urgent,
+          mode,
           consent: true,
           locale,
           documents,
@@ -177,10 +179,20 @@ export function SendPrescriptionPage() {
               onChange={(e) => setForm({ ...form, message: e.target.value })}
             />
           </label>
-          <p className="chat__mode">
-            <span className="chip chip--on">{t('send.pickup')}</span>
-            <span className="muted">{t('send.payAtPharmacy')}</span>
-          </p>
+          <div className="chat__mode" role="group" aria-label={t('send.how')}>
+            {(['pickup', 'own_delivery'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                className={`chip${mode === m ? ' chip--on' : ''}`}
+                aria-pressed={mode === m}
+                onClick={() => setMode(m)}
+              >
+                {t(`send.mode.${m}`)}
+              </button>
+            ))}
+            <span className="muted">{t(`send.mode.${mode}.hint`)}</span>
+          </div>
           <label className="check">
             <input type="checkbox" checked={urgent} onChange={(e) => setUrgent(e.target.checked)} />
             <span>{t('send.urgent')}</span>

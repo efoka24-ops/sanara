@@ -29,6 +29,7 @@ final class ProcessingService
         private readonly StockService $stock,
         private readonly RequestLedger $ledger,
         private readonly EscalationService $escalation,
+        private readonly \Sanara\Common\Tenancy\TenantContext $ctx,
     ) {
     }
 
@@ -66,6 +67,7 @@ final class ProcessingService
         $events = $this->tdb->select('request_events', ['request_id' => $id], 'seq');
         $quote = $this->tdb->select('quotes', ['request_id' => $id], null, 1)[0] ?? null;
         return $this->summary($r) + [
+            'mode' => $r['mode'] ?? 'pickup',
             'mine' => $actor !== null && $r['status'] === 'processing' && $r['locked_by'] === $actor,
             'phone' => $r['phone'], 'advice' => $r['advice'], 'pickup_code' => $r['pickup_code'],
             'documents' => array_map(static fn (array $d) => ['id' => $d['id'], 'name' => $d['original_name'], 'mime' => $d['mime'], 'size' => (int) $d['size_bytes']], $documents),
@@ -76,7 +78,7 @@ final class ProcessingService
                 'lines' => array_map(static fn (array $l) => [
                     'id' => $l['id'], 'product_id' => $l['product_id'], 'label' => $l['label'], 'quantity' => (int) $l['quantity'], 'unit_price' => (int) $l['unit_price'],
                     'total' => (int) $l['line_total'], 'available' => (int) $l['available'] === 1, 'accepted' => $l['accepted'] === null ? null : (int) $l['accepted'] === 1,
-                    'read_text' => $l['read_text'], 'corrected' => (int) $l['corrected'] === 1,
+                    'read_text' => $l['read_text'], 'corrected' => (int) $l['corrected'] === 1, 'replaces' => $l['replaces'],
                 ], $this->tdb->select('quote_lines', ['request_id' => $id], 'position')),
             ],
         ];
@@ -195,13 +197,18 @@ final class ProcessingService
                         $price = (int) $p['sale_price'];
                     }
                 }
+                // Générique proposé à la place du produit prescrit : le patient l'accepte ou le décoche.
+                $replaces = is_string($line['replaces'] ?? null) && trim($line['replaces']) !== '' ? trim($line['replaces']) : null;
+                if ($replaces !== null && mb_strlen($replaces) > 190) {
+                    throw new ApiException('validation_failed', 422, ['fields' => ["lines.$position.replaces" => 'too_long']]);
+                }
                 $read = is_string($line['read_text'] ?? null) && trim($line['read_text']) !== '' ? mb_substr(trim($line['read_text']), 0, 190) : null;
                 $confidence = is_int($line['read_confidence'] ?? null) ? max(0, min(100, $line['read_confidence'])) : null;
                 $total += $price * $qty;
                 $this->tdb->insert('quote_lines', [
                     'id' => Ulid::generate(), 'quote_id' => $quoteId, 'request_id' => $id, 'position' => $position + 1, 'product_id' => $productId,
                     'label' => mb_substr($label, 0, 190), 'quantity' => $qty, 'unit_price' => $price, 'line_total' => $price * $qty,
-                    'available' => $available ? 1 : 0, 'accepted' => null, 'read_text' => $read, 'read_confidence' => $confidence,
+                    'available' => $available ? 1 : 0, 'accepted' => null, 'replaces' => $replaces, 'read_text' => $read, 'read_confidence' => $confidence,
                     // Mesure de fiabilité : la lecture proposée a-t-elle été changée ?
                     'corrected' => $read !== null && mb_strtolower($read) !== mb_strtolower($label) ? 1 : 0,
                 ]);
@@ -301,6 +308,31 @@ final class ProcessingService
             'links' => array_slice($out, 0, 3000),
             'reliability' => ['lines' => $lines, 'corrected' => $corrected, 'accepted_rate' => $lines === 0 ? null : intdiv(($lines - $corrected) * 100, $lines)],
         ];
+    }
+
+    /** Lectures automatiques permises ce mois : essai 30 ; formule : sa limite ; sans abonnement : aucune. */
+    private const TRIAL_READINGS = 30;
+
+    /** @return array{limit: ?int, used: int} */
+    public function readingUsage(): array
+    {
+        $sub = $this->db->one('SELECT s.status, p.monthly_readings FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.pharmacy_id = ?', [$this->ctx->require()]);
+        $limit = $sub === null ? null : ($sub['status'] === 'trial' ? self::TRIAL_READINGS : ($sub['monthly_readings'] === null ? null : (int) $sub['monthly_readings']));
+        $month = $this->clock->now()->format('Y-m-01 00:00:00.000');
+        $used = count(array_filter($this->tdb->select('assistant_runs'), static fn (array $r) => $r['created_at'] >= $month));
+        return ['limit' => $limit, 'used' => $used];
+    }
+
+    /** T169 : une lecture automatique est comptée avant de tourner, dans la limite de l'abonnement. @return array{limit: ?int, used: int} */
+    public function recordReading(string $requestId, string $userId): array
+    {
+        $this->request($requestId);
+        $usage = $this->readingUsage();
+        if ($usage['limit'] !== null && $usage['used'] >= $usage['limit']) {
+            throw new ApiException('reading_quota_reached', 429, ['limit' => $usage['limit']]);
+        }
+        $this->tdb->insert('assistant_runs', ['id' => Ulid::generate(), 'request_id' => $requestId, 'user_id' => $userId, 'created_at' => $this->clock->stamp()]);
+        return ['limit' => $usage['limit'], 'used' => $usage['used'] + 1];
     }
 
     /** @param array<string, mixed> $r @return array<string, mixed> */

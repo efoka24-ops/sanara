@@ -26,6 +26,7 @@ final class ErrorCatalog
         'request_locked' => ['Cette demande est prise en charge par une autre personne, ou n’est plus la vôtre.', 'This request is being handled by someone else.'],
         'pickup_mismatch' => ['La vente ne correspond pas au devis accepté.', 'The sale does not match the accepted quote.'],
         'https_required' => ['Envoi refusé : la connexion n’est pas sécurisée.', 'Upload refused: the connection is not secure.'],
+        'reading_quota_reached' => ['Quota de lectures automatiques du mois atteint : saisissez les lignes à la main.', 'Monthly automatic reading quota reached: enter the lines by hand.'],
         'too_many_requests' => ['Trop de tentatives, réessayez plus tard.', 'Too many attempts, try again later.'],
         'invalid_credentials' => ['Identifiants incorrects.', 'Invalid credentials.'],
         'account_locked' => ['Compte verrouillé temporairement.', 'Account temporarily locked.'],

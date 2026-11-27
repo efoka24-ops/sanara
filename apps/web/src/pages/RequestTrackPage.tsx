@@ -216,6 +216,11 @@ export function RequestTrackPage() {
                   />
                   <span>
                     {l.label} × {l.quantity}
+                    {l.replaces && (
+                      <small className="quote__generic">
+                        {t('track.generic', { name: l.replaces })}
+                      </small>
+                    )}
                   </span>
                 </label>
                 <b>{l.available ? money(l.total) : t('track.unavailable')}</b>
@@ -255,7 +260,7 @@ export function RequestTrackPage() {
         <section className="pickup">
           <p className="eyebrow">{t('track.pickupEyebrow')}</p>
           <h2>{view.status === 'ready' ? t('track.ready') : t('track.preparing')}</h2>
-          <p>{t('track.showCode')}</p>
+          <p>{t(view.mode === 'own_delivery' ? 'track.showCodeCourier' : 'track.showCode')}</p>
           <div className="pickup__code">
             <b>{view.pickup_code}</b>
             <PickupQr code={view.pickup_code} />

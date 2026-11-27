@@ -204,6 +204,7 @@ interface Plan {
   price_month: number;
   max_stations: number;
   features: string | null;
+  monthly_readings: number | null;
   active: number;
   pharmacies: number;
 }
@@ -434,6 +435,7 @@ export function AdminPlansPage() {
     name: string;
     price: string;
     stations: string;
+    readings: string;
     features: string;
     active: boolean;
   } | null>(null);
@@ -449,6 +451,7 @@ export function AdminPlansPage() {
       name: form.name,
       price_month: Number(form.price),
       max_stations: Number(form.stations),
+      monthly_readings: form.readings.trim() === '' ? null : Number(form.readings),
       features: form.features,
       active: form.active,
     };
@@ -467,7 +470,15 @@ export function AdminPlansPage() {
         <h1>{t('adm.plans.title')}</h1>
         <Button
           onClick={() => {
-            setForm({ code: '', name: '', price: '0', stations: '1', features: '', active: true });
+            setForm({
+              code: '',
+              name: '',
+              price: '0',
+              stations: '1',
+              readings: '',
+              features: '',
+              active: true,
+            });
             setError(null);
           }}
         >
@@ -486,6 +497,7 @@ export function AdminPlansPage() {
                 name: p.name,
                 price: String(p.price_month),
                 stations: String(p.max_stations),
+                readings: p.monthly_readings === null ? '' : String(p.monthly_readings),
                 features: p.features ?? '',
                 active: !!p.active,
               });
@@ -535,6 +547,14 @@ export function AdminPlansPage() {
                 onChange={(e) => setForm({ ...form, stations: e.target.value })}
               />
             </div>
+            <Field
+              label={t('adm.plans.readings')}
+              type="number"
+              min={0}
+              placeholder={t('adm.plans.unlimited')}
+              value={form.readings}
+              onChange={(e) => setForm({ ...form, readings: e.target.value })}
+            />
             <Field
               label={t('adm.plans.features')}
               value={form.features}

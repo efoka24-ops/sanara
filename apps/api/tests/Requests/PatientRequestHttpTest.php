@@ -381,6 +381,60 @@ final class PatientRequestHttpTest extends TestCase
         $this->assertSame([], $this->call('GET', '/app/assistant/lexicon', null, 'pharmacist')[1]['links'], 'produit retiré : lien oublié');
     }
 
+    public function testThePatientMayArrangeTheirOwnDelivery(): void
+    {
+        $this->assertSame(422, $this->send(['mode' => 'drone'])[0]);
+        $code = $this->send(['mode' => 'own_delivery'])[1]['code'];
+        $this->assertSame('own_delivery', $this->follow($code)['mode']);
+        $this->assertSame('own_delivery', $this->call('GET', '/app/requests/' . $this->queued(), null, 'pharmacist')[1]['mode']);
+        $this->assertSame('pickup', $this->follow($this->send()[1]['code'])['mode'], 'retrait en officine par défaut');
+    }
+
+    public function testAGenericIsProposedAndOnlyGivenIfThePatientAcceptsIt(): void
+    {
+        $generic = $this->product('Amoxicilline Biogaran 500', 900, 10);
+        [$code] = $this->quoted([['product_id' => $generic, 'quantity' => 1, 'replaces' => 'Clamoxyl 500 mg']]);
+        $line = $this->follow($code)['quote']['lines'][0];
+        $this->assertSame('Clamoxyl 500 mg', $line['replaces']);
+        // Le patient refuse le générique : la demande est close, rien n'est réservé pour lui.
+        $this->assertSame(200, $this->call('POST', "/public/requests/$code/decision", ['refuse' => true])[0]);
+
+        $this->send();
+        $id = (string) array_values(array_filter($this->call('GET', '/app/requests', null, 'pharmacist')[1]['items'], static fn ($i) => $i['status'] === 'received'))[0]['id'];
+        $this->call('POST', "/app/requests/$id/take", [], 'pharmacist');
+        $tooLong = ['lines' => [['product_id' => $generic, 'quantity' => 1, 'replaces' => str_repeat('a', 191)]]];
+        $this->assertSame(422, $this->call('POST', "/app/requests/$id/quote", $tooLong, 'pharmacist')[0]);
+    }
+
+    public function testAutomaticReadingsFollowTheSubscriptionQuota(): void
+    {
+        $this->send();
+        $id = $this->queued();
+        $read = fn () => $this->call('POST', '/app/assistant/readings', ['request_id' => $id], 'pharmacist');
+
+        // Sans abonnement (pilote, démonstration) : pas de limite.
+        [$status, $usage] = $read();
+        $this->assertSame([201, null, 1], [$status, $usage['limit'], $usage['used']]);
+
+        Seeder::platformDefaults($this->db);
+        $plan = (string) $this->db->one("SELECT id FROM plans WHERE code = 'pro'")['id'];
+        $this->db->insert('subscriptions', ['id' => Ulid::generate(), 'pharmacy_id' => 'T1', 'plan_id' => $plan, 'status' => 'trial', 'stations' => 1, 'created_at' => '2026-11-01 00:00:00.000', 'updated_at' => '2026-11-01 00:00:00.000']);
+        for ($i = 2; $i <= 30; $i++) {
+            $this->assertSame(201, $read()[0]);
+        }
+        [$status, $body] = $read();
+        $this->assertSame([429, 'reading_quota_reached', 30], [$status, $body['error']['code'], $body['error']['details']['limit']]);
+
+        // Formule payante : la limite de la formule, réglée par le super admin ; le mois suivant repart de zéro.
+        $this->db->execute("UPDATE subscriptions SET status = 'active' WHERE pharmacy_id = 'T1'");
+        $this->db->execute('UPDATE plans SET monthly_readings = 40 WHERE id = ?', [$plan]);
+        $this->assertSame(['limit' => 40, 'used' => 30], array_intersect_key($this->call('GET', '/app/assistant/readings', null, 'pharmacist')[1], ['limit' => 1, 'used' => 1]));
+        $this->clock->advance('+5 days');
+        $this->tokens = [];
+        $this->assertSame(0, $this->call('GET', '/app/assistant/readings', null, 'pharmacist')[1]['used']);
+        $this->assertSame(404, $this->call('POST', '/app/assistant/readings', ['request_id' => 'inconnu'], 'pharmacist')[0]);
+    }
+
     public function testThePharmacyIsWarnedByMailOfAnUrgentRequest(): void
     {
         $this->send();

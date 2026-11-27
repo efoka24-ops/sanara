@@ -766,8 +766,6 @@
   "send.phone": "Votre téléphone",
   "send.badPhone": "Numéro de téléphone invalide",
   "send.message": "Message au pharmacien (facultatif)",
-  "send.pickup": "Retrait en officine",
-  "send.payAtPharmacy": "Paiement à la pharmacie au retrait.",
   "send.urgent": "C’est urgent",
   "send.consent": "J’accepte que mon ordonnance, mon prénom et mon téléphone soient transmis à {pharmacy} pour préparer un devis. Ils sont chiffrés et ne servent qu’à cela.",
   "send.submit": "Envoyer au pharmacien",
@@ -948,5 +946,18 @@
   "store.photosHint": "Une photo de la façade aide les patients à vous trouver. Trois photos au plus ; la première apparaît en haut de votre fiche.",
   "store.photoN": "Photo {n}",
   "store.addPhoto": "Ajouter une photo",
-  "store.photoRemoved": "Photo supprimée"
+  "store.photoRemoved": "Photo supprimée",
+  "send.how": "Comment récupérer vos médicaments",
+  "send.mode.pickup": "Retrait en officine",
+  "send.mode.own_delivery": "Je gère ma livraison",
+  "send.mode.pickup.hint": "Paiement à la pharmacie au retrait.",
+  "send.mode.own_delivery.hint": "Vous envoyez votre coursier : il montre le code et paie au comptoir.",
+  "track.showCodeCourier": "Votre coursier montre ce code au caissier et paie au comptoir.",
+  "track.generic": "Générique proposé à la place de {name} : décochez si vous n’en voulez pas.",
+  "req.replaces": "Générique à la place de (facultatif)",
+  "req.generic": "générique de {name}",
+  "adm.plans.readings": "Lectures automatiques par mois",
+  "adm.plans.unlimited": "Vide : sans limite",
+  "reader.quota": "{used} lectures sur {limit} ce mois",
+  "err.reading_quota_reached": "Quota de lectures automatiques du mois atteint : saisissez les lignes à la main."
 }

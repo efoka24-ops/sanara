@@ -24,6 +24,8 @@ final class PatientService
     public const CONSENT_VERSION = '1';
     public const MAX_PAGES = 5;
     private const URGENT_PER_DAY = 3;
+    /** Retrait en officine, ou coursier envoyé par le patient (il paie au comptoir). */
+    public const MODES = ['pickup', 'own_delivery'];
     private const TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
     public function __construct(
@@ -62,6 +64,10 @@ final class PatientService
         if (mb_strlen($phone) > 32 || preg_match('/^\+?[0-9 .()-]+$/', $phone) !== 1 || strlen((string) preg_replace('/\D/', '', $phone)) < 8) {
             $errors['phone'] = 'phone';
         }
+        $mode = $in['mode'] ?? 'pickup';
+        if (!in_array($mode, self::MODES, true)) {
+            $errors['mode'] = 'unknown';
+        }
         if (mb_strlen($message) > 500) {
             $errors['message'] = 'too_long';
         }
@@ -79,10 +85,10 @@ final class PatientService
         $id = Ulid::generate();
         $code = strtoupper(bin2hex(random_bytes(20)));
         $now = $this->clock->stamp();
-        $number = (string) $this->db->transaction(function () use ($id, $code, $now, $firstName, $phone, $message, $urgent, $advice, $files, $in, $ip, $phoneKey): string {
+        $number = (string) $this->db->transaction(function () use ($id, $code, $now, $firstName, $phone, $message, $urgent, $advice, $files, $in, $ip, $phoneKey, $mode): string {
             $number = sprintf('SAN-%05d', $this->seq->next('request'));
             $this->tdb->insert('patient_requests', [
-                'id' => $id, 'code' => $code, 'number' => $number, 'first_name' => $firstName, 'phone' => $phone, 'phone_key' => $phoneKey, 'status' => 'received',
+                'id' => $id, 'code' => $code, 'number' => $number, 'first_name' => $firstName, 'phone' => $phone, 'phone_key' => $phoneKey, 'mode' => $mode, 'status' => 'received',
                 'urgent' => $urgent ? 1 : 0, 'advice' => $advice, 'locale' => ($in['locale'] ?? 'fr') === 'en' ? 'en' : 'fr',
                 'consent_version' => self::CONSENT_VERSION, 'consent_at' => $now, 'consent_ip_hash' => hash('sha256', $ip),
                 'created_at' => $now, 'updated_at' => $now,
@@ -125,7 +131,7 @@ final class PatientService
         $held = in_array($r['status'], ['accepted', 'ready'], true);
         return [
             'number' => $r['number'], 'status' => $r['status'], 'urgent' => (int) $r['urgent'] === 1, 'advice' => $r['advice'],
-            'first_name' => $r['first_name'], 'created_at' => $r['created_at'], 'escalation' => $r['escalation_state'],
+            'first_name' => $r['first_name'], 'created_at' => $r['created_at'], 'escalation' => $r['escalation_state'], 'mode' => $r['mode'] ?? 'pickup',
             'pages' => count($this->tdb->select('request_documents', ['request_id' => $r['id']])),
             'pharmacy' => [
                 'id' => $sheet === null ? null : $sheet['id'], 'name' => $pharmacy['name'], 'phone' => $pharmacy['phone'],
@@ -138,7 +144,7 @@ final class PatientService
                 'lines' => array_map(static fn (array $l) => [
                     'id' => $l['id'], 'label' => $l['label'], 'quantity' => (int) $l['quantity'], 'unit_price' => (int) $l['unit_price'],
                     'total' => (int) $l['line_total'], 'available' => (int) $l['available'] === 1,
-                    'accepted' => $l['accepted'] === null ? null : (int) $l['accepted'] === 1,
+                    'accepted' => $l['accepted'] === null ? null : (int) $l['accepted'] === 1, 'replaces' => $l['replaces'],
                 ], $this->tdb->select('quote_lines', ['request_id' => $r['id']], 'position')),
             ],
             'pickup_code' => $held ? $r['pickup_code'] : null,

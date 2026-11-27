@@ -456,6 +456,8 @@ final class Routes
                 return $r->withStatus(204);
             })->add($perm('requests.process'));
             $g->get('/presence', fn (Request $q, Response $r) => $json($r, ['items' => $s->presence->team()]))->add($perm('requests.process'));
+            $g->get('/assistant/readings', fn (Request $q, Response $r) => $json($r, $s->requests->readingUsage()))->add($perm('requests.process'));
+            $g->post('/assistant/readings', fn (Request $q, Response $r) => $json($r, $s->requests->recordReading((string) ($body($q)['request_id'] ?? ''), $actor($q)), 201))->add($perm('requests.process'));
             $g->get('/assistant/lexicon', fn (Request $q, Response $r) => $json($r, $s->requests->lexicon()))->add($perm('requests.process'));
             $g->get('/pickups/{code}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->pickup($a['code'])))->add($perm('pickup.validate'));
 

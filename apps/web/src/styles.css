@@ -1192,6 +1192,10 @@ textarea.sa-field__input {
   padding: 10px 0;
   border-bottom: 1px solid var(--sa-line-2);
 }
+.quote__generic {
+  display: block;
+  color: var(--sa-amber-fg);
+}
 .quote .is-off {
   color: var(--sa-subtle);
 }
@@ -1312,7 +1316,7 @@ img.rx-doc {
 }
 .draft__fields {
   display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr) auto;
+  grid-template-columns: 6rem repeat(auto-fit, minmax(10rem, 1fr));
   gap: 10px;
   align-items: center;
 }

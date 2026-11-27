@@ -766,8 +766,6 @@
   "send.phone": "Your phone",
   "send.badPhone": "Invalid phone number",
   "send.message": "Message to the pharmacist (optional)",
-  "send.pickup": "Pick up at the pharmacy",
-  "send.payAtPharmacy": "Pay at the pharmacy on pickup.",
   "send.urgent": "It is urgent",
   "send.consent": "I agree that my prescription, first name and phone are sent to {pharmacy} to prepare a quote. They are encrypted and used only for this.",
   "send.submit": "Send to the pharmacist",
@@ -948,5 +946,18 @@
   "store.photosHint": "A photo of the storefront helps patients find you. Up to three photos; the first one appears at the top of your page.",
   "store.photoN": "Photo {n}",
   "store.addPhoto": "Add a photo",
-  "store.photoRemoved": "Photo removed"
+  "store.photoRemoved": "Photo removed",
+  "send.how": "How to get your medicines",
+  "send.mode.pickup": "Pick up at the pharmacy",
+  "send.mode.own_delivery": "I arrange delivery",
+  "send.mode.pickup.hint": "Pay at the pharmacy on pickup.",
+  "send.mode.own_delivery.hint": "You send your courier: they show the code and pay at the counter.",
+  "track.showCodeCourier": "Your courier shows this code and pays at the counter.",
+  "track.generic": "Generic offered instead of {name}: untick if you do not want it.",
+  "req.replaces": "Generic instead of (optional)",
+  "req.generic": "generic of {name}",
+  "adm.plans.readings": "Automatic readings per month",
+  "adm.plans.unlimited": "Empty: unlimited",
+  "reader.quota": "{used} of {limit} readings this month",
+  "err.reading_quota_reached": "Monthly automatic reading quota reached: enter the lines by hand."
 }

@@ -7,6 +7,11 @@ const PHOTO = Buffer.from(
 );
 const stamp = Date.now().toString(36);
 
+// Les fenêtres du pharmacien et du caissier se ferment : sinon elles continuent de signaler leur présence.
+test.afterEach(async ({ browser, page }) => {
+  for (const c of browser.contexts()) if (c !== page.context()) await c.close();
+});
+
 test.afterEach(async ({ request }) => {
   const owner = await apiAs(request, 'owner@demo.test');
   await owner('PUT', '/app/visibility', { visible: false });
@@ -322,5 +327,62 @@ test('US24 : le patient voit si un pharmacien est connecté ; une urgence alerte
   await staff.getByRole('link', { name: 'Demandes patients' }).click();
   await expect(staff.getByText('Urgent').first()).toBeVisible();
 
+  await owner('PUT', '/app/visibility', { visible: false });
+});
+
+test('T175, P4 : générique proposé et accepté, coursier envoyé par le patient', async ({
+  page,
+  request,
+}) => {
+  const owner = await apiAs(request, 'owner@demo.test');
+  await owner('PUT', '/app/visibility', { visible: true });
+  const generic = await owner<{ id: string }>('POST', '/app/products', {
+    name: `Amoxicilline générique ${stamp}`,
+    regulatory_status: 'free',
+    sale_price: 900,
+    purchase_price: 500,
+    vat_bp: 0,
+  });
+  await owner('POST', '/app/stock/receipts', {
+    product_id: generic.id,
+    lot_number: `GEN-${stamp}`,
+    expiry: '2031-06-30',
+    quantity: 5,
+    unit_cost: 500,
+  });
+  const found = await (
+    await request.get('http://127.0.0.1:8081/public/pharmacies?q=d%C3%A9mo')
+  ).json();
+
+  await page.goto(`/pharmacies/${found.items[0].id}/envoyer`);
+  await page
+    .locator('input[type=file]')
+    .setInputFiles({ name: 'g.png', mimeType: 'image/png', buffer: PHOTO });
+  await page.getByLabel('Votre prénom').fill('Mariam');
+  await page.getByLabel('Votre téléphone').fill('+237 690 55 44 33');
+  await page.getByRole('button', { name: 'Je gère ma livraison' }).click();
+  await expect(page.getByText(/il montre le code et paie au comptoir/)).toBeVisible();
+  await page.getByLabel(/J’accepte que mon ordonnance/).check();
+  await page.getByRole('button', { name: 'Envoyer au pharmacien' }).click();
+  await expect(page.getByRole('heading', { name: 'Demande reçue' })).toBeVisible();
+  const number = (await page.locator('.eyebrow').first().innerText()).replace(/^DEMANDE\s+/i, '');
+
+  const pharmacist = await apiAs(request, 'pharmacist@demo.test');
+  const queue = await pharmacist<{ items: { id: string; number: string }[] }>(
+    'GET',
+    '/app/requests',
+  );
+  const id = queue.items.find((i) => i.number === number)!.id;
+  await pharmacist('POST', `/app/requests/${id}/take`, {});
+  await pharmacist('POST', `/app/requests/${id}/quote`, {
+    lines: [{ product_id: generic.id, quantity: 1, replaces: 'Clamoxyl 500 mg' }],
+  });
+
+  await page.reload();
+  await expect(page.getByText(/Générique proposé à la place de Clamoxyl 500 mg/)).toBeVisible();
+  await page.getByRole('button', { name: 'Valider le devis' }).click();
+  await expect(
+    page.getByText('Votre coursier montre ce code au caissier et paie au comptoir.'),
+  ).toBeVisible();
   await owner('PUT', '/app/visibility', { visible: false });
 });

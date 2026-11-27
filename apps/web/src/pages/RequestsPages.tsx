@@ -27,6 +27,7 @@ interface Item {
 }
 interface Detail extends Item {
   mine: boolean;
+  mode: 'pickup' | 'own_delivery';
   phone: string;
   advice: string | null;
   pickup_code: string | null;
@@ -46,6 +47,7 @@ interface Detail extends Item {
       accepted: boolean | null;
       read_text: string | null;
       corrected: boolean;
+      replaces: string | null;
     }[];
   } | null;
 }
@@ -55,6 +57,7 @@ interface Draft {
   quantity: number;
   read_text: string;
   read_confidence: number | null;
+  replaces?: string;
   available: boolean;
 }
 
@@ -209,6 +212,7 @@ export function RequestPage() {
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [learned, setLearned] = useState<LearnedState | null>(null);
+  const [quota, setQuota] = useState<{ limit: number | null; used: number } | null>(null);
   const [reader, setReader] = useState<{
     busy: boolean;
     progress: number;
@@ -221,6 +225,14 @@ export function RequestPage() {
   async function read(docs: Detail['documents']) {
     setReader({ busy: true, progress: 0, proposals: null, anomalies: [], failed: false });
     try {
+      const usage = await api<{ limit: number | null; used: number }>(
+        'POST',
+        '/app/assistant/readings',
+        {
+          request_id: id,
+        },
+      );
+      setQuota(usage);
       // Relu à chaque fois : il inclut les choix faits sur les demandes précédentes.
       const lexicon = await loadLexicon();
       setLearned(lexicon);
@@ -246,6 +258,11 @@ export function RequestPage() {
       });
     } catch (e) {
       console.error('lecture de l’ordonnance', e);
+      if (e instanceof ApiError && e.code === 'reading_quota_reached') {
+        setReader({ busy: false, progress: 0, proposals: null, anomalies: [], failed: false });
+        setError(errText(e));
+        return;
+      }
       setReader({ busy: false, progress: 0, proposals: null, anomalies: [], failed: true });
     }
   }
@@ -320,7 +337,7 @@ export function RequestPage() {
           </h1>
           <p className="muted">
             {d.first_name} · <a href={`tel:${d.phone.replace(/\s/g, '')}`}>{d.phone}</a> ·{' '}
-            {when(d.created_at, locale)}
+            {t(`send.mode.${d.mode}`)} · {when(d.created_at, locale)}
           </p>
         </div>
         {d.pickup_code && (
@@ -409,6 +426,11 @@ export function RequestPage() {
                   )}
                 </div>
                 <p className="muted">{t('reader.hint')}</p>
+                {quota?.limit != null && (
+                  <p className="muted">
+                    {t('reader.quota', { used: quota.used, limit: quota.limit })}
+                  </p>
+                )}
                 {d.documents.every((x) => x.mime === 'application/pdf') ? (
                   <p className="muted">{t('reader.pdf')}</p>
                 ) : (
@@ -532,6 +554,13 @@ export function RequestPage() {
                           onChange={(e) => set({ read_text: e.target.value })}
                         />
                         {l.product && (
+                          <Field
+                            label={t('req.replaces')}
+                            value={l.replaces ?? ''}
+                            onChange={(e) => set({ replaces: e.target.value })}
+                          />
+                        )}
+                        {l.product && (
                           <label className="check">
                             <input
                               type="checkbox"
@@ -573,6 +602,7 @@ export function RequestPage() {
                         available: l.available,
                         read_text: l.read_text || undefined,
                         read_confidence: l.read_confidence ?? undefined,
+                        replaces: l.replaces || undefined,
                       })),
                     },
                     t('req.quoteSent'),
@@ -606,6 +636,9 @@ export function RequestPage() {
                   >
                     <span>
                       {l.label} × {l.quantity}
+                      {l.replaces && (
+                        <span className="muted"> · {t('req.generic', { name: l.replaces })}</span>
+                      )}
                       {l.read_text && l.corrected && (
                         <span className="muted"> · {t('req.read', { text: l.read_text })}</span>
                       )}

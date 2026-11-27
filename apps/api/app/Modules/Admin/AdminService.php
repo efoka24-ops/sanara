@@ -111,9 +111,10 @@ final class AdminService
             $p['price_month'] = (int) $p['price_month'];
             $p['max_stations'] = (int) $p['max_stations'];
             $p['active'] = (int) $p['active'];
+            $p['monthly_readings'] = $p['monthly_readings'] === null ? null : (int) $p['monthly_readings'];
             $p['pharmacies'] = (int) $this->db->one("SELECT COUNT(*) AS n FROM subscriptions WHERE plan_id = ? AND status IN ('trial', 'active')", [$p['id']])['n'];
             return $p;
-        }, $this->db->all('SELECT id, code, name, price_month, max_stations, features, active FROM plans ORDER BY price_month'));
+        }, $this->db->all('SELECT id, code, name, price_month, max_stations, features, monthly_readings, active FROM plans ORDER BY price_month'));
     }
 
     /** @param array<string, mixed> $in */
@@ -136,6 +137,11 @@ final class AdminService
         if (!is_int($stations) || $stations < 1) {
             $e['max_stations'] = 'invalid';
         }
+        // Lectures automatiques par mois : vide = sans limite.
+        $readings = $in['monthly_readings'] ?? null;
+        if ($readings !== null && (!is_int($readings) || $readings < 0)) {
+            $e['monthly_readings'] = 'invalid';
+        }
         if ($e !== []) {
             throw new ApiException('validation_failed', 422, ['fields' => $e]);
         }
@@ -145,10 +151,10 @@ final class AdminService
                 throw new ApiException('conflict', 409);
             }
             $id = Ulid::generate();
-            $this->db->insert('plans', ['id' => $id, 'code' => $code, 'name' => $name, 'price_month' => $price, 'max_stations' => $stations, 'features' => $features, 'active' => 1, 'created_at' => $this->clock->stamp()]);
+            $this->db->insert('plans', ['id' => $id, 'code' => $code, 'name' => $name, 'price_month' => $price, 'max_stations' => $stations, 'features' => $features, 'monthly_readings' => $readings, 'active' => 1, 'created_at' => $this->clock->stamp()]);
             return $id;
         }
-        if ($this->db->execute('UPDATE plans SET name = ?, price_month = ?, max_stations = ?, features = ?, active = ? WHERE id = ?', [$name, $price, $stations, $features, empty($in['active']) && array_key_exists('active', $in) ? 0 : 1, $id]) === 0 && $this->db->one('SELECT id FROM plans WHERE id = ?', [$id]) === null) {
+        if ($this->db->execute('UPDATE plans SET name = ?, price_month = ?, max_stations = ?, features = ?, monthly_readings = ?, active = ? WHERE id = ?', [$name, $price, $stations, $features, $readings, empty($in['active']) && array_key_exists('active', $in) ? 0 : 1, $id]) === 0 && $this->db->one('SELECT id FROM plans WHERE id = ?', [$id]) === null) {
             throw new ApiException('not_found', 404);
         }
         return $id;
