@@ -108,9 +108,14 @@ export function Home() {
           <h2>{t('home.pro')}</h2>
           <p>{t('home.proText')}</p>
         </div>
-        <Link className="sa-btn sa-btn--amber" to="/inscription">
-          {t('home.proApply')}
-        </Link>
+        <div className="landing__pro-actions">
+          <Link className="sa-btn sa-btn--amber" to="/inscription">
+            {t('home.proApply')}
+          </Link>
+          <Link className="sa-btn sa-btn--ghost" to="/telecharger">
+            {t('dl.link')}
+          </Link>
+        </div>
       </section>
 
       <footer className="landing__foot">

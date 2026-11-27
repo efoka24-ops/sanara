@@ -827,6 +827,54 @@ textarea.sa-field__input {
   margin: 0 0 6px;
 }
 
+.landing__pro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.sa-btn.sa-btn--ghost {
+  background: transparent;
+  color: #fff;
+  border: 1px solid var(--sa-green-50);
+}
+/* Téléchargement de l'application Windows */
+.download__hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  padding: 56px 48px;
+  background: linear-gradient(180deg, var(--sa-bg), var(--sa-surface));
+}
+.download__hero h1 {
+  margin: 12px 0 0;
+  font-family: var(--sa-font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+.download__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  padding: 40px 48px;
+}
+.download__steps .panel {
+  margin: 0;
+}
+.download__steps h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+@media (max-width: 900px) {
+  .download__hero,
+  .download__steps {
+    grid-template-columns: 1fr;
+    padding: 28px 20px;
+  }
+}
+
 /* Recherche et carte (maquette P2, US18) */
 .finder {
   display: grid;

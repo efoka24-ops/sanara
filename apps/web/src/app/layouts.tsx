@@ -52,8 +52,8 @@ export function PublicLayout() {
           <Link to="/#comment" className="topbar__how">
             {t('home.how')}
           </Link>
-          <Link to="/#pharmaciens" className="topbar__pro">
-            {t('home.forPharmacists')}
+          <Link to="/telecharger" className="topbar__pro">
+            {t('dl.link')}
           </Link>
         </nav>
         <nav className="topbar__actions">

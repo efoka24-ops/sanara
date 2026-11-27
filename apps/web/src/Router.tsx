@@ -34,6 +34,7 @@ import { PharmaciesPage } from './pages/PharmaciesPage';
 import { PublicPharmacyPage } from './pages/PublicPharmacyPage';
 import { DutiesPage } from './pages/DutiesPage';
 import { StorefrontPage } from './pages/StorefrontPage';
+import { DownloadPage } from './pages/DownloadPage';
 import { SendPrescriptionPage } from './pages/SendPrescriptionPage';
 import { RequestTrackPage } from './pages/RequestTrackPage';
 import { RequestPage, RequestsPage } from './pages/RequestsPages';
@@ -59,6 +60,7 @@ export function Router() {
                     <Route path="pharmacies/:id/envoyer" element={<SendPrescriptionPage />} />
                     <Route path="suivi/:code" element={<RequestTrackPage />} />
                     <Route path="gardes" element={<DutiesPage />} />
+                    <Route path="telecharger" element={<DownloadPage />} />
                     <Route path="inscription" element={<ApplyPage />} />
                     <Route path="inscription/envoyee" element={<SentPage />} />
                     <Route path="inscription/suivi/:code" element={<TrackPage />} />
