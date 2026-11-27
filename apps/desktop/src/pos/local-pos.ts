@@ -4,7 +4,7 @@
  * pour qu'une vente acceptée ici le soit aussi à la synchronisation.
  */
 import { saleLine, saleNumber, settle, ulid, type PayMethod } from '@sanara/shared';
-import { SCHEMA_VERSION, type ReferenceProduct } from '@sanara/sync';
+import { SCHEMA_VERSION, type ReferenceCustomer, type ReferenceProduct } from '@sanara/sync';
 import { SqliteQueue, SqliteReference, SqliteState, type LocalDatabase } from '../local-db';
 
 export interface PosUser {
@@ -15,6 +15,8 @@ export interface SaleInput {
   lines: { productId: string; qty: number; discountBp?: number }[];
   payments: { method: PayMethod; amount: number; reference?: string }[];
   customerName?: string;
+  /** Compte porté au crédit. */
+  customerId?: string;
   prescription?: { ref: string; prescriber: string; patientName: string };
 }
 export interface LocalSale {
@@ -154,6 +156,20 @@ export class LocalPos {
     return stock + unassigned - sold.n;
   }
 
+  /** Comptes clients, dette connue augmentée du crédit accordé ici et pas encore reçu en retour. */
+  customers(query: string): ReferenceCustomer[] {
+    return this.reference.searchCustomers(query).map((c) => this.account(c.id)!);
+  }
+
+  private account(id: string): ReferenceCustomer | null {
+    const known = this.reference.customer(id);
+    if (!known) return null;
+    const pending = this.db
+      .prepare('SELECT COALESCE(SUM(amount), 0) AS n FROM pos_credit WHERE customer_id = ?')
+      .get(id) as { n: number };
+    return { ...known, balance: known.balance + pending.n };
+  }
+
   sell(input: SaleInput): LocalSale {
     return this.db.transaction(() => {
       const session = this.currentSession();
@@ -209,8 +225,8 @@ export class LocalPos {
         if ((mobile || payment.method === 'card') && !filled(payment.reference)) {
           throw invalid('payments.reference');
         }
-        if (payment.method === 'credit' && !filled(input.customerName)) {
-          throw invalid('customerName');
+        if (payment.method === 'credit' && !filled(input.customerId)) {
+          throw invalid('customerId');
         }
       }
       const amounts = lines.map((l) =>
@@ -219,6 +235,20 @@ export class LocalPos {
       const total = amounts.reduce((s, a) => s + a.total, 0);
       const settlement = settle(total, input.payments);
       if (!settlement) throw new PosError('payment_insufficient', { total });
+
+      const account = filled(input.customerId) ? this.account(input.customerId!) : null;
+      if (filled(input.customerId) && !account) throw invalid('customerId');
+      const credit = settlement.applied
+        .filter((a) => a.method === 'credit')
+        .reduce((s, a) => s + a.amount, 0);
+      if (account && credit > 0) {
+        if (!account.active) throw new PosError('customer_inactive');
+        const available = account.creditLimit - account.balance;
+        if (credit > available) {
+          throw new PosError('credit_limit_exceeded', { available: Math.max(0, available) });
+        }
+      }
+      const customerName = account?.name ?? input.customerName;
 
       const saleId = ulid();
       const number = this.nextNumber(session.station, settings.saleCounters);
@@ -234,13 +264,19 @@ export class LocalPos {
           vatBp: l.product.vatBp,
         })),
         payments: input.payments,
-        ...(filled(input.customerName) ? { customerName: input.customerName } : {}),
+        ...(account ? { customerId: account.id } : {}),
+        ...(filled(customerName) ? { customerName } : {}),
         ...(regulated ? { prescription: p } : {}),
       });
       const consume = this.db.prepare(
         'INSERT INTO pos_consumption (operation_id, product_id, qty) VALUES (?, ?, ?)',
       );
       for (const [productId, qty] of wanted) consume.run(operationId, productId, qty);
+      if (account && credit > 0) {
+        this.db
+          .prepare('INSERT INTO pos_credit (operation_id, customer_id, amount) VALUES (?, ?, ?)')
+          .run(operationId, account.id, credit);
+      }
       const cash = settlement.applied
         .filter((a) => a.method === 'cash')
         .reduce((s, a) => s + a.amount, 0);

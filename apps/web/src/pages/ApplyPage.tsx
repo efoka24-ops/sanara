@@ -223,13 +223,13 @@ export function ApplyPage() {
           </div>
         )}
         <div className="actions">
-          {step > 0 ? (
-            <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
-              {t('common.back')}
-            </Button>
-          ) : (
-            <span />
-          )}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => (step > 0 ? setStep(step - 1) : nav(-1))}
+          >
+            {t('common.back')}
+          </Button>
           {step < 3 ? (
             <Button type="button" onClick={next}>
               {t('common.continue')}

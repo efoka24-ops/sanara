@@ -3,6 +3,7 @@ import { Logo } from '@sanara/ui';
 import { useT } from '@sanara/i18n';
 import { useSession } from './session';
 import { IdleLock } from './IdleLock';
+import { BackButton } from './BackButton';
 
 // Une entrée n'est ajoutée qu'avec sa page (route dans Router.tsx) : jamais de lien vers un écran vide.
 const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
@@ -11,6 +12,7 @@ const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
   { to: '/app/ventes', key: 'nav.sales', permission: 'sales.create' },
   { to: '/app/produits', key: 'nav.products', permission: 'products.read' },
   { to: '/app/stock', key: 'nav.stock', permission: 'stock.read' },
+  { to: '/app/clients', key: 'nav.customers', permission: 'customers.read' },
   { to: '/app/synchronisation', key: 'nav.sync', permission: 'stock.read' },
   { to: '/app/equipe', key: 'nav.team', permission: 'team.manage' },
   { to: '/securite', key: 'nav.security' },
@@ -34,6 +36,7 @@ export function PublicLayout() {
   return (
     <div className="layout layout--public">
       <header className="topbar">
+        <BackButton />
         <Logo size={30} />
         <nav className="topbar__actions">
           <button
@@ -75,6 +78,7 @@ export function PharmacyLayout() {
         </nav>
       </aside>
       <main>
+        <BackButton />
         <Outlet />
       </main>
       <IdleLock />
@@ -125,6 +129,7 @@ export function AdminLayout() {
         </div>
       </aside>
       <main>
+        <BackButton />
         <Outlet />
       </main>
     </div>

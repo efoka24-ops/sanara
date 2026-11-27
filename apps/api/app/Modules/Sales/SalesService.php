@@ -10,6 +10,7 @@ use Sanara\Common\Rbac\Authorizer;
 use Sanara\Common\Tenancy\TenantContext;
 use Sanara\Common\Tenancy\TenantDb;
 use Sanara\Common\Ulid;
+use Sanara\Modules\Customers\CustomerService;
 use Sanara\Modules\Security\PinService;
 use Sanara\Modules\Stock\StockService;
 
@@ -28,11 +29,12 @@ final class SalesService
         private readonly Authorizer $authz,
         private readonly PinService $pin,
         private readonly TenantContext $ctx,
+        private readonly CustomerService $customers,
     ) {
     }
 
     /**
-     * @param array<string, mixed> $in lines[{product_id, qty, discount_bp?}], payments[{method, amount, reference?}], prescription?, pharmacist?, approver?
+     * @param array<string, mixed> $in lines[{product_id, qty, discount_bp?}], payments[{method, amount, reference?}], customer_id?, prescription?, pharmacist?, approver?
      * @return array<string, mixed> vente complète avec rendu de monnaie
      */
     public function create(array $in, string $userId): array
@@ -73,20 +75,27 @@ final class SalesService
             if (in_array($p['method'] ?? '', ['momo_mtn', 'momo_orange', 'card'], true) && trim((string) ($p['reference'] ?? '')) === '') {
                 throw new ApiException('validation_failed', 422, ['fields' => ['payments.reference' => 'required']]);
             }
-            if (($p['method'] ?? '') === 'credit' && trim((string) ($in['customer_name'] ?? '')) === '') {
-                throw new ApiException('validation_failed', 422, ['fields' => ['customer_name' => 'required']]);
-            }
         }
+        $credit = $this->credit($settle['applied']);
+        $customer = trim((string) ($in['customer_id'] ?? ''));
+        if ($credit > 0 && $customer === '') {
+            throw new ApiException('validation_failed', 422, ['fields' => ['customer_id' => 'required']]);
+        }
+        $name = $customer === '' ? $this->str($in['customer_name'] ?? null, 120) : (string) $this->customers->get($customer)['name'];
 
         $id = Ulid::generate();
-        $this->db->transaction(function () use ($id, $in, $userId, $session, $lines, $total, $settle, $presc, $pharmacist, $approver): void {
+        $this->db->transaction(function () use ($id, $in, $userId, $session, $lines, $total, $settle, $presc, $pharmacist, $approver, $credit, $customer, $name): void {
+            // En premier : le plafond est vérifié sur le compte verrouillé.
+            if ($credit > 0) {
+                $this->customers->charge($customer, $credit, $id, $userId);
+            }
             $year = substr($this->clock->stamp(), 0, 4);
             $number = sprintf('V-%s-%s-%05d', $session['station'], $year, $this->seq->next('sale:' . $session['station'] . ':' . $year));
             $now = $this->clock->stamp();
             $this->tdb->insert('sales', [
                 'id' => $id, 'number' => $number, 'invoice_number' => null, 'station' => $session['station'], 'session_id' => $session['id'], 'cashier_id' => $userId, 'status' => 'completed',
                 'gross_total' => array_sum(array_column($lines, 'gross')), 'discount_total' => array_sum(array_column($lines, 'discount')), 'total' => $total, 'vat_total' => array_sum(array_column($lines, 'vat')),
-                'customer_name' => $this->str($in['customer_name'] ?? null, 120), 'prescription_ref' => $this->str($presc['ref'] ?? null, 60), 'prescriber' => $this->str($presc['prescriber'] ?? null, 120),
+                'customer_name' => $name, 'customer_id' => $customer === '' ? null : $customer, 'prescription_ref' => $this->str($presc['ref'] ?? null, 60), 'prescriber' => $this->str($presc['prescriber'] ?? null, 120),
                 'patient_name' => $this->str($presc['patient_name'] ?? null, 120), 'pharmacist_id' => $pharmacist, 'discount_approved_by' => $approver, 'printed_count' => 0, 'created_at' => $now,
             ]);
             foreach ($lines as $l) {
@@ -113,7 +122,7 @@ final class SalesService
      * distance : produit réglementé sans compte pharmacien et remise non autorisée.
      * À appeler dans une transaction.
      *
-     * @param array<string, mixed> $in saleId, sessionId, number, lines[{productId, qty, unitPrice, discountBp, vatBp}], payments[], customerName?, prescription?
+     * @param array<string, mixed> $in saleId, sessionId, number, lines[{productId, qty, unitPrice, discountBp, vatBp}], payments[], customerId?, customerName?, prescription?
      * @return list<array{kind: string, details: array<string, mixed>}> écarts à signaler
      */
     public function recordOffline(array $in, string $userId, string $at): array
@@ -182,19 +191,32 @@ final class SalesService
             if (in_array($method, ['momo_mtn', 'momo_orange', 'card'], true) && trim((string) ($p['reference'] ?? '')) === '') {
                 throw new ApiException('validation_failed', 422, ['fields' => ['payments.reference' => 'required']]);
             }
-            if ($method === 'credit' && trim((string) ($in['customerName'] ?? '')) === '') {
-                throw new ApiException('validation_failed', 422, ['fields' => ['customerName' => 'required']]);
-            }
         }
         $settle = SaleMath::settle($total, $this->payments($raw)) ?? throw new ApiException('payment_insufficient', 422, ['total' => $total]);
 
         if ($session['status'] !== 'open') {
             $conflicts[] = ['kind' => 'session_closed', 'details' => ['sessionId' => $session['id']]];
         }
+        $credit = $this->credit($settle['applied']);
+        $customer = trim((string) ($in['customerId'] ?? ''));
+        $name = $this->str($in['customerName'] ?? null, 120);
+        if ($credit > 0 && $customer === '') {
+            throw new ApiException('validation_failed', 422, ['fields' => ['customerId' => 'required']]);
+        }
+        if ($credit > 0) {
+            // La marchandise est partie : la dette est inscrite et le dépassement signalé.
+            $charged = $this->customers->charge($customer, $credit, $id, $userId, true, $at);
+            $name = $charged['name'];
+            if ($charged['over'] > 0) {
+                $conflicts[] = ['kind' => 'credit_limit_exceeded', 'details' => ['customerId' => $customer, 'over' => $charged['over']]];
+            }
+        } elseif ($customer !== '') {
+            $name = (string) $this->customers->get($customer)['name'];
+        }
         $this->tdb->insert('sales', [
             'id' => $id, 'number' => $number, 'invoice_number' => null, 'station' => $session['station'], 'session_id' => $session['id'], 'cashier_id' => $userId, 'status' => 'completed',
             'gross_total' => array_sum(array_column($lines, 'gross')), 'discount_total' => array_sum(array_column($lines, 'discount')), 'total' => $total, 'vat_total' => array_sum(array_column($lines, 'vat')),
-            'customer_name' => $this->str($in['customerName'] ?? null, 120), 'prescription_ref' => $this->str($presc['ref'] ?? null, 60), 'prescriber' => $this->str($presc['prescriber'] ?? null, 120),
+            'customer_name' => $name, 'customer_id' => $customer === '' ? null : $customer, 'prescription_ref' => $this->str($presc['ref'] ?? null, 60), 'prescriber' => $this->str($presc['prescriber'] ?? null, 120),
             'patient_name' => $this->str($presc['patientName'] ?? null, 120), 'pharmacist_id' => $regulated ? $userId : null,
             'discount_approved_by' => max(array_column($lines, 'discount_bp')) > $maxBp ? $userId : null, 'printed_count' => 1, 'created_at' => $at,
         ]);
@@ -219,6 +241,12 @@ final class SalesService
             ]);
         }
         return $conflicts;
+    }
+
+    /** @param list<array<string, mixed>> $applied montant porté au compte du client */
+    private function credit(array $applied): int
+    {
+        return array_sum(array_map(static fn ($p) => $p['method'] === 'credit' ? (int) $p['amount'] : 0, $applied));
     }
 
     /** @return array<string, mixed> */

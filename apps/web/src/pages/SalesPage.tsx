@@ -22,6 +22,7 @@ interface SaleLine {
   regulatory_status: string;
 }
 interface Sale extends Row {
+  customer_id: string | null;
   lines: SaleLine[];
   payments: { method: string; amount: number }[];
 }
@@ -245,11 +246,13 @@ export function SalesPage() {
                   value={form.method}
                   onChange={(e) => setForm({ ...form, method: e.target.value })}
                 >
-                  {['credit_note', 'cash', 'other'].map((m) => (
-                    <option key={m} value={m}>
-                      {t(`sale.refund.${m}`)}
-                    </option>
-                  ))}
+                  {['credit_note', 'cash', ...(sale?.customer_id ? ['account'] : []), 'other'].map(
+                    (m) => (
+                      <option key={m} value={m}>
+                        {t(`sale.refund.${m}`)}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
               <label className="check">

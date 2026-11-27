@@ -64,6 +64,7 @@ final class Services
     public readonly CaptchaVerifier $captcha;
     public readonly \Sanara\Modules\Sync\SyncService $sync;
     public readonly \Sanara\Modules\Sync\DeviceService $devices;
+    public readonly \Sanara\Modules\Customers\CustomerService $customers;
 
     public function __construct(public readonly Db $db, public readonly Clock $clock, public readonly Config $config, ?EncryptedStorage $storage = null)
     {
@@ -110,18 +111,20 @@ final class Services
         $this->admin = new \Sanara\Modules\Admin\AdminService($db, $clock, $this->templates);
         $this->activationResend = new \Sanara\Modules\Applications\ActivationResendService($db, $clock, $this->activation, $this->jobs, $config->appUrl);
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
-        $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $this->tenant, $clock);
-        $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
+        $tdb = new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant, new \Sanara\Common\Tenancy\ChangeLog($db, $clock));
+        $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, $tdb, $this->tenant, $clock);
+        $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, $tdb, $clock);
         $this->catalogTransfer = new \Sanara\Modules\Catalog\CatalogTransfer($this->catalog);
         $this->reference = new \Sanara\Modules\Catalog\ReferenceCatalog($db, $this->catalog);
-        $this->stock = new StockService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->tenant);
-        $this->inventory = new \Sanara\Modules\Stock\InventoryService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock);
-        $seq = new \Sanara\Modules\Sales\Sequences($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant));
-        $this->cash = new \Sanara\Modules\Sales\CashService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $seq);
-        $this->sales = new \Sanara\Modules\Sales\SalesService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant);
-        $this->returns = new \Sanara\Modules\Sales\ReturnsService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->sales, $this->cash, $seq, $this->authz, $this->pin, $this->tenant);
-        $this->devices = new \Sanara\Modules\Sync\DeviceService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->audit, $this->tenant);
-        $this->sync = new \Sanara\Modules\Sync\SyncService($db, new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant), $clock, $this->sales, $this->cash, $this->authz, $this->audit, $this->tenant);
+        $this->stock = new StockService($db, $tdb, $clock, $this->tenant);
+        $this->inventory = new \Sanara\Modules\Stock\InventoryService($db, $tdb, $clock);
+        $seq = new \Sanara\Modules\Sales\Sequences($db, $tdb);
+        $this->cash = new \Sanara\Modules\Sales\CashService($db, $tdb, $clock, $seq);
+        $this->customers = new \Sanara\Modules\Customers\CustomerService($db, $tdb, $clock, $this->cash, $seq, $this->tenant);
+        $this->sales = new \Sanara\Modules\Sales\SalesService($db, $tdb, $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers);
+        $this->returns = new \Sanara\Modules\Sales\ReturnsService($db, $tdb, $clock, $this->sales, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers);
+        $this->devices = new \Sanara\Modules\Sync\DeviceService($db, $tdb, $clock, $this->audit, $this->tenant);
+        $this->sync = new \Sanara\Modules\Sync\SyncService($db, $tdb, $clock, $this->sales, $this->cash, $this->authz, $this->audit, $this->tenant);
         $this->team = new \Sanara\Modules\Team\TeamService($db, $clock, $users, $this->authz, $this->activation, new RefreshTokenService($db, $clock), $this->jobs, $config->appUrl);
     }
 

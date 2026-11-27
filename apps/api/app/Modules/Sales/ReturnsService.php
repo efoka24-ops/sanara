@@ -10,6 +10,7 @@ use Sanara\Common\Rbac\Authorizer;
 use Sanara\Common\Tenancy\TenantContext;
 use Sanara\Common\Tenancy\TenantDb;
 use Sanara\Common\Ulid;
+use Sanara\Modules\Customers\CustomerService;
 use Sanara\Modules\Security\PinService;
 
 /**
@@ -28,11 +29,12 @@ final class ReturnsService
         private readonly Authorizer $authz,
         private readonly PinService $pin,
         private readonly TenantContext $ctx,
+        private readonly CustomerService $customers,
     ) {
     }
 
     /**
-     * @param array<string, mixed> $in lines[{sale_line_id, qty}], reason, restock?, refund_method(cash|credit_note|other), approver?
+     * @param array<string, mixed> $in lines[{sale_line_id, qty}], reason, restock?, refund_method(cash|credit_note|account|other), approver?
      * @return array<string, mixed>
      */
     public function create(string $saleId, array $in, string $userId): array
@@ -43,7 +45,8 @@ final class ReturnsService
             throw new ApiException('validation_failed', 422, ['fields' => ['reason' => 'required']]);
         }
         $method = (string) ($in['refund_method'] ?? 'credit_note');
-        if (!in_array($method, ['cash', 'credit_note', 'other'], true)) {
+        // « account » : le montant diminue la dette du client de la vente.
+        if (!in_array($method, ['cash', 'credit_note', 'account', 'other'], true) || ($method === 'account' && ($sale['customer_id'] ?? null) === null)) {
             throw new ApiException('validation_failed', 422, ['fields' => ['refund_method' => 'invalid']]);
         }
         // Retour : droit « annuler une vente », sinon validation d'un responsable par PIN. Hors délai : toujours un responsable.
@@ -110,6 +113,9 @@ final class ReturnsService
             $this->tdb->update('sales', ['status' => $fullAfter ? ($kind === 'cancel' ? 'cancelled' : 'returned') : 'part_returned'], ['id' => $saleId]);
             if ($method === 'cash') {
                 $this->tdb->insert('cash_movements', ['id' => Ulid::generate(), 'session_id' => $session['id'], 'kind' => 'refund', 'amount' => $amount, 'ref_id' => $id, 'reason' => mb_substr($reason, 0, 190), 'created_at' => $this->clock->stamp()]);
+            }
+            if ($method === 'account') {
+                $this->customers->refund((string) $sale['customer_id'], $amount, $saleId, $id, $userId);
             }
             if ($method === 'credit_note') {
                 $this->tdb->insert('credit_notes', ['id' => Ulid::generate(), 'number' => sprintf('AV-%s-%06d', $year, $this->seq->next('credit:' . $year)), 'return_id' => $id, 'sale_id' => $saleId, 'amount' => $amount, 'created_at' => $this->clock->stamp()]);

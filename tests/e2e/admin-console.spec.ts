@@ -33,10 +33,7 @@ test('console : chaque entrée du menu ouvre son écran et le bouton retour revi
   await page.getByRole('link', { name: 'Pharmacies', exact: true }).click();
   await page.getByRole('link', { name: 'Pharmacie Démo' }).click();
   await expect(page.getByRole('heading', { name: /Pharmacie Démo/ })).toBeVisible();
-  await page
-    .getByRole('button', { name: /Pharmacies/ })
-    .first()
-    .click();
+  await page.getByRole('button', { name: '← Retour' }).click();
   await expect(page.getByRole('heading', { name: 'Pharmacies', exact: true })).toBeVisible();
 });
 

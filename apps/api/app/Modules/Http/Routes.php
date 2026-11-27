@@ -508,6 +508,25 @@ final class Routes
             })->add($perm('sales.create'));
             $g->get('/sales/{id}/returns', fn (Request $q, Response $r, array $a) => $json($r, ['items' => $s->returns->forSale($a['id'])]))->add($perm('sales.create'));
             $g->get('/returns/{id}/credit-note', fn (Request $q, Response $r, array $a) => $html($r, \Sanara\Modules\Sales\SalesDocuments::creditNote($s->returns->creditNote($a['id']), $tenantInfo($q))))->add($perm('sales.create'));
+            // --- Comptes clients (US13) ---
+            $g->get('/customers', fn (Request $q, Response $r) => $json($r, ['items' => $s->customers->search((string) ($q->getQueryParams()['q'] ?? ''))]))->add($perm('customers.read'));
+            $g->post('/customers', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
+                $id = $s->customers->create($body($q));
+                $s->audit->record('customer.create', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'entity' => 'customer', 'entity_id' => $id]);
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('customers.write'));
+            $g->get('/customers/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->customers->get($a['id'])))->add($perm('customers.read'));
+            $g->post('/customers/{id}', function (Request $q, Response $r, array $a) use ($s, $body, $actor) {
+                $s->customers->update($a['id'], $body($q));
+                $s->audit->record('customer.update', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'entity' => 'customer', 'entity_id' => $a['id']]);
+                return $r->withStatus(204);
+            })->add($perm('customers.write'));
+            $g->post('/customers/{id}/payments', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $paid = $s->customers->pay($a['id'], $body($q), $actor($q));
+                $s->audit->record('customer.payment', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'entity' => 'customer', 'entity_id' => $a['id'], 'receipt' => $paid['receipt_number']]);
+                return $json($r, $paid, 201);
+            })->add($perm('customers.collect'));
+            $g->get('/customers/{id}/receipts/{entry}', fn (Request $q, Response $r, array $a) => $html($r, \Sanara\Modules\Sales\SalesDocuments::debtReceipt($s->customers->receipt($a['id'], $a['entry']), $tenantInfo($q))))->add($perm('customers.read'));
             $g->get('/pos/held', fn (Request $q, Response $r) => $json($r, ['items' => $s->sales->held($actor($q))]))->add($perm('sales.create'));
             $g->post('/pos/held', function (Request $q, Response $r) use ($s, $json, $body, $actor) {
                 return $json($r, ['id' => $s->sales->hold($actor($q), (string) ($body($q)['label'] ?? ''), $body($q)['cart'] ?? null)], 201);
@@ -572,7 +591,7 @@ final class Routes
                 $b = $body($q);
                 return $json($r, $s->devices->register((string) $q->getAttribute('userId'), (string) ($b['deviceId'] ?? ''), (string) ($b['name'] ?? '')));
             })->add($perm('sales.create'));
-            $g->get('/pull', fn (Request $q, Response $r) => $json($r, $s->sync->pull((string) ($q->getQueryParams()['cursor'] ?? ''), (int) ($q->getQueryParams()['limit'] ?? 500))))->add($perm('sales.create'));
+            $g->get('/pull', fn (Request $q, Response $r) => $json($r, $s->sync->pull((string) ($q->getQueryParams()['cursor'] ?? ''), (int) ($q->getQueryParams()['limit'] ?? 500), (string) ($q->getQueryParams()['since'] ?? ''))))->add($perm('sales.create'));
         })->add(new AuthMiddleware($s->jwt, $s->tenant));
 
         // Document chiffré : accès uniquement par URL signée à durée courte.

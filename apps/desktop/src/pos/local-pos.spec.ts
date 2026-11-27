@@ -39,6 +39,8 @@ const lot = (id: string, productId: string, quantity: number, over = {}) => ({
 });
 
 const snapshot = (over: Partial<ReferenceSnapshot> = {}): ReferenceSnapshot => ({
+  full: true,
+  customers: [],
   serverTime: '2026-11-26T08:00:00.000Z',
   settings: { maxDiscountBp: 1000, allowNegativeStock: false, saleCounters: { 'C1:2026': 41 } },
   products: [
@@ -81,6 +83,47 @@ beforeEach(() => {
 afterEach(() => {
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+describe('vente à crédit hors-ligne', () => {
+  const account = {
+    id: 'C1',
+    name: 'Awa Bello',
+    phone: null,
+    creditLimit: 5000,
+    balance: 1000,
+    active: true,
+  };
+  const credit = (qty: number, customerId?: string) =>
+    sale({
+      lines: [{ productId: 'para', qty }],
+      payments: [{ method: 'credit', amount: qty * 1000 }],
+      customerId,
+    });
+
+  it('exige un compte actif et respecte son plafond, ventes non envoyées comprises', () => {
+    reference.replace(
+      snapshot({ customers: [account, { ...account, id: 'C2', name: 'Bloqué', active: false }] }),
+    );
+    const till = pos();
+    till.openCash('C1', 0);
+    expect(() => till.sell(credit(1))).toThrow('validation_failed');
+    expect(() => till.sell(credit(1, 'inconnu'))).toThrow('validation_failed');
+    expect(() => till.sell(credit(1, 'C2'))).toThrow('customer_inactive');
+    till.sell(credit(3, 'C1'));
+    expect(() => till.sell(credit(2, 'C1'))).toThrow('credit_limit_exceeded');
+    till.sell(credit(1, 'C1'));
+    const sent = queue.pending().at(-1)!.payload as Record<string, unknown>;
+    expect(sent).toMatchObject({ customerId: 'C1', customerName: 'Awa Bello' });
+    expect(till.customers('awa')[0]).toMatchObject({ balance: 5000, creditLimit: 5000 });
+
+    // Une copie qui tient compte des ventes envoyées remplace les montants en attente.
+    queue.acknowledge(queue.pending().map((o) => o.id));
+    reference.merge(
+      snapshot({ full: false, products: [], lots: [], customers: [{ ...account, balance: 5000 }] }),
+    );
+    expect(till.customers('awa')[0]!.balance).toBe(5000);
+  });
 });
 
 describe('caisse hors-ligne', () => {

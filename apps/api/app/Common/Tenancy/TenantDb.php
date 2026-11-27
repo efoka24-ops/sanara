@@ -12,7 +12,7 @@ use Sanara\Common\Persistence\Ident;
  */
 final class TenantDb
 {
-    public function __construct(private readonly Db $db, private readonly TenantContext $ctx)
+    public function __construct(private readonly Db $db, private readonly TenantContext $ctx, private readonly ?ChangeLog $changes = null)
     {
     }
 
@@ -64,7 +64,16 @@ final class TenantDb
             throw new \InvalidArgumentException('tenant_id différent de la pharmacie courante');
         }
         $row['tenant_id'] = $tid;
-        $this->db->insert($table, $row);
+        $tracked = $this->changes?->tracked($table);
+        if ($tracked === null || !isset($row[$tracked[1]])) {
+            $this->db->insert($table, $row);
+            return;
+        }
+        // L'écriture et sa trace réussissent ou échouent ensemble.
+        $this->db->transaction(function () use ($table, $row, $tracked, $tid): void {
+            $this->db->insert($table, $row);
+            $this->changes?->mark($tid, $tracked[0], (string) $row[$tracked[1]]);
+        });
     }
 
     /** @param array<string, mixed> $set @param array<string, mixed> $where */
@@ -78,14 +87,37 @@ final class TenantDb
         foreach (array_keys($set) as $c) {
             $cols[] = Ident::check($c) . ' = ?';
         }
-        return $this->db->execute('UPDATE ' . $table . ' SET ' . implode(', ', $cols) . $sql, [...array_values($set), ...$params]);
+        return $this->tracking($table, $sql, $params, 'UPDATE ' . $table . ' SET ' . implode(', ', $cols) . $sql, [...array_values($set), ...$params]);
     }
 
     /** @param array<string, mixed> $where */
     public function delete(string $table, array $where): int
     {
         [$sql, $params] = $this->where($table, $where);
-        return $this->db->execute('DELETE FROM ' . $table . $sql, $params);
+        return $this->tracking($table, $sql, $params, 'DELETE FROM ' . $table . $sql, $params);
+    }
+
+    /**
+     * Exécute une mise à jour ou une suppression et trace les objets du référentiel concernés, lus avant
+     * qu'elle ait lieu.
+     *
+     * @param list<mixed> $whereParams
+     * @param list<mixed> $params
+     */
+    private function tracking(string $table, string $where, array $whereParams, string $sql, array $params): int
+    {
+        $tracked = $this->changes?->tracked($table);
+        if ($tracked === null) {
+            return $this->db->execute($sql, $params);
+        }
+        return (int) $this->db->transaction(function () use ($table, $tracked, $where, $whereParams, $sql, $params): int {
+            $touched = array_column($this->db->all('SELECT DISTINCT ' . $tracked[1] . ' AS ref FROM ' . $table . $where, $whereParams), 'ref');
+            $n = $this->db->execute($sql, $params);
+            foreach ($touched as $id) {
+                $this->changes?->mark($this->ctx->require(), $tracked[0], (string) $id);
+            }
+            return $n;
+        });
     }
 
     private function guard(string $table): void

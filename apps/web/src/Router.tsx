@@ -34,6 +34,7 @@ import { PharmaciesPage } from './pages/PharmaciesPage';
 import { DesktopProvider } from './app/desktop';
 import { DesktopFrame } from './app/DesktopFrame';
 import { SyncPage } from './pages/SyncPage';
+import { CustomersPage } from './pages/CustomersPage';
 
 export function Router() {
   return (
@@ -69,6 +70,7 @@ export function Router() {
                       <Route path="caisse" element={<PosPage />} />
                       <Route path="ventes" element={<SalesPage />} />
                       <Route path="synchronisation" element={<SyncPage />} />
+                      <Route path="clients" element={<CustomersPage />} />
                     </Route>
                   </Route>
                   <Route path="admin" element={<RequireArea area="admin" />}>

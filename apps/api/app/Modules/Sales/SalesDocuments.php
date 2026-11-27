@@ -84,7 +84,7 @@ final class SalesDocuments
         foreach ($t['by_method'] as $m => $amount) {
             $b .= '<tr><td>' . P::e(self::METHODS[$m] ?? $m) . '</td><td class="n">' . P::money((int) $amount, $cur) . '</td></tr>';
         }
-        $b .= '</table><div class="sep"></div><table><tr><td>Fond de caisse</td><td class="n">' . P::money((int) $t['opening_float'], $cur) . '</td></tr><tr><td>Remboursements espèces</td><td class="n">' . P::money((int) $t['cash_refunds'], $cur) . '</td></tr>'
+        $b .= '</table><div class="sep"></div><table><tr><td>Fond de caisse</td><td class="n">' . P::money((int) $t['opening_float'], $cur) . '</td></tr>' . ((int) ($t['cash_collected'] ?? 0) > 0 ? '<tr><td>Dettes encaissées en espèces</td><td class="n">' . P::money((int) $t['cash_collected'], $cur) . '</td></tr>' : '') . '<tr><td>Remboursements espèces</td><td class="n">' . P::money((int) $t['cash_refunds'], $cur) . '</td></tr>'
             . '<tr><td>Espèces attendues</td><td class="n">' . P::money((int) $t['expected_cash'], $cur) . '</td></tr>';
         if ($s['counted_cash'] !== null) {
             $b .= '<tr><td>Espèces comptées</td><td class="n">' . P::money((int) $s['counted_cash'], $cur) . '</td></tr><tr class="tot"><td>Écart</td><td class="n">' . P::money((int) $s['gap'], $cur) . '</td></tr>';
@@ -93,6 +93,21 @@ final class SalesDocuments
             }
         }
         return P::wrap('Rapport Z', $b . '</table>', '80');
+    }
+
+    /**
+     * @param array<string, mixed> $r CustomerService::receipt()
+     * @param array<string, mixed> $t pharmacie : name, currency
+     */
+    public static function debtReceipt(array $r, array $t): string
+    {
+        $cur = (string) ($t['currency'] ?? 'XAF');
+        $b = '<div class="c"><b>' . P::e($t['name'] ?? '') . '</b></div><div class="sep"></div>'
+            . '<div>Reçu ' . P::e($r['number']) . '<br>' . P::e(substr((string) $r['date'], 0, 16)) . ' UTC<br>Client ' . P::e($r['customer']) . '</div><div class="sep"></div><table>'
+            . '<tr class="tot"><td>Réglé</td><td class="n">' . P::money((int) $r['amount'], $cur) . '</td></tr>'
+            . '<tr><td>' . P::e(self::METHODS[$r['method']] ?? 'Virement') . '</td><td class="n">' . P::e($r['reference'] ?? '') . '</td></tr>'
+            . '<tr><td>Reste dû</td><td class="n">' . P::money((int) $r['balance'], $cur) . '</td></tr></table>';
+        return P::wrap('Reçu ' . (string) $r['number'], $b, '80');
     }
 
     /**

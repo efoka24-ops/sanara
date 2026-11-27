@@ -9,6 +9,7 @@ import {
   type PullPage,
   type PushRequest,
   type PushResponse,
+  type ReferenceSnapshot,
   type SyncOperation,
   type SyncTransport,
 } from '../src';
@@ -172,7 +173,11 @@ describe('réception du référentiel', () => {
   it('ne remplace le référentiel que si l’envoi et toutes les pages ont abouti', async () => {
     const stored: string[][] = [];
     const sink = {
+      since: () => undefined,
       replace: (s: { products: { id: string }[] }) => void stored.push(s.products.map((p) => p.id)),
+      merge: () => {
+        throw new Error('copie complète attendue');
+      },
     };
 
     const cut = server({ failOnBatch: 1 });
@@ -197,6 +202,65 @@ describe('réception du référentiel', () => {
   });
 });
 
+describe('téléchargement des seuls changements', () => {
+  const customer = {
+    id: 'C1',
+    name: 'Awa',
+    phone: null,
+    creditLimit: 5000,
+    balance: 1200,
+    active: true,
+  };
+  const server2 = (full: boolean) => {
+    const asked: [string, string | undefined][] = [];
+    const transport: SyncTransport = {
+      ...server().transport,
+      pull: async (cursor, since) => {
+        asked.push([cursor, since]);
+        return cursor === ''
+          ? { ...page(['A'], 'c:', true), full, serverTime: '2026-11-27T10:00:00.000Z' }
+          : {
+              ...page([], null),
+              full,
+              serverTime: '2026-11-27T10:00:01.000Z',
+              customers: [customer],
+            };
+      },
+    };
+    return { asked, transport };
+  };
+  const sink = () => {
+    const calls: [string, ReferenceSnapshot][] = [];
+    return {
+      calls,
+      since: () => '2026-11-27T09:00:00.000Z',
+      replace: (s: ReferenceSnapshot) => void calls.push(['replace', s]),
+      merge: (s: ReferenceSnapshot) => void calls.push(['merge', s]),
+    };
+  };
+
+  it('demande depuis la dernière copie et fusionne, clients compris', async () => {
+    const s = server2(false);
+    const target = sink();
+    await synchronise(queueOf(), s.transport, target, who);
+    expect(s.asked).toEqual([
+      ['', '2026-11-27T09:00:00.000Z'],
+      ['c:', '2026-11-27T09:00:00.000Z'],
+    ]);
+    const [kind, snapshot] = target.calls[0]!;
+    expect(kind).toBe('merge');
+    expect(snapshot.customers).toEqual([customer]);
+    // L'heure de la première page sert de point de départ au téléchargement suivant.
+    expect(snapshot.serverTime).toBe('2026-11-27T10:00:00.000Z');
+  });
+
+  it('remplace tout quand le serveur rend une copie complète', async () => {
+    const target = sink();
+    await synchronise(queueOf(), server2(true).transport, target, who);
+    expect(target.calls[0]![0]).toBe('replace');
+  });
+});
+
 describe('transport HTTP', () => {
   it('envoie le jeton, et traite une réponse non JSON ou une erreur comme un échec', async () => {
     const calls: { url: string; init: RequestInit }[] = [];
@@ -211,6 +275,11 @@ describe('transport HTTP', () => {
     });
     await transport.pull('X Y');
     expect(calls[0]!.url).toBe('http://serveur/api/sync/pull?cursor=X%20Y');
+    reply = new Response(JSON.stringify(page([], null, true)), { status: 200 });
+    await transport.pull('', '2026-11-27T09:00:00.000Z');
+    expect(calls.at(-1)!.url).toBe(
+      'http://serveur/api/sync/pull?cursor=&since=2026-11-27T09%3A00%3A00.000Z',
+    );
     expect(calls[0]!.init.headers).toMatchObject({ Authorization: 'Bearer jeton' });
 
     reply = new Response('<html>403</html>', { status: 200 });

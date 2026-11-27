@@ -22,6 +22,7 @@ final class SyncPullHttpTest extends TestCase
 {
     private const PW = 'Motdepasse#2026';
     private App $app;
+    private Clock $clock;
     /** @var array<string, string> */
     private array $tokens = [];
 
@@ -30,7 +31,7 @@ final class SyncPullHttpTest extends TestCase
         $db = TestDb::create();
         Seeder::roles($db);
         Seeder::cameroon($db);
-        $clock = Clock::fixed('2026-11-26T18:00:00Z');
+        $this->clock = $clock = Clock::fixed('2026-11-26T18:00:00Z');
         $users = new UserRepository($db, $clock);
         $hash = (new PasswordHasher())->hash(self::PW);
         foreach (['owner' => 'T1', 'cashier' => 'T1', 'accountant' => 'T1', 'other' => 'T2'] as $name => $tenant) {
@@ -58,6 +59,13 @@ final class SyncPullHttpTest extends TestCase
         }
         $res = $this->app->handle($r);
         return [$res->getStatusCode(), json_decode((string) $res->getBody(), true) ?? []];
+    }
+
+    /** Une heure passe : les jetons de session sont à reprendre. */
+    private function later(): void
+    {
+        $this->clock->advance('+1 hour');
+        $this->tokens = [];
     }
 
     private function product(string $name, int $stock = 0, string $user = 'owner', ?string $barcode = null): string
@@ -102,6 +110,46 @@ final class SyncPullHttpTest extends TestCase
         $this->assertCount(1, $page['lots']);
         $this->assertSame([$id, 12, '2030-01-01', 'available'], [$page['lots'][0]['productId'], $page['lots'][0]['quantity'], $page['lots'][0]['expiry'], $page['lots'][0]['status']]);
         $this->assertSame(['id', 'productId', 'lotNumber', 'expiry', 'status', 'receivedAt', 'quantity'], array_keys($page['lots'][0]), 'aucun prix d’achat');
+    }
+
+    public function testLaterPullsCarryOnlyWhatChangedSinceByTimeOfReception(): void
+    {
+        $sold = $this->product('Vendu', 10);
+        $quiet = $this->product('Calme', 4);
+        $account = $this->call('POST', '/app/customers', ['name' => 'Awa Test', 'phone' => '690', 'credit_limit' => 5000], 'owner')[1]['id'];
+        $this->later();
+        [, $first] = $this->call('GET', '/sync/pull', null, 'cashier');
+        $this->assertTrue($first['full']);
+
+        $this->later();
+        [, $second] = $this->call('GET', "/sync/pull?since={$first['serverTime']}", null, 'cashier');
+        $this->assertFalse($second['full']);
+        $this->assertSame([[], [], null], [$second['products'], $second['lots'], $second['nextCursor']]);
+        $this->assertNotNull($second['settings']);
+
+        $this->call('POST', '/app/cash/open', ['station' => 'C1', 'opening_float' => 0], 'cashier');
+        $this->call('POST', '/app/sales', ['lines' => [['product_id' => $sold, 'qty' => 1]], 'payments' => [['method' => 'credit', 'amount' => 1500]], 'customer_id' => $account], 'cashier');
+        [, $third] = $this->call('GET', "/sync/pull?since={$second['serverTime']}", null, 'cashier');
+        $this->assertSame([$sold], array_column($third['products'], 'id'));
+        $this->assertSame([9], array_column($third['lots'], 'quantity'));
+        $this->assertSame('c:', $third['nextCursor']);
+        [, $customers] = $this->call('GET', "/sync/pull?since={$second['serverTime']}&cursor=c:", null, 'cashier');
+        $this->assertSame([['id' => $account, 'name' => 'Awa Test', 'phone' => '690', 'creditLimit' => 5000, 'balance' => 1500, 'active' => true]], $customers['customers']);
+        $this->assertNull($customers['nextCursor']);
+
+        // Un changement de statut de lot compte aussi ; une date illisible redonne tout.
+        $this->later();
+        [, $marker] = $this->call('GET', '/sync/pull?since=hier', null, 'cashier');
+        $this->later();
+        $lot = $this->call('GET', "/app/stock/products/$quiet/lots", null, 'owner')[1]['items'][0]['id'];
+        $this->call('POST', "/app/stock/lots/$lot/quarantine", ['reason' => 'Rappel du fabricant'], 'owner');
+        [, $fourth] = $this->call('GET', "/sync/pull?since={$marker['serverTime']}", null, 'cashier');
+        // « Vendu » a changé il y a une heure : plus ancien que la marge de recouvrement.
+        $this->assertSame([$quiet], array_column($fourth['products'], 'id'));
+        $this->assertSame(['quarantine'], array_column($fourth['lots'], 'status'));
+        $all = $this->call('GET', '/sync/pull?since=hier', null, 'cashier')[1];
+        $this->assertTrue($all['full']);
+        $this->assertCount(2, $all['products']);
     }
 
     public function testPagesFollowTheCursorWithoutGapOrRepeat(): void

@@ -26,6 +26,8 @@ final class SyncService
     public const SCHEMA_VERSION = 1;
     private const MAX_BATCH = 200;
     private const MAX_PAGE = 500;
+    /** Secondes reprises avant la date demandée par un téléchargement différentiel. */
+    private const OVERLAP = 300;
     /** Au-delà, l'horloge du poste est signalée comme déréglée. */
     private const MAX_SKEW = 300;
 
@@ -63,19 +65,37 @@ final class SyncService
     }
 
     /**
-     * T139 : référentiel nécessaire à la vente hors-ligne, par pages de produits classés par identifiant.
-     * Les prix d'achat n'y figurent jamais.
+     * T137, T139 : référentiel nécessaire à la vente hors-ligne, par pages de produits puis de clients
+     * (curseur préfixé « c: »), classés par identifiant. Les prix d'achat n'y figurent jamais.
+     * Avec $since, seuls les produits et clients modifiés depuis sont rendus.
      *
-     * @return array{serverTime: string, settings: ?array<string, mixed>, products: list<array<string, mixed>>, lots: list<array<string, mixed>>, nextCursor: ?string}
+     * @return array{serverTime: string, full: bool, settings: ?array<string, mixed>, products: list<array<string, mixed>>, lots: list<array<string, mixed>>, customers: list<array<string, mixed>>, nextCursor: ?string}
      */
-    public function pull(string $cursor, int $limit): array
+    public function pull(string $cursor, int $limit, string $since = ''): array
     {
         $limit = max(1, min(self::MAX_PAGE, $limit));
         $tid = $this->ctx->require();
-        $rows = $this->db->all('SELECT id, name, dci, form, strength, regulatory_status, sale_price, vat_bp, active FROM products WHERE tenant_id = ? AND id > ? ORDER BY id LIMIT ' . ($limit + 1), [$tid, $cursor]);
+        $from = $this->time($since === '' ? null : $since);
+        // Recouvrement : une écriture commencée avant le dernier téléchargement a pu être validée après.
+        $from = $from === null ? null : $this->clock->stamp($from->modify('-' . self::OVERLAP . ' seconds'));
+        $base = [
+            'serverTime' => $this->clock->now()->format('Y-m-d\TH:i:s.v\Z'),
+            'full' => $from === null,
+            'settings' => $cursor === '' ? $this->settings($tid) : null,
+            'products' => [],
+            'lots' => [],
+            'customers' => [],
+            'nextCursor' => null,
+        ];
+        if (str_starts_with($cursor, 'c:')) {
+            return $this->customerPage($tid, substr($cursor, 2), $limit, $from) + $base;
+        }
+        [$changed, $params] = $this->changedSince($tid, 'product', $from);
+        $rows = $this->db->all('SELECT id, name, dci, form, strength, regulatory_status, sale_price, vat_bp, active FROM products WHERE tenant_id = ? AND id > ?' . $changed . ' ORDER BY id LIMIT ' . ($limit + 1), [$tid, $cursor, ...$params]);
         $more = count($rows) > $limit;
         $rows = array_slice($rows, 0, $limit);
         $ids = array_column($rows, 'id');
+        $next = $more ? (string) end($ids) : ($this->customerPage($tid, '', 1, $from)['customers'] !== [] ? 'c:' : null);
 
         $barcodes = [];
         $lots = [];
@@ -98,15 +118,50 @@ final class SyncService
             }
         }
 
-        return [
-            'serverTime' => $this->clock->now()->format('Y-m-d\TH:i:s.v\Z'),
-            'settings' => $cursor === '' ? ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters(), 'pharmacy' => $this->pharmacy($tid)] : null,
+        return array_replace($base, [
             'products' => array_map(static fn (array $p) => [
                 'id' => $p['id'], 'name' => $p['name'], 'dci' => $p['dci'], 'form' => $p['form'], 'strength' => $p['strength'], 'regulatoryStatus' => $p['regulatory_status'],
                 'salePrice' => (int) $p['sale_price'], 'vatBp' => (int) $p['vat_bp'], 'active' => (int) $p['active'] === 1, 'barcodes' => $barcodes[$p['id']] ?? [], 'unassignedQty' => $unassigned[$p['id']] ?? 0,
             ], $rows),
             'lots' => $lots,
-            'nextCursor' => $more ? (string) end($ids) : null,
+            'nextCursor' => $next,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function settings(string $tid): array
+    {
+        return ['maxDiscountBp' => (int) $this->setting('max_discount_bp', 1000), 'allowNegativeStock' => $this->setting('allow_negative_stock', false) === true, 'saleCounters' => (object) $this->saleCounters(), 'pharmacy' => $this->pharmacy($tid)];
+    }
+
+    /** @return array{0: string, 1: list<string>} condition « modifié depuis », sur la colonne id */
+    private function changedSince(string $tid, string $entity, ?string $from): array
+    {
+        return $from === null
+            ? ['', []]
+            : [' AND id IN (SELECT entity_id FROM ref_changes WHERE tenant_id = ? AND entity = ? AND changed_at >= ?)', [$tid, $entity, $from]];
+    }
+
+    /** @return array{customers: list<array<string, mixed>>, nextCursor: ?string} */
+    private function customerPage(string $tid, string $after, int $limit, ?string $from): array
+    {
+        [$changed, $params] = $this->changedSince($tid, 'customer', $from);
+        $rows = $this->db->all('SELECT id, name, phone, credit_limit, active FROM customers WHERE tenant_id = ? AND id > ?' . $changed . ' ORDER BY id LIMIT ' . ($limit + 1), [$tid, $after, ...$params]);
+        $more = count($rows) > $limit;
+        $rows = array_slice($rows, 0, $limit);
+        $balances = [];
+        if ($rows !== []) {
+            $ids = array_column($rows, 'id');
+            $in = implode(', ', array_fill(0, count($ids), '?'));
+            foreach ($this->db->all("SELECT customer_id, SUM(amount) AS n FROM customer_entries WHERE tenant_id = ? AND customer_id IN ($in) GROUP BY customer_id", [$tid, ...$ids]) as $b) {
+                $balances[$b['customer_id']] = (int) $b['n'];
+            }
+        }
+        return [
+            'customers' => array_map(static fn (array $c) => [
+                'id' => $c['id'], 'name' => $c['name'], 'phone' => $c['phone'], 'creditLimit' => (int) $c['credit_limit'], 'balance' => $balances[$c['id']] ?? 0, 'active' => (int) $c['active'] === 1,
+            ], $rows),
+            'nextCursor' => $more ? 'c:' . $rows[count($rows) - 1]['id'] : null,
         ];
     }
 
@@ -201,7 +256,9 @@ final class SyncService
             if ($product !== '' && !array_key_exists($product, $names)) {
                 $names[$product] = $this->tdb->select('products', ['id' => $product], null, 1)[0]['name'] ?? null;
             }
-            $items[] = ['id' => $c['id'], 'kind' => $c['kind'], 'details' => (object) $details, 'product_name' => $names[$product] ?? null, 'created_at' => $c['created_at']];
+            $customer = (string) ($details['customerId'] ?? '');
+            $account = $customer === '' ? null : ($this->tdb->select('customers', ['id' => $customer], null, 1)[0]['name'] ?? null);
+            $items[] = ['id' => $c['id'], 'kind' => $c['kind'], 'details' => (object) $details, 'product_name' => $names[$product] ?? null, 'customer_name' => $account, 'created_at' => $c['created_at']];
         }
         return $items;
     }

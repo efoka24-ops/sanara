@@ -75,14 +75,19 @@ final class CashService
         }
         $sales = $this->tdb->select('sales', ['session_id' => $sessionId]);
         $refunds = 0;
+        $collected = 0;
         foreach ($this->tdb->select('cash_movements', ['session_id' => $sessionId]) as $m) {
-            $refunds += (int) $m['amount'];
+            if ($m['kind'] === 'debt_payment') {
+                $collected += (int) $m['amount'];
+            } else {
+                $refunds += (int) $m['amount'];
+            }
         }
         $cash = $by['cash'] ?? 0;
         return [
             'sales_count' => count($sales), 'sales_total' => array_sum(array_map(static fn ($x) => (int) $x['total'], $sales)), 'vat_total' => array_sum(array_map(static fn ($x) => (int) $x['vat_total'], $sales)),
             'discount_total' => array_sum(array_map(static fn ($x) => (int) $x['discount_total'], $sales)), 'by_method' => $by, 'cash_refunds' => $refunds,
-            'opening_float' => (int) $s['opening_float'], 'expected_cash' => (int) $s['opening_float'] + $cash - $refunds,
+            'opening_float' => (int) $s['opening_float'], 'cash_collected' => $collected, 'expected_cash' => (int) $s['opening_float'] + $cash + $collected - $refunds,
         ];
     }
 

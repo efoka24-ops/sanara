@@ -993,3 +993,25 @@ textarea.sa-field__input {
     display: none;
   }
 }
+
+/* Retour à l'écran précédent */
+main > .back {
+  margin: 0 0 14px;
+}
+main > .back + .setup {
+  margin-top: 0;
+}
+.topbar .back {
+  margin: 0 14px 0 0;
+}
+.topbar .topbar__actions {
+  margin-left: auto;
+}
+.desktop-frame .topbar .back {
+  background: var(--sa-surface);
+}
+/* Recherche posée sur le fond de l'écran : champ blanc pour rester visible. */
+.customers > div > .sa-field {
+  background: var(--sa-surface);
+  border-color: var(--sa-line);
+}

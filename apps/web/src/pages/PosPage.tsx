@@ -20,10 +20,21 @@ interface CartLine {
   discountBp: number;
   stock: number | null;
 }
+interface Account {
+  id: string;
+  name: string;
+  credit_limit: number;
+  balance: number;
+  active: boolean;
+}
 interface Held {
   id: string;
   label: string;
-  cart: { lines: { product: ProductLite; qty: number; discountBp: number }[]; customer?: string };
+  cart: {
+    lines: { product: ProductLite; qty: number; discountBp: number }[];
+    customer?: string;
+    account?: Account;
+  };
 }
 interface Approver {
   id: string;
@@ -60,6 +71,8 @@ export function PosPage() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [sel, setSel] = useState(0);
   const [customer, setCustomer] = useState('');
+  const [account, setAccount] = useState<Account | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [held, setHeld] = useState<Held[]>([]);
   const [paying, setPaying] = useState(false);
   const [rows, setRows] = useState<PayRow[]>([]);
@@ -81,6 +94,19 @@ export function PosPage() {
   const [discountFor, setDiscountFor] = useState<number | null>(null);
   const [discountPct, setDiscountPct] = useState('');
   const [askCustomer, setAskCustomer] = useState(false);
+
+  // Comptes proposés pendant la saisie du client (F8).
+  useEffect(() => {
+    if (!askCustomer || !can('customers.read')) return;
+    let live = true;
+    const query = new URLSearchParams({ q: account ? '' : customer, picker: '1' });
+    api<{ items: Account[] }>('GET', `/app/customers?${query}`)
+      .then((r) => live && setAccounts(r.items.slice(0, 8)))
+      .catch(() => live && setAccounts([]));
+    return () => {
+      live = false;
+    };
+  }, [askCustomer, customer]);
 
   const loadSession = useCallback(async () => {
     const r = await api<{ session: CashSession | null }>('GET', '/app/cash/current');
@@ -136,16 +162,19 @@ export function PosPage() {
       cart: {
         lines: cart.map((l) => ({ product: l.product, qty: l.qty, discountBp: l.discountBp })),
         customer,
+        account: account ?? undefined,
       },
     });
     setCart([]);
     setCustomer('');
+    setAccount(null);
     loadHeld();
     search.current?.focus();
   }
   async function resume(h: Held) {
     setCart(h.cart.lines.map((l) => ({ ...l, stock: null })));
     setCustomer(h.cart.customer ?? '');
+    setAccount(h.cart.account ?? null);
     await api('DELETE', `/app/pos/held/${h.id}`);
     loadHeld();
   }
@@ -185,6 +214,7 @@ export function PosPage() {
         reference: r.reference || undefined,
       })),
       customer_name: customer || undefined,
+      customer_id: account?.id,
     };
     if (regulated) {
       body.prescription = { ref: rx.ref, prescriber: rx.prescriber, patient_name: rx.patient };
@@ -197,6 +227,7 @@ export function PosPage() {
       setPaying(false);
       setCart([]);
       setCustomer('');
+      setAccount(null);
       setRx({ ref: '', prescriber: '', patient: '', pharmacist: '', pin: '' });
       setDoc({ title: sale.number, path: `/app/sales/${sale.id}/receipt` });
     } catch (e) {
@@ -447,7 +478,13 @@ export function PosPage() {
           <span className="muted">{t('pos.total')}</span>
           <b>{money(total)}</b>
         </div>
-        {customer && <p className="muted">{customer}</p>}
+        {customer && (
+          <p className="muted">
+            {customer}
+            {account &&
+              ` · ${t('pay.available', { amount: money(Math.max(0, account.credit_limit - account.balance)) })}`}
+          </p>
+        )}
         <div className="stack">
           <Button onClick={startPay} disabled={cart.length === 0}>
             {t('pos.pay')}
@@ -596,8 +633,12 @@ export function PosPage() {
                     }
                   />
                 )}
-                {r.method === 'credit' && !customer && (
-                  <p className="muted">{t('pay.customerName')} : F8</p>
+                {r.method === 'credit' && (
+                  <p className="muted">
+                    {account
+                      ? `${account.name} · ${t('pay.available', { amount: money(Math.max(0, account.credit_limit - account.balance)) })}`
+                      : `${t('pay.chooseAccount')} (F8)`}
+                  </p>
                 )}
               </div>
             ))}
@@ -746,9 +787,34 @@ export function PosPage() {
             label={t('pay.customerName')}
             value={customer}
             autoFocus
-            onChange={(e) => setCustomer(e.target.value)}
+            onChange={(e) => {
+              // Un nom saisi à la main n'ouvre pas de crédit : seul un compte choisi le permet.
+              setCustomer(e.target.value);
+              setAccount(null);
+            }}
             onKeyDown={(e) => e.key === 'Enter' && setAskCustomer(false)}
           />
+          <ul className="sessions">
+            {accounts.map((a) => (
+              <li key={a.id}>
+                <span>
+                  {a.name} ·{' '}
+                  {t('pay.available', { amount: money(Math.max(0, a.credit_limit - a.balance)) })}
+                </span>
+                <button
+                  className="link-strong"
+                  disabled={!a.active}
+                  onClick={() => {
+                    setAccount(a);
+                    setCustomer(a.name);
+                    setAskCustomer(false);
+                  }}
+                >
+                  {t(a.active ? 'pay.useAccount' : 'cust.inactive')}
+                </button>
+              </li>
+            ))}
+          </ul>
           <div className="actions">
             <Button onClick={() => setAskCustomer(false)}>{t('common.save')}</Button>
           </div>

@@ -256,9 +256,9 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T134 **[TDD]** [US28] Tests de synchro : deux postes hors-ligne vendent le même produit, somme correcte ; synchro interrompue sans doublon ; serveur gagnant sur référentiels (`packages/sync/tests/offline-scenarios.spec.ts`) (couverts : reprise sans doublon et référentiel (packages/sync/tests), deux postes sur le même produit (SyncPushHttpTest et tests/e2e/us28-sync.spec.ts))
 - [x] T135 [US28] Couche d'accès aux données double (API en ligne / SQLite hors-ligne) derrière une même interface (`packages/shared/src/data-access/`) (même API HTTP pour l'interface : la passerelle répond depuis SQLite pour la caisse (apps/desktop/src/pos/) et relaie le reste au serveur)
 - [x] T136 [US28] File d'opérations locale, push par lots, accusés, reprise (`packages/sync/src/client/`) (`pushPending` et `createHttpTransport` dans packages/sync/src/client.ts ; file persistante dans apps/desktop/src/local-db ; le branchement dans l'application relève de T126)
-- [ ] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`) (`push` fait et testé : idempotent, atomique par opération, trois types (ouverture, vente, clôture de caisse), attribution au compte auteur ; `pull` fait pour le référentiel complet par pages (produits, codes-barres, lots, soldes, réglages) ; restent le différentiel et les clients)
+- [x] T137 [US28] Endpoints serveur `POST /sync/push`, `GET /sync/pull?cursor=` avec idempotence (`apps/api/src/modules/sync/`) (push idempotent et atomique ; pull complet puis différentiel (?since=, journal des changements daté à la réception) pour les produits, lots, réglages et clients)
 - [x] T138 [US28] Résolution des conflits et journal `SyncConflict` (`packages/sync/src/conflicts/`) (écarts listés et marqués vérifiés (GET /sync/conflicts, POST /sync/conflicts/{id}/resolve), écran apps/web/src/pages/SyncPage.tsx ; la correction du stock passe par l'inventaire)
-- [ ] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale (synchronisation initiale du catalogue, du stock et des réglages faite ; restent les clients et le différentiel)
+- [x] T139 [US28] Synchro initiale (téléchargement du catalogue, stock, clients) et synchro incrémentale (synchronisation initiale du catalogue, du stock et des réglages faite ; restent les clients et le différentiel) (synchronisation initiale du catalogue, du stock, des réglages et des clients ; ensuite seuls les changements, avec une copie complète par jour)
 - [ ] T140 [US28] Vérification d'intégrité d'un poste hors-ligne trop longtemps (checksums de stock) avant acceptation
 - [x] T141 [US28] Indicateur de synchro dans l'interface (état, nombre d'opérations en attente, erreurs) (bloc d'état de la barre latérale (apps/web/src/app/DesktopStatus.tsx) : en ligne, opérations en attente, refusées, conflits, dernière synchronisation, bouton)
 - [x] T142 [US28] Détection de décalage d'horloge et horodatage serveur de référence (écart d'horloge mesuré et signalé par l'API puis rendu au poste ; affichage restant) (écart mesuré et signalé par l'API, affiché sur le poste)
@@ -394,11 +394,11 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 26 : V2 - US13 Clients et crédit (P2)
 
-- [ ] T220 [P] [US13] Modèles `Customer`, `CreditAccount`, `LoyaltyPoints`
-- [ ] T221 **[TDD]** [US13] Tests : plafond de crédit, règlements partiels, relances avec consentement
-- [ ] T222 [US13] CRUD clients, comptes à crédit, relevés, reçus (`apps/api/src/modules/customers/`)
+- [ ] T220 [P] [US13] Modèles `Customer`, `CreditAccount`, `LoyaltyPoints` (comptes clients et écritures de crédit faits ; reste la fidélité (T223))
+- [ ] T221 **[TDD]** [US13] Tests : plafond de crédit, règlements partiels, relances avec consentement (plafond, règlements partiels, retours et dépassement hors-ligne testés ; restent les relances (T223))
+- [x] T222 [US13] CRUD clients, comptes à crédit, relevés, reçus (`apps/api/src/modules/customers/`) (apps/api/app/Modules/Customers/ : fiches, plafonds, relevés, encaissements avec reçu, crédit à la caisse en ligne et hors-ligne)
 - [ ] T223 [US13] Relances automatiques SMS/email et programme de fidélité
-- [ ] T224 [US13] Pages clients et créances (`apps/web/src/app/(pharmacy)/clients/`)
+- [x] T224 [US13] Pages clients et créances (`apps/web/src/app/(pharmacy)/clients/`) (apps/web/src/pages/CustomersPage.tsx)
 
 ## Phase 27 : V2 - US15 Fournisseurs, commandes, réceptions (P2)
 

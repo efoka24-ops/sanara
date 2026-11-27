@@ -62,28 +62,46 @@ export interface ReferenceLot {
   receivedAt: string;
   quantity: number;
 }
+export interface ReferenceCustomer {
+  id: string;
+  name: string;
+  phone: string | null;
+  creditLimit: number;
+  /** Dette connue du serveur à l'heure du téléchargement. */
+  balance: number;
+  active: boolean;
+}
 export interface PullPage {
   serverTime: string;
+  /** Faux : seuls les produits et clients modifiés depuis la date demandée. */
+  full?: boolean;
   settings: ReferenceSettings | null;
   products: ReferenceProduct[];
   lots: ReferenceLot[];
+  customers?: ReferenceCustomer[];
   nextCursor: string | null;
 }
 export interface ReferenceSnapshot {
   serverTime: string;
+  full: boolean;
   settings: ReferenceSettings;
   products: ReferenceProduct[];
   lots: ReferenceLot[];
+  customers: ReferenceCustomer[];
 }
 
 export interface SyncTransport {
   push(request: PushRequest): Promise<PushResponse>;
-  pull(cursor: string): Promise<PullPage>;
+  pull(cursor: string, since?: string): Promise<PullPage>;
 }
 
 export interface ReferenceSink {
+  /** Date de la copie à compléter ; absente : tout télécharger. */
+  since(): string | undefined;
   /** Remplace tout le référentiel local, en une seule transaction. */
   replace(snapshot: ReferenceSnapshot): void;
+  /** Applique les seuls produits (avec leurs lots) et clients reçus, en une seule transaction. */
+  merge(snapshot: ReferenceSnapshot): void;
 }
 
 export interface SyncIdentity {
@@ -151,14 +169,22 @@ export async function pushPending(
   return report;
 }
 
-export async function pullReference(transport: SyncTransport): Promise<ReferenceSnapshot> {
+export async function pullReference(
+  transport: SyncTransport,
+  since?: string,
+): Promise<ReferenceSnapshot> {
   let cursor = '';
   let settings: ReferenceSettings | null = null;
   let serverTime = '';
   const products: ReferenceProduct[] = [];
   const lots: ReferenceLot[] = [];
+  const customers: ReferenceCustomer[] = [];
+  // Un serveur qui ne dit rien rend une copie complète.
+  let full = false;
   for (;;) {
-    const page = await transport.pull(cursor);
+    const page = await transport.pull(cursor, since);
+    full ||= page.full !== false;
+    customers.push(...(page.customers ?? []));
     settings ??= page.settings;
     serverTime ||= page.serverTime;
     products.push(...page.products);
@@ -168,7 +194,7 @@ export async function pullReference(transport: SyncTransport): Promise<Reference
     cursor = page.nextCursor;
   }
   if (!settings) throw new Error('réglages absents de la première page');
-  return { serverTime, settings, products, lots };
+  return { serverTime, full, settings, products, lots, customers };
 }
 
 /** Envoie d'abord, puis rafraîchit le référentiel, qui tient ainsi compte de ce qui vient de partir. */
@@ -182,11 +208,12 @@ export async function synchronise(
   if (!report.online) return { ...report, refreshed: false };
   let snapshot: ReferenceSnapshot;
   try {
-    snapshot = await pullReference(transport);
+    snapshot = await pullReference(transport, sink.since());
   } catch {
     return { ...report, refreshed: false };
   }
-  sink.replace(snapshot);
+  if (snapshot.full) sink.replace(snapshot);
+  else sink.merge(snapshot);
   return { ...report, refreshed: true };
 }
 
@@ -212,6 +239,10 @@ export function createHttpTransport(options: {
   }
   return {
     push: (request) => call<PushResponse>('/sync/push', request),
-    pull: (cursor) => call<PullPage>(`/sync/pull?cursor=${encodeURIComponent(cursor)}`),
+    pull: (cursor, since) =>
+      call<PullPage>(
+        `/sync/pull?cursor=${encodeURIComponent(cursor)}` +
+          (since ? `&since=${encodeURIComponent(since)}` : ''),
+      ),
   };
 }

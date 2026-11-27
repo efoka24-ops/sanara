@@ -11,8 +11,15 @@ import { money, useErrorText } from '../lib/common';
 interface Conflict {
   id: string;
   kind: string;
-  details: { missing?: number; sold?: number; current?: number; secondsAhead?: number };
+  details: {
+    missing?: number;
+    sold?: number;
+    current?: number;
+    secondsAhead?: number;
+    over?: number;
+  };
   product_name: string | null;
+  customer_name: string | null;
   created_at: string;
 }
 
@@ -55,6 +62,8 @@ export function SyncPage() {
       sold: money(c.details.sold ?? 0),
       current: money(c.details.current ?? 0),
       seconds: c.details.secondsAhead ?? 0,
+      customer: c.customer_name ?? '',
+      over: money(c.details.over ?? 0),
     });
   const label = (code: string) => (t(`err.${code}`) === `err.${code}` ? code : t(`err.${code}`));
 

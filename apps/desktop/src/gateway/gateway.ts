@@ -4,7 +4,12 @@
  * Les jetons du serveur ne sortent jamais de la passerelle : l'interface n'a que des jetons locaux.
  */
 import { randomBytes } from 'node:crypto';
-import { createHttpTransport, synchronise, type PushReport } from '@sanara/sync';
+import {
+  createHttpTransport,
+  synchronise,
+  type PushReport,
+  type ReferenceCustomer,
+} from '@sanara/sync';
 import { SqliteQueue, SqliteReference, SqliteState, type LocalDatabase } from '../local-db';
 import { LocalPos, PosError, type SaleInput } from '../pos/local-pos';
 import { OfflineAccounts, type Profile } from './accounts';
@@ -68,6 +73,7 @@ interface Body {
   lines?: { product_id: string; qty: number; discount_bp?: number }[];
   payments?: SaleInput['payments'];
   customer_name?: string;
+  customer_id?: string;
   prescription?: { ref: string; prescriber: string; patient_name: string };
   label?: string;
   cart?: unknown;
@@ -122,7 +128,7 @@ export class Gateway {
 
   constructor(private readonly options: GatewayOptions) {
     this.queue = new SqliteQueue(options.db);
-    this.reference = new SqliteReference(options.db);
+    this.reference = new SqliteReference(options.db, () => this.now());
     this.state = new SqliteState(options.db);
     this.accounts = new OfflineAccounts(options.db, () => this.now());
   }
@@ -488,6 +494,11 @@ export class Gateway {
       return json({ product_id: m[1], on_hand: pos.available(m[1]!), lots: [] });
     }
 
+    if (route === '/app/customers' && method === 'GET' && picker) {
+      sells();
+      return json({ items: pos.customers(query.get('q') ?? '').map(customerView) });
+    }
+
     if (route === '/app/cash/current') {
       sells();
       const s = pos.currentSession();
@@ -533,6 +544,7 @@ export class Gateway {
         })),
         payments: b.payments ?? [],
         customerName: b.customer_name,
+        customerId: b.customer_id,
         prescription: b.prescription && {
           ref: b.prescription.ref,
           prescriber: b.prescription.prescriber,
@@ -576,6 +588,11 @@ export class Gateway {
     }
     if (session.profile.tenant_id === null) return null;
     if (route === '/app/products') return this.search(query);
+    if (route === '/app/customers') {
+      return json({
+        items: this.reference.searchCustomers(query.get('q') ?? '').map(customerView),
+      });
+    }
     const product = route.match(/^\/app\/products\/([^/]+)$/);
     if (product) {
       const p = this.reference.product(product[1]!);
@@ -601,6 +618,15 @@ export class Gateway {
     );
   }
 }
+
+const customerView = (c: ReferenceCustomer) => ({
+  id: c.id,
+  name: c.name,
+  phone: c.phone ?? '',
+  credit_limit: c.creditLimit,
+  balance: c.balance,
+  active: c.active,
+});
 
 const productView = (p: {
   id: string;

@@ -1,21 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Badge, Button, Field, Modal, Table, useToast } from '@sanara/ui';
 import { api, ApiError } from '../api/client';
 import { fmt, money } from '../lib/common';
 
 /** Console super admin (maquettes S1, B3 à B11). */
-
-export function BackLink({ to, label }: { to?: string; label?: string }) {
-  const { t } = useT();
-  const nav = useNavigate();
-  return (
-    <button type="button" className="back" onClick={() => (to ? nav(to) : nav(-1))}>
-      ← {label ?? t('adm.back')}
-    </button>
-  );
-}
 
 function useAdminError() {
   const { t } = useT();
@@ -278,7 +268,6 @@ export function AdminPharmacyPage() {
   }
   return (
     <div>
-      <BackLink to="/admin/pharmacies" label={t('adm.ph.title')} />
       <div className="row">
         <h1>
           {p.name}{' '}

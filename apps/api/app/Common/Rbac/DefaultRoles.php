@@ -30,6 +30,9 @@ final class DefaultRoles
         'patients.read' => 'Consulter les dossiers patients',
         'patients.write' => 'Modifier les dossiers patients',
         'narcotics.dispense' => 'Délivrer des produits réglementés',
+        'customers.read' => 'Consulter les comptes clients',
+        'customers.write' => 'Gérer les comptes clients et leurs plafonds',
+        'customers.collect' => 'Encaisser les dettes des clients',
         'finance.read' => 'Consulter la finance',
         'reports.read' => 'Consulter les rapports',
     ];
@@ -38,6 +41,7 @@ final class DefaultRoles
         'audit.read', 'team.manage', 'settings.write', 'assistant.configure', 'requests.process', 'products.read', 'products.write',
         'stock.read', 'stock.write', 'purchases.write', 'sales.create', 'sales.discount', 'sales.discount_override', 'sales.cancel', 'pickup.validate',
         'stock.destroy', 'inventory.validate', 'cash.close', 'patients.read', 'patients.write', 'narcotics.dispense', 'finance.read', 'reports.read',
+        'customers.read', 'customers.write', 'customers.collect',
     ];
 
     /** @return array<string, array{name: string, scope: string, permissions: list<string>}> */
@@ -49,11 +53,12 @@ final class DefaultRoles
             'pharmacist' => ['name' => 'Pharmacien adjoint', 'scope' => 'tenant', 'permissions' => [
                 'requests.process', 'products.read', 'products.write', 'stock.read', 'stock.write', 'purchases.write', 'sales.create',
                 'sales.discount', 'sales.discount_override', 'stock.destroy', 'inventory.validate', 'pickup.validate', 'patients.read', 'patients.write', 'narcotics.dispense', 'reports.read',
+                'customers.read', 'customers.write', 'customers.collect',
             ]],
             'storekeeper' => ['name' => 'Magasinier', 'scope' => 'tenant', 'permissions' => ['products.read', 'stock.read', 'stock.write', 'purchases.write']],
-            'preparateur' => ['name' => 'Préparateur', 'scope' => 'tenant', 'permissions' => ['products.read', 'stock.read', 'sales.create', 'sales.discount', 'pickup.validate']],
-            'cashier' => ['name' => 'Caissier', 'scope' => 'tenant', 'permissions' => ['products.read', 'sales.create', 'sales.discount', 'pickup.validate']],
-            'accountant' => ['name' => 'Comptable', 'scope' => 'tenant', 'permissions' => ['finance.read', 'reports.read', 'cash.close']],
+            'preparateur' => ['name' => 'Préparateur', 'scope' => 'tenant', 'permissions' => ['products.read', 'stock.read', 'sales.create', 'sales.discount', 'pickup.validate', 'customers.read', 'customers.collect']],
+            'cashier' => ['name' => 'Caissier', 'scope' => 'tenant', 'permissions' => ['products.read', 'sales.create', 'sales.discount', 'pickup.validate', 'customers.read', 'customers.collect']],
+            'accountant' => ['name' => 'Comptable', 'scope' => 'tenant', 'permissions' => ['finance.read', 'reports.read', 'cash.close', 'customers.read', 'customers.write', 'customers.collect']],
         ];
     }
 }
