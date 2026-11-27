@@ -128,7 +128,7 @@ final class AdminHttpTest extends TestCase
     {
         $admin = $this->tok('admin@s.cm');
         $list = $this->call('GET', '/admin/templates', null, $admin)[1]['items'];
-        $this->assertCount(16, $list);
+        $this->assertCount(18, $list, '9 modèles, en français et en anglais');
         $this->assertSame(422, $this->call('PUT', '/admin/templates/access_granted/fr', ['subject' => 'x', 'body' => 'Bonjour {{inconnue}}'], $admin)[0]);
         $this->assertSame(204, $this->call('PUT', '/admin/templates/access_granted/fr', ['subject' => 'Bienvenue {{pharmacie}}', 'body' => "Bonjour {{responsable}}, activez : {{lien_activation}} ({{duree_lien}}) pour {{pharmacie}}"], $admin)[0]);
         $r = $this->s->templates->render('access_granted', 'fr', ['responsable' => 'Alain', 'pharmacie' => 'Plateau', 'duree_lien' => '48 h', 'lien_activation' => 'https://x']);

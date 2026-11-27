@@ -166,6 +166,43 @@ final class Routes
         $app->get('/public/pharmacies/{id}', fn (Request $req, Response $res, array $a) => $revalidated($req, $res, $s->publicPharmacies->find($a['id'])));
         $app->get('/public/geo', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->places()]));
 
+        // --- Demandes patients (US21, US23, US26) : sans compte, protégées par le code de suivi ---
+        $app->post('/public/pharmacies/{id}/requests', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $body) {
+            $limit($req, 'patient-request', 5, 3600);
+            // Une ordonnance est une donnée de santé : jamais en clair en production.
+            if ($s->config->env === 'production' && $req->getUri()->getScheme() !== 'https' && ($req->getServerParams()['HTTPS'] ?? '') !== 'on') {
+                throw new ApiException('https_required', 403);
+            }
+            $out = $s->patients->submit($a['id'], $body($req), (string) ($req->getServerParams()['REMOTE_ADDR'] ?? ''));
+            self::drainLater($s);
+            return $json($res, $out, 201);
+        });
+        $private = static fn (Response $res): Response => $res->withHeader('Cache-Control', 'private, no-store');
+        $app->get('/public/requests/{code}', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $private) {
+            $limit($req, 'patient-follow', 600, 3600);
+            return $private($json($res, $s->patients->view($a['code'])));
+        });
+        $app->post('/public/requests/{code}/pages', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $body, $private) {
+            $limit($req, 'patient-pages', 10, 3600);
+            return $private($json($res, $s->patients->addPages($a['code'], $body($req))));
+        });
+        $app->post('/public/requests/{code}/decision', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $body, $private) {
+            $limit($req, 'patient-action', 60, 3600);
+            return $private($json($res, $s->patients->decide($a['code'], $body($req))));
+        });
+        $app->post('/public/requests/{code}/message', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $body, $private) {
+            $limit($req, 'patient-action', 60, 3600);
+            $out = $s->patients->message($a['code'], (string) ($body($req)['text'] ?? ''));
+            self::drainLater($s);
+            return $private($json($res, $out));
+        });
+        $app->post('/public/requests/{code}/urgent', function (Request $req, Response $res, array $a) use ($s, $json, $limit, $private) {
+            $limit($req, 'patient-urgent', 5, 3600);
+            $out = $s->patients->urgent($a['code']);
+            self::drainLater($s);
+            return $private($json($res, $out));
+        });
+
         // --- Demandes d'accès (US1) ---
         $docs = static function (Request $req): array {
             $out = [];
@@ -369,6 +406,31 @@ final class Routes
                 !empty($body($q)['skip']) ? $s->setup->skipStep($a['step']) : $s->setup->completeStep($a['step']);
                 return $json($r, $s->setup->onboarding());
             })->add($perm('settings.write'));
+
+            // --- Demandes patients (US22, US23) ---
+            $g->get('/requests', fn (Request $q, Response $r) => $json($r, ['items' => $s->requests->queue(($q->getQueryParams()['closed'] ?? '') === '1')]))->add($perm('requests.process'));
+            $g->get('/requests/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->get($a['id'])))->add($perm('requests.process'));
+            $g->get('/requests/{id}/documents/{doc}', function (Request $q, Response $r, array $a) use ($s, $actor) {
+                $d = $s->requests->document($a['id'], $a['doc']);
+                $s->audit->record('request.document.read', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'entity' => 'patient_request', 'entity_id' => $a['id']]);
+                $r->getBody()->write($d['bytes']);
+                return $r->withHeader('Content-Type', $d['mime'])->withHeader('Content-Disposition', 'inline')->withHeader('X-Content-Type-Options', 'nosniff')->withHeader('Cache-Control', 'private, no-store');
+            })->add($perm('requests.process'));
+            foreach (['take', 'release', 'retake', 'ready'] as $step) {
+                $g->post("/requests/{id}/$step", function (Request $q, Response $r, array $a) use ($s, $actor, $step) {
+                    $s->requests->$step($a['id'], $actor($q));
+                    return $r->withStatus(204);
+                })->add($perm('requests.process'));
+            }
+            $g->post('/requests/{id}/cancel', function (Request $q, Response $r, array $a) use ($s, $body, $actor) {
+                $s->requests->cancel($a['id'], $actor($q), (string) ($body($q)['reason'] ?? ''));
+                return $r->withStatus(204);
+            })->add($perm('requests.process'));
+            $g->post('/requests/{id}/quote', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
+                $s->requests->quote($a['id'], $actor($q), (array) ($body($q)['lines'] ?? []));
+                return $json($r, $s->requests->get($a['id']), 201);
+            })->add($perm('requests.process'));
+            $g->get('/pickups/{code}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->pickup($a['code'])))->add($perm('pickup.validate'));
 
             // --- Catalogue (US6) ---
             $g->get('/products', fn (Request $q, Response $r) => $json($r, $s->catalog->search((string) ($q->getQueryParams()['q'] ?? ''), array_map('strval', $q->getQueryParams()))))->add($perm('products.read'));

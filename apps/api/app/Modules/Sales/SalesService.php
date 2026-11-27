@@ -30,11 +30,12 @@ final class SalesService
         private readonly PinService $pin,
         private readonly TenantContext $ctx,
         private readonly CustomerService $customers,
+        private readonly \Sanara\Modules\Requests\RequestLedger $requests,
     ) {
     }
 
     /**
-     * @param array<string, mixed> $in lines[{product_id, qty, discount_bp?}], payments[{method, amount, reference?}], customer_id?, prescription?, pharmacist?, approver?
+     * @param array<string, mixed> $in lines[{product_id, qty, discount_bp?}], payments[{method, amount, reference?}], customer_id?, prescription?, pharmacist?, approver?, request_id? (retrait d'un devis accepté)
      * @return array<string, mixed> vente complète avec rendu de monnaie
      */
     public function create(array $in, string $userId): array
@@ -44,6 +45,15 @@ final class SalesService
             throw new ApiException('cash_session_stale', 409);
         }
         $lines = $this->lines((array) ($in['lines'] ?? []));
+        $request = is_string($in['request_id'] ?? null) ? $in['request_id'] : '';
+        if ($request !== '') {
+            // Retrait d'une commande : le prix promis au patient reste dû.
+            $promised = $this->requests->pickupPrices($request, $lines);
+            foreach ($lines as $i => $l) {
+                $price = $promised[$l['product_id']];
+                $lines[$i] = array_merge($l, ['unit_price' => $price], SaleMath::line($l['qty'], $price, 0, $l['vat_bp']));
+            }
+        }
         $maxBp = $this->maxDiscountBp();
         $needsApproval = false;
         foreach ($lines as $l) {
@@ -84,7 +94,7 @@ final class SalesService
         $name = $customer === '' ? $this->str($in['customer_name'] ?? null, 120) : (string) $this->customers->get($customer)['name'];
 
         $id = Ulid::generate();
-        $this->db->transaction(function () use ($id, $in, $userId, $session, $lines, $total, $settle, $presc, $pharmacist, $approver, $credit, $customer, $name): void {
+        $this->db->transaction(function () use ($id, $in, $userId, $session, $lines, $total, $settle, $presc, $pharmacist, $approver, $credit, $customer, $name, $request): void {
             // En premier : le plafond est vérifié sur le compte verrouillé.
             if ($credit > 0) {
                 $this->customers->charge($customer, $credit, $id, $userId);
@@ -104,6 +114,9 @@ final class SalesService
                     'discount_bp' => $l['discount_bp'], 'vat_bp' => $l['vat_bp'], 'line_total' => $l['total'], 'vat_amount' => $l['vat'],
                 ]);
                 $this->stock->issue($l['product_id'], $l['qty'], 'sale', 'sale', $id, $userId, 'Vente ' . $number);
+            }
+            if ($request !== '') {
+                $this->requests->pickedUp($request, $id, $userId);
             }
             foreach ($settle['applied'] as $i => $p) {
                 $ref = (array) ($in['payments'] ?? []);

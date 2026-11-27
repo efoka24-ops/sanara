@@ -44,6 +44,8 @@ final class Services
     public readonly \Sanara\Common\Audit\AuditLogger $audit;
     public readonly \Sanara\Modules\Tenants\TenantSetupService $setup;
     public readonly \Sanara\Modules\Tenants\StorefrontService $storefront;
+    public readonly \Sanara\Modules\Requests\PatientService $patients;
+    public readonly \Sanara\Modules\Requests\ProcessingService $requests;
     public readonly \Sanara\Modules\Team\TeamService $team;
     public readonly \Sanara\Modules\Applications\ActivationResendService $activationResend;
     public readonly \Sanara\Modules\Catalog\CatalogService $catalog;
@@ -123,7 +125,10 @@ final class Services
         $seq = new \Sanara\Modules\Sales\Sequences($db, $tdb);
         $this->cash = new \Sanara\Modules\Sales\CashService($db, $tdb, $clock, $seq);
         $this->customers = new \Sanara\Modules\Customers\CustomerService($db, $tdb, $clock, $this->cash, $seq, $this->tenant);
-        $this->sales = new \Sanara\Modules\Sales\SalesService($db, $tdb, $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers);
+        $ledger = new \Sanara\Modules\Requests\RequestLedger($db, $tdb, $clock);
+        $this->sales = new \Sanara\Modules\Sales\SalesService($db, $tdb, $clock, $this->stock, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers, $ledger);
+        $this->requests = new \Sanara\Modules\Requests\ProcessingService($db, $tdb, $clock, $storage, $this->stock, $ledger);
+        $this->patients = new \Sanara\Modules\Requests\PatientService($db, $tdb, $this->tenant, $clock, $storage, $this->jobs, $seq, $ledger, $this->publicPharmacies);
         $this->returns = new \Sanara\Modules\Sales\ReturnsService($db, $tdb, $clock, $this->sales, $this->cash, $seq, $this->authz, $this->pin, $this->tenant, $this->customers);
         $this->devices = new \Sanara\Modules\Sync\DeviceService($db, $tdb, $clock, $this->audit, $this->tenant);
         $this->sync = new \Sanara\Modules\Sync\SyncService($db, $tdb, $clock, $this->sales, $this->cash, $this->authz, $this->audit, $this->tenant);

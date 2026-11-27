@@ -43,6 +43,12 @@ final class EmailTemplates
             'en' => ['subject' => 'Reset your Sanara password',
                 'body' => "Hello,\n\nTo choose a new password (link valid for 1 hour):\n\n{{lien}}\n\nIf you did not request this, ignore this message."],
         ],
+        'request_urgent' => [
+            'fr' => ['subject' => 'Demande urgente {{numero}}',
+                'body' => "Bonjour,\n\nUn patient signale une urgence : demande {{numero}} pour {{pharmacie}}. Ouvrez Sanara pour la prendre en charge."],
+            'en' => ['subject' => 'Urgent request {{numero}}',
+                'body' => "Hello,\n\nA patient reports an emergency: request {{numero}} for {{pharmacie}}. Open Sanara to handle it."],
+        ],
         'account_locked' => [
             'fr' => ['subject' => 'Compte Sanara verrouillé temporairement',
                 'body' => "Bonjour,\n\nLe compte {{compte}} a été verrouillé 15 minutes après plusieurs échecs de connexion. S'il ne s'agit pas de vous ou d'un membre de l'équipe, changez le mot de passe."],
