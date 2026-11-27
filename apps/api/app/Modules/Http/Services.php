@@ -43,6 +43,7 @@ final class Services
     public readonly MailJobHandler $mail;
     public readonly \Sanara\Common\Audit\AuditLogger $audit;
     public readonly \Sanara\Modules\Tenants\TenantSetupService $setup;
+    public readonly \Sanara\Modules\Tenants\StorefrontService $storefront;
     public readonly \Sanara\Modules\Team\TeamService $team;
     public readonly \Sanara\Modules\Applications\ActivationResendService $activationResend;
     public readonly \Sanara\Modules\Catalog\CatalogService $catalog;
@@ -113,6 +114,7 @@ final class Services
         $this->audit = new \Sanara\Common\Audit\AuditLogger($db, $clock);
         $tdb = new \Sanara\Common\Tenancy\TenantDb($db, $this->tenant, new \Sanara\Common\Tenancy\ChangeLog($db, $clock));
         $this->setup = new \Sanara\Modules\Tenants\TenantSetupService($db, $tdb, $this->tenant, $clock);
+        $this->storefront = new \Sanara\Modules\Tenants\StorefrontService($db, $tdb, $this->tenant, $clock);
         $this->catalog = new \Sanara\Modules\Catalog\CatalogService($db, $tdb, $clock);
         $this->catalogTransfer = new \Sanara\Modules\Catalog\CatalogTransfer($this->catalog);
         $this->reference = new \Sanara\Modules\Catalog\ReferenceCatalog($db, $this->catalog);

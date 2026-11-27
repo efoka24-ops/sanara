@@ -26,12 +26,20 @@ final class PublicPharmacyProjection
         // La localisation administrative vient de la demande d'accès acceptée.
         $a = $this->db->one('SELECT region, department, city, district, latitude, longitude FROM pharmacy_applications WHERE tenant_id = ?', [$tenantId]) ?? [];
         $point = $t['latitude'] !== null && $t['longitude'] !== null ? $t : $a;
+        // La vitrine saisie par la pharmacie remplace les informations de la demande.
+        $profile = $this->db->one('SELECT * FROM storefront_profiles WHERE tenant_id = ?', [$tenantId]);
+        if ($profile !== null) {
+            $a = $point = $profile;
+        }
+        $duties = $this->db->all('SELECT starts_at, ends_at FROM duty_periods WHERE tenant_id = ? AND ends_at > ? ORDER BY starts_at', [$tenantId, $this->clock->stamp()]);
         $visible = (int) $t['public_visible'] === 1 && $t['status'] === 'active' && $t['deleted_at'] === null ? 1 : 0;
         $row = [
             'pharmacy_name' => $t['name'], 'region' => $a['region'] ?? '', 'city' => $a['city'] ?? '', 'district' => $a['district'] ?? null,
             'address' => $t['address'], 'phone' => $t['phone'], 'visible' => $visible, 'updated_at' => $this->clock->stamp(),
             'country_code' => $t['country_code'], 'department' => $a['department'] ?? null,
             'latitude' => $point['latitude'] ?? null, 'longitude' => $point['longitude'] ?? null, 'hours' => $this->hours($tenantId),
+            'duties' => json_encode(array_map(static fn (array $d) => [$d['starts_at'], $d['ends_at']], $duties)),
+            'services' => $profile['services'] ?? null, 'insurances' => $profile['insurances'] ?? null, 'email' => $profile['public_email'] ?? null,
         ];
         $this->db->transaction(function () use ($tenantId, $row): void {
             $existing = $this->db->one('SELECT id FROM public_pharmacies WHERE tenant_id = ?', [$tenantId]);

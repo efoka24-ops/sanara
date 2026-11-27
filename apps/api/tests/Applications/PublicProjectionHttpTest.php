@@ -90,7 +90,7 @@ final class PublicProjectionHttpTest extends TestCase
         $this->assertSame(
             [
                 'address' => 'Rue 12', 'city' => 'Garoua', 'closes' => null, 'country_code' => 'CM', 'department' => 'Bénoué', 'distance_m' => null,
-                'district' => 'Plateau', 'latitude' => null, 'longitude' => null, 'next_opening' => null, 'open' => null,
+                'district' => 'Plateau', 'duty' => null, 'duty_badge' => null, 'latitude' => null, 'longitude' => null, 'next_opening' => null, 'open' => null,
                 'pharmacy_name' => 'Pharmacie du Plateau', 'phone' => '+237600000001', 'region' => 'Nord',
             ],
             $public,

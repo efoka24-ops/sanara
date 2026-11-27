@@ -25,7 +25,8 @@ final class PublicPharmacyService
     }
 
     /**
-     * Filtres : q, country, region, department, city, district, bbox (« ouest,sud,est,nord »), open.
+     * Filtres : q, country, region, department, city, district, bbox (« ouest,sud,est,nord »), open,
+     * duty (tonight, week, weekend).
      * Les distances partent de la position (lat, lng) ou, à défaut, d'un quartier saisi (near).
      *
      * @param array<string, mixed> $query paramètres de la requête
@@ -37,6 +38,10 @@ final class PublicPharmacyService
         $limit = max(1, min(100, (int) ($query['limit'] ?? 20)));
         $offset = max(0, (int) ($query['offset'] ?? 0));
         $position = $this->position($text('lat'), $text('lng'));
+        $period = $text('duty');
+        if ($period !== '' && !in_array($period, DutyCalendar::PERIODS, true)) {
+            throw new ApiException('validation_failed', 422, ['fields' => ['duty' => 'unknown']]);
+        }
 
         // Une pharmacie non publiée ou suspendue n'est jamais rendue, quels que soient les paramètres.
         $where = ['p.visible = ?'];
@@ -59,13 +64,7 @@ final class PublicPharmacyService
             array_push($params, $west, $east, $south, $north);
         }
 
-        $rows = $this->db->all(
-            'SELECT p.id, p.pharmacy_name, p.country_code, p.region, p.department, p.city, p.district, p.address, p.phone,'
-            . ' p.latitude, p.longitude, p.hours, c.timezone'
-            . ' FROM public_pharmacies p LEFT JOIN countries c ON c.code = p.country_code'
-            . ' WHERE ' . implode(' AND ', $where),
-            $params,
-        );
+        $rows = $this->rows($where, $params);
 
         $origin = $position !== null ? 'position' : null;
         if ($position === null && $text('near') !== '') {
@@ -73,19 +72,16 @@ final class PublicPharmacyService
             $origin = $position !== null ? 'district' : null;
         }
 
-        $now = $this->clock->now();
         $items = [];
         foreach ($rows as $r) {
-            $status = OpeningStatus::at($r['hours'] === null ? null : json_decode((string) $r['hours'], true), $now, (string) ($r['timezone'] ?? self::FALLBACK_ZONE));
-            if (!empty($query['open']) && $status['open'] !== true) {
+            $item = $this->present($r, $period);
+            if ((!empty($query['open']) && $item['open'] !== true) || ($period !== '' && $item['duty'] === null)) {
                 continue;
             }
-            $lat = $r['latitude'] === null ? null : (float) $r['latitude'];
-            $lng = $r['longitude'] === null ? null : (float) $r['longitude'];
-            unset($r['hours'], $r['timezone']);
-            $items[] = ['latitude' => $lat, 'longitude' => $lng] + $r + $status + [
-                'distance_m' => $position !== null && $lat !== null && $lng !== null ? $this->metres($position, [$lat, $lng]) : null,
-            ];
+            $item['distance_m'] = $position !== null && $item['latitude'] !== null && $item['longitude'] !== null
+                ? $this->metres($position, [$item['latitude'], $item['longitude']])
+                : null;
+            $items[] = $item;
         }
 
         // Les plus proches d'abord ; sans distance, ordre alphabétique après les autres.
@@ -93,6 +89,69 @@ final class PublicPharmacyService
             <=> [$b['distance_m'] ?? PHP_INT_MAX, mb_strtolower((string) $b['pharmacy_name'])]);
 
         return ['items' => array_slice($items, $offset, $limit), 'total' => count($items), 'limit' => $limit, 'offset' => $offset, 'origin' => $origin];
+    }
+
+    /**
+     * US19 : fiche d'une pharmacie publiée.
+     *
+     * @return array<string, mixed>
+     */
+    public function find(string $id): array
+    {
+        $r = $this->rows(['p.visible = ?', 'p.id = ?'], [1, $id])[0] ?? throw new ApiException('not_found', 404);
+        $zone = (string) ($r['timezone'] ?? self::FALLBACK_ZONE);
+        $now = $this->clock->now();
+        $duties = [];
+        foreach (json_decode((string) $r['duties'], true) ?? [] as $period) {
+            $next = DutyCalendar::next([$period], $now, $zone);
+            if ($next !== null && count($duties) < 5) {
+                $duties[] = $next;
+            }
+        }
+        $week = $r['hours'] === null ? null : array_map(
+            static fn (array $d) => ['weekday' => $d[0], 'opens' => $d[1], 'closes' => $d[2]],
+            json_decode((string) $r['hours'], true),
+        );
+        return $this->present($r, '') + [
+            'distance_m' => null, 'week' => $week, 'duties' => $duties, 'email' => $r['email'],
+            'services' => json_decode((string) $r['services'], true) ?? [],
+            'insurances' => json_decode((string) $r['insurances'], true) ?? [],
+        ];
+    }
+
+    /** @param list<string> $where @param list<mixed> $params @return list<array<string, mixed>> */
+    private function rows(array $where, array $params): array
+    {
+        return $this->db->all(
+            'SELECT p.id, p.pharmacy_name, p.country_code, p.region, p.department, p.city, p.district, p.address, p.phone,'
+            . ' p.latitude, p.longitude, p.hours, p.duties, p.services, p.insurances, p.email, c.timezone'
+            . ' FROM public_pharmacies p LEFT JOIN countries c ON c.code = p.country_code'
+            . ' WHERE ' . implode(' AND ', $where),
+            $params,
+        );
+    }
+
+    /**
+     * Forme publique d'une ligne : statut d'ouverture et garde à l'heure du pays.
+     *
+     * @param array<string, mixed> $r
+     * @return array<string, mixed>
+     */
+    private function present(array $r, string $period): array
+    {
+        $zone = (string) ($r['timezone'] ?? self::FALLBACK_ZONE);
+        $now = $this->clock->now();
+        $periods = json_decode((string) $r['duties'], true) ?? [];
+        $status = OpeningStatus::at($r['hours'] === null ? null : json_decode((string) $r['hours'], true), $now, $zone);
+        $duty = DutyCalendar::next($periods, $now, $zone, $period === '' ? null : DutyCalendar::window($period, $now, $zone));
+        $tonight = DutyCalendar::next($periods, $now, $zone, DutyCalendar::window('tonight', $now, $zone));
+        $current = DutyCalendar::next($periods, $now, $zone);
+        $badge = ($current['now'] ?? false) ? 'now' : ($tonight !== null ? 'tonight' : null);
+
+        $r['latitude'] = $r['latitude'] === null ? null : (float) $r['latitude'];
+        $r['longitude'] = $r['longitude'] === null ? null : (float) $r['longitude'];
+        unset($r['hours'], $r['duties'], $r['services'], $r['insurances'], $r['email'], $r['timezone']);
+        return $r + $status + ['duty' => $duty, 'duty_badge' => $badge];
     }
 
     /**

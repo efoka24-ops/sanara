@@ -163,6 +163,7 @@ final class Routes
             return $res->withStatus(304)->withBody((new \Slim\Psr7\Factory\StreamFactory())->createStream(''));
         };
         $app->get('/public/pharmacies', fn (Request $req, Response $res) => $revalidated($req, $res, $s->publicPharmacies->search($req->getQueryParams())));
+        $app->get('/public/pharmacies/{id}', fn (Request $req, Response $res, array $a) => $revalidated($req, $res, $s->publicPharmacies->find($a['id'])));
         $app->get('/public/geo', fn (Request $req, Response $res) => $revalidated($req, $res, ['items' => $s->publicPharmacies->places()]));
 
         // --- Demandes d'accès (US1) ---
@@ -344,6 +345,22 @@ final class Routes
             })->add($perm('settings.write'));
             $g->put('/visibility', function (Request $q, Response $r) use ($s, $body, $tenantId) {
                 $s->setup->setVisibility(!empty($body($q)['visible']));
+                $s->publicProjection->refresh($tenantId($q));
+                return $r->withStatus(204);
+            })->add($perm('settings.write'));
+            $g->get('/storefront', fn (Request $q, Response $r) => $json($r, $s->storefront->get()))->add($perm('settings.write'));
+            $g->put('/storefront', function (Request $q, Response $r) use ($s, $body, $tenantId) {
+                $s->storefront->save($body($q));
+                $s->publicProjection->refresh($tenantId($q));
+                return $r->withStatus(204);
+            })->add($perm('settings.write'));
+            $g->post('/storefront/duties', function (Request $q, Response $r) use ($s, $body, $json, $tenantId) {
+                $id = $s->storefront->addDuty($body($q));
+                $s->publicProjection->refresh($tenantId($q));
+                return $json($r, ['id' => $id], 201);
+            })->add($perm('settings.write'));
+            $g->delete('/storefront/duties/{id}', function (Request $q, Response $r, array $a) use ($s, $tenantId) {
+                $s->storefront->deleteDuty($a['id']);
                 $s->publicProjection->refresh($tenantId($q));
                 return $r->withStatus(204);
             })->add($perm('settings.write'));
