@@ -9,6 +9,7 @@ import { BackButton } from './BackButton';
 const PHARMACY_MENU: Array<{ to: string; key: string; permission?: string }> = [
   { to: '/app', key: 'nav.dashboard' },
   { to: '/app/caisse', key: 'nav.pos', permission: 'sales.create' },
+  { to: '/app/demandes', key: 'nav.requests', permission: 'requests.process' },
   { to: '/app/ventes', key: 'nav.sales', permission: 'sales.create' },
   { to: '/app/produits', key: 'nav.products', permission: 'products.read' },
   { to: '/app/stock', key: 'nav.stock', permission: 'stock.read' },

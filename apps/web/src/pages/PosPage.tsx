@@ -52,6 +52,19 @@ interface Sale {
   total: number;
   change: number;
 }
+interface Pickup {
+  request_id: string;
+  number: string;
+  first_name: string;
+  lines: {
+    product_id: string;
+    name: string;
+    quantity: number;
+    unit_price: number;
+    regulatory_status: string;
+    vat_bp: number;
+  }[];
+}
 const METHODS: PayMethod[] = ['cash', 'momo_mtn', 'momo_orange', 'card', 'credit'];
 const DENOMS = [10000, 5000, 2000, 1000, 500, 100, 50, 25, 10, 5];
 
@@ -94,6 +107,10 @@ export function PosPage() {
   const [discountFor, setDiscountFor] = useState<number | null>(null);
   const [discountPct, setDiscountPct] = useState('');
   const [askCustomer, setAskCustomer] = useState(false);
+  // Retrait d'une commande patient : panier figé aux produits, quantités et prix du devis.
+  const [pickup, setPickup] = useState<Pickup | null>(null);
+  const [askPickup, setAskPickup] = useState<string | null>(null);
+  const [pickupError, setPickupError] = useState<string | null>(null);
 
   // Comptes proposés pendant la saisie du client (F8).
   useEffect(() => {
@@ -132,7 +149,54 @@ export function PosPage() {
   const regulated = cart.some((l) => l.product.regulatory_status !== 'free');
   const needsPharmacist = regulated && !can('narcotics.dispense');
 
+  async function findPickup(code: string) {
+    setPickupError(null);
+    try {
+      const found = await api<Pickup>('GET', `/app/pickups/${encodeURIComponent(code.trim())}`);
+      setPickup(found);
+      setCart(
+        found.lines.map((l) => ({
+          product: {
+            id: l.product_id,
+            name: l.name,
+            dci: null,
+            strength: null,
+            form: null,
+            sale_price: l.unit_price,
+            vat_bp: l.vat_bp,
+            regulatory_status: l.regulatory_status,
+          },
+          qty: l.quantity,
+          discountBp: 0,
+          stock: null,
+        })),
+      );
+      setCustomer(found.first_name);
+      setAccount(null);
+      setRx({
+        ref: found.number,
+        prescriber: '',
+        patient: found.first_name,
+        pharmacist: '',
+        pin: '',
+      });
+      setAskPickup(null);
+      setDone(null);
+    } catch (e) {
+      setPickupError(
+        e instanceof ApiError && e.code === 'not_found' ? t('pickup.unknown') : errText(e),
+      );
+    }
+  }
+  function dropPickup() {
+    setPickup(null);
+    setCart([]);
+    setCustomer('');
+    setRx({ ref: '', prescriber: '', patient: '', pharmacist: '', pin: '' });
+  }
+
   async function add(p: ProductLite) {
+    if (pickup) return;
     setDone(null);
     const idx = cart.findIndex((l) => l.product.id === p.id);
     if (idx >= 0) {
@@ -215,6 +279,7 @@ export function PosPage() {
       })),
       customer_name: customer || undefined,
       customer_id: account?.id,
+      request_id: pickup?.request_id,
     };
     if (regulated) {
       body.prescription = { ref: rx.ref, prescriber: rx.prescriber, patient_name: rx.patient };
@@ -225,6 +290,7 @@ export function PosPage() {
       const sale = await api<Sale>('POST', '/app/sales', body);
       setDone(sale);
       setPaying(false);
+      setPickup(null);
       setCart([]);
       setCustomer('');
       setAccount(null);
@@ -404,7 +470,16 @@ export function PosPage() {
           <h1>{t('pos.title')}</h1>
           <span className="muted">{session.station}</span>
         </div>
-        <ProductSearch label={t('pos.search')} onPick={add} autoFocus inputRef={search} />
+        {pickup ? (
+          <p className="notice row">
+            <span>{t('pickup.banner', { number: pickup.number, name: pickup.first_name })}</span>
+            <button type="button" className="link-strong" onClick={dropPickup}>
+              {t('pickup.drop')}
+            </button>
+          </p>
+        ) : (
+          <ProductSearch label={t('pos.search')} onPick={add} autoFocus inputRef={search} />
+        )}
         <Table
           rowKey={(x) => x.l.product.id}
           rows={lines}
@@ -446,6 +521,7 @@ export function PosPage() {
                   className="qty"
                   type="number"
                   min={1}
+                  disabled={pickup !== null}
                   aria-label={`${t('pos.qty')} ${x.l.product.name}`}
                   value={x.l.qty}
                   onChange={(e) => setQty(lines.indexOf(x), Number(e.target.value))}
@@ -463,7 +539,11 @@ export function PosPage() {
               key: 'x',
               header: '',
               render: (x) => (
-                <button className="link" onClick={() => remove(lines.indexOf(x))}>
+                <button
+                  className="link"
+                  disabled={pickup !== null}
+                  onClick={() => remove(lines.indexOf(x))}
+                >
                   {t('pos.remove')}
                 </button>
               ),
@@ -489,7 +569,21 @@ export function PosPage() {
           <Button onClick={startPay} disabled={cart.length === 0}>
             {t('pos.pay')}
           </Button>
-          <Button variant="secondary" onClick={hold} disabled={cart.length === 0}>
+          <Button
+            variant="secondary"
+            disabled={pickup !== null}
+            onClick={() => {
+              setPickupError(null);
+              setAskPickup('');
+            }}
+          >
+            {t('pickup.open')}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={hold}
+            disabled={cart.length === 0 || pickup !== null}
+          >
             {t('pos.hold')}
           </Button>
           <Button
@@ -498,7 +592,7 @@ export function PosPage() {
               setDiscountFor(sel);
               setDiscountPct('');
             }}
-            disabled={cart.length === 0 || !can('sales.discount')}
+            disabled={cart.length === 0 || !can('sales.discount') || pickup !== null}
           >
             {t('pos.discount')}
           </Button>
@@ -534,6 +628,39 @@ export function PosPage() {
           </p>
         )}
       </aside>
+
+      {askPickup !== null && (
+        <Modal title={t('pickup.open')} onClose={() => setAskPickup(null)}>
+          <form
+            className="stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void findPickup(askPickup);
+            }}
+          >
+            <Field
+              label={t('pickup.code')}
+              autoFocus
+              autoComplete="off"
+              value={askPickup}
+              onChange={(e) => setAskPickup(e.target.value.toUpperCase())}
+            />
+            {pickupError && (
+              <div role="alert" className="form-error">
+                {pickupError}
+              </div>
+            )}
+            <div className="actions">
+              <Button variant="secondary" onClick={() => setAskPickup(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={askPickup.trim() === ''}>
+                {t('pickup.find')}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {paying && (
         <Modal title={t('pay.title')} onClose={() => setPaying(false)}>

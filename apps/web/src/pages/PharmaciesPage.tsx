@@ -226,7 +226,7 @@ export function PharmaciesPage() {
               position={position}
               selected={selected}
               onSelect={choose}
-              onOpen={(id) => navigate(`/pharmacies/${id}`)}
+              onOpen={(id) => navigate(`/pharmacies/${id}/envoyer`)}
             />
           </Suspense>
         )}

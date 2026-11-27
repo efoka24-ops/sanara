@@ -123,7 +123,8 @@ final class PatientRequestHttpTest extends TestCase
     private function quoted(array $lines): array
     {
         $code = $this->send()[1]['code'];
-        $id = $this->queued();
+        // La demande qui vient d'arriver, même si d'autres sont déjà en cours.
+        $id = (string) array_values(array_filter($this->call('GET', '/app/requests', null, 'pharmacist')[1]['items'], static fn ($i) => $i['status'] === 'received'))[0]['id'];
         $this->assertSame(204, $this->call('POST', "/app/requests/$id/take", [], 'pharmacist')[0]);
         [$status, $body] = $this->call('POST', "/app/requests/$id/quote", ['lines' => $lines], 'pharmacist');
         $this->assertSame(201, $status, json_encode($body));
@@ -216,6 +217,8 @@ final class PatientRequestHttpTest extends TestCase
         $this->send();
         $id = $this->queued();
         $this->assertSame(204, $this->call('POST', "/app/requests/$id/take", [], 'pharmacist')[0]);
+        $this->assertTrue($this->call('GET', "/app/requests/$id", null, 'pharmacist')[1]['mine']);
+        $this->assertFalse($this->call('GET', "/app/requests/$id", null, 'owner')[1]['mine']);
         [$status, $body] = $this->call('POST', "/app/requests/$id/take", [], 'owner');
         $this->assertSame([409, 'request_locked'], [$status, $body['error']['code']]);
         $this->assertSame(409, $this->call('POST', "/app/requests/$id/quote", ['lines' => []], 'owner')[0]);
@@ -352,6 +355,30 @@ final class PatientRequestHttpTest extends TestCase
         $this->assertSame(409, $this->call('POST', "/public/requests/$code/message", ['text' => 'Encore'])[0]);
         $this->assertSame([], $this->call('GET', '/app/requests', null, 'pharmacist')[1]['items']);
         $this->assertCount(1, $this->call('GET', '/app/requests?closed=1', null, 'pharmacist')[1]['items']);
+    }
+
+    public function testTheReaderLearnsFromThePharmacistsChoices(): void
+    {
+        $p = $this->product('Clamoxyl 500', 1800, 20);
+        $this->quoted([['product_id' => $p, 'quantity' => 1, 'read_text' => 'Amoxicilline 500 mg', 'read_confidence' => 70]]);
+        $this->quoted([
+            ['product_id' => $p, 'quantity' => 1, 'read_text' => 'amoxicilline 500 MG'],
+            ['product_id' => $p, 'quantity' => 1, 'read_text' => 'Clamoxyl 500'],
+            ['label' => 'Introuvable', 'quantity' => 1, 'read_text' => 'Xyz'],
+        ]);
+
+        [$status, $body] = $this->call('GET', '/app/assistant/lexicon', null, 'pharmacist');
+        $this->assertSame(200, $status);
+        $links = array_column($body['links'], null, 'read');
+        $this->assertSame(2, $links['amoxicilline 500 mg']['uses'], 'même texte, écrit autrement');
+        $this->assertSame(['id' => $p, 'name' => 'Clamoxyl 500'], array_intersect_key($links['amoxicilline 500 mg']['product'], ['id' => 1, 'name' => 1]));
+        $this->assertArrayNotHasKey('xyz', $links, 'rien à apprendre sans produit retenu');
+        $this->assertSame(['lines' => 4, 'corrected' => 3, 'accepted_rate' => 25], $body['reliability']);
+
+        $this->assertSame([], $this->call('GET', '/app/assistant/lexicon', null, 'other')[1]['links'], 'chaque pharmacie apprend pour elle');
+        $this->assertSame(403, $this->call('GET', '/app/assistant/lexicon', null, 'cashier')[0]);
+        $this->call('POST', "/app/products/$p/active", ['active' => false], 'owner');
+        $this->assertSame([], $this->call('GET', '/app/assistant/lexicon', null, 'pharmacist')[1]['links'], 'produit retiré : lien oublié');
     }
 
     public function testThePharmacyIsWarnedByMailOfAnUrgentRequest(): void

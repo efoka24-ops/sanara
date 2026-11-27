@@ -74,6 +74,8 @@ interface Body {
   payments?: SaleInput['payments'];
   customer_name?: string;
   customer_id?: string;
+  /** Retrait d'une commande patient : réservé à la caisse en ligne. */
+  request_id?: string;
   prescription?: { ref: string; prescriber: string; patient_name: string };
   label?: string;
   cart?: unknown;
@@ -97,6 +99,7 @@ const ERROR_STATUS: Record<string, number> = {
   not_found: 404,
   forbidden: 403,
   discount_needs_approval: 403,
+  pickup_web_only: 409,
 };
 
 const json = (body: unknown, status = 200) =>
@@ -536,6 +539,7 @@ export class Gateway {
     if (route === '/app/sales' && method === 'POST') {
       sells();
       const b = body();
+      if (b.request_id) throw new PosError('pickup_web_only');
       const done = pos.sell({
         lines: (b.lines ?? []).map((l) => ({
           productId: l.product_id,

@@ -277,7 +277,7 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 - [x] T148 [US18] Page de recherche : liste + carte Leaflet, regroupement de marqueurs, chargement progressif (liste avant carte) (`apps/web/src/app/(public)/pharmacies/`) (apps/web/src/pages/PharmaciesPage.tsx et app/PharmacyMap.tsx : liste avant la carte, Leaflet, regroupement des repères)
 - [x] T149 [US18] Fiche résumée au survol/appui : nom, distance, ouvert/fermé, de garde (nom, distance et ouvert/fermé au survol ou à l'appui ; reste la garde) (nom, distance, ouvert ou fermé et garde au survol ou à l'appui)
 - [x] T150 [US18] Géolocalisation avec consentement et repli sur saisie du quartier (position demandée à la demande seulement, arrondie, absente de l'adresse ; repli sur le quartier saisi (HTTPS requis pour la géolocalisation))
-- [ ] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21) (le double appui ouvre la fiche de la pharmacie ; l'assistant viendra avec US21)
+- [x] T151 [US18] Double-clic/double appui sur marqueur : ouverture de l'assistant (point d'entrée US21) (le double appui ouvre la fiche de la pharmacie ; l'assistant viendra avec US21) (le double appui sur un repère ouvre l'assistant de la pharmacie (/pharmacies/:id/envoyer))
 - [ ] T152 [US18] Filtres : ouvert maintenant, de garde, assurances acceptées (filtre « ouvert maintenant » fait ; restent la garde et les assurances) (filtres « ouvert maintenant » et « de garde » faits ; reste le filtre par assurance)
 - [ ] T153 [US18] SEO, performance 3G (images optimisées, tuiles légères), test Lighthouse en CI
 
@@ -296,15 +296,15 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 18 : US21 - Dépôt d'ordonnance et analyse (P1) 🎯 MVP 2
 
-- [ ] T160 [P] [US21] Modèles `PatientRequest`, `RequestDocument`, `RequestLine`, `Consent`, `AssistantRun` (`apps/api/prisma/schema.prisma`)
-- [ ] T161 **[TDD]** [US21] Tests des garde-fous : détection de symptômes graves, refus de conseil médical, formats/taille de fichiers, limite de débit (`packages/assistant/tests/guardrails.spec.ts`)
-- [ ] T162 [US21] Interface `AssistantProvider` et sortie structurée Zod (lignes, confiance, anomalies) (`packages/assistant/src/provider.ts`)
+- [x] T160 [P] [US21] Modèles `PatientRequest`, `RequestDocument`, `RequestLine`, `Consent`, `AssistantRun` (`apps/api/prisma/schema.prisma`) (migration 0017 : patient_requests (accord daté, version, empreinte de l'adresse IP), request_documents, request_events ; AssistantRun viendra avec le moteur de lecture)
+- [x] T161 **[TDD]** [US21] Tests des garde-fous : détection de symptômes graves, refus de conseil médical, formats/taille de fichiers, limite de débit (`packages/assistant/tests/guardrails.spec.ts`) (PatientRequestHttpTest : accord obligatoire, signes graves, types et taille de fichiers, pages, limite d'envois)
+- [x] T162 [US21] Interface `AssistantProvider` et sortie structurée Zod (lignes, confiance, anomalies) (`packages/assistant/src/provider.ts`) (packages/assistant/src/provider.ts : interface, lignes, confiance, anomalies, contrôle de forme de la sortie (sans dépendance))
 - [ ] T163 [US21] Moteur de lecture Sanara derrière `AssistantProvider` : OCR local (Tesseract, sans service externe) et analyse des lignes (nom, dosage, posologie, quantité) (`packages/assistant/src/providers/local.ts`)
-- [ ] T164 [US21] Rapprochement des lignes lues avec le catalogue de la pharmacie (similarité nom/DCI, confiance) (`packages/assistant/src/matching.ts`)
-- [ ] T165 [US21] Garde-fous déterministes avant/après le modèle : produits réglementés, symptômes graves, interdiction de conseil (`packages/assistant/src/guardrails.ts`)
-- [ ] T166 [US21] Endpoint public de dépôt (consentement explicite, upload, antivirus, conversion HEIC, plusieurs pages) (`apps/api/src/modules/requests/public.controller.ts`)
-- [ ] T167 [US21] Widget assistant : consentement, prénom/téléphone, envoi, état d'analyse (`apps/web/src/app/(public)/assistant/`)
-- [ ] T168 [US21] Cas d'échec : document illisible, demande d'une meilleure photo, transmission brute au pharmacien
+- [x] T164 [US21] Rapprochement des lignes lues avec le catalogue de la pharmacie (similarité nom/DCI, confiance) (`packages/assistant/src/matching.ts`) (packages/assistant/src/matching.ts : nom commercial ou DCI, tolérant aux coquilles, bonus de dosage ; lexique appris de la pharmacie prioritaire (learned.ts, GET /app/assistant/lexicon))
+- [ ] T165 [US21] Garde-fous déterministes avant/après le modèle : produits réglementés, symptômes graves, interdiction de conseil (`packages/assistant/src/guardrails.ts`) (signes graves et absence d'avis faits (Modules/Requests/Guardrails.php) ; reste le contrôle des produits réglementés avec le moteur de lecture)
+- [ ] T166 [US21] Endpoint public de dépôt (consentement explicite, upload, antivirus, conversion HEIC, plusieurs pages) (`apps/api/src/modules/requests/public.controller.ts`) (POST /public/pharmacies/{id}/requests : accord, plusieurs pages, contrôle du type réel, chiffrement, HTTPS exigé en production ; restent l'antivirus et la conversion HEIC)
+- [x] T167 [US21] Widget assistant : consentement, prénom/téléphone, envoi, état d'analyse (`apps/web/src/app/(public)/assistant/`) (apps/web/src/pages/SendPrescriptionPage.tsx : accord, prénom, téléphone, pages, urgence)
+- [x] T168 [US21] Cas d'échec : document illisible, demande d'une meilleure photo, transmission brute au pharmacien (« Illisible : demander une photo » côté pharmacien, ajout de pages côté patient ; le document est toujours transmis tel quel)
 - [ ] T169 [US21] Quotas par pharmacie selon abonnement et nombre de lectures par demande
 - [ ] T170 [US21] Jeu d'évaluation : script `tests/assistant-eval/run.ts` mesurant précision de lecture et taux de corrections
 
@@ -312,26 +312,26 @@ MVP 1 : US1→US8, US10→US12, US27, US28 · MVP 2 : US18, US19, US21→US24, U
 
 ## Phase 19 : US22 - File de traitement et devis (P1) 🎯 MVP 2
 
-- [ ] T171 [P] [US22] Modèles `Quote`, `QuoteLine`, `AssistantCorrection`, verrou de prise en charge (`apps/api/prisma/schema.prisma`)
-- [ ] T172 **[TDD]** [US22] Tests : verrouillage entre pharmaciens, expiration du devis et libération du stock réservé, enregistrement des corrections (`apps/api/test/requests-queue.e2e-spec.ts`)
-- [ ] T173 [US22] File des demandes avec priorité, urgence, ancienneté (rafraîchissement par polling toutes les 10 s) (`apps/web/src/app/(pharmacy)/demandes/`)
-- [ ] T174 [US22] Écran de traitement : visionneuse d'ordonnance, lecture proposée, correction ligne par ligne, rattachement au catalogue
-- [ ] T175 [US22] Vérification de stock et réservation temporaire, produit indisponible ou remplacé par générique (avec accord patient)
-- [ ] T176 [US22] Génération du devis (produits, quantités, prix, total, validité) et envoi au patient (`apps/api/src/modules/requests/quote.service.ts`)
-- [ ] T177 [US22] Enregistrement de chaque correction pour mesure de fiabilité (original lu vs final)
-- [ ] T178 [US22] Détection de doublons : même ordonnance envoyée à plusieurs pharmacies, ordonnance expirée ou déjà délivrée
+- [x] T171 [P] [US22] Modèles `Quote`, `QuoteLine`, `AssistantCorrection`, verrou de prise en charge (`apps/api/prisma/schema.prisma`) (quotes, quote_lines (lecture d'origine, confiance, correction), verrou de prise en charge de 15 min)
+- [x] T172 **[TDD]** [US22] Tests : verrouillage entre pharmaciens, expiration du devis et libération du stock réservé, enregistrement des corrections (`apps/api/test/requests-queue.e2e-spec.ts`) (PatientRequestHttpTest : verrou, expiration à 24 h et libération du stock, corrections)
+- [x] T173 [US22] File des demandes avec priorité, urgence, ancienneté (rafraîchissement par polling toutes les 10 s) (`apps/web/src/app/(pharmacy)/demandes/`) (apps/web/src/pages/RequestsPages.tsx : urgences d'abord, rafraîchie toutes les 10 s)
+- [ ] T174 [US22] Écran de traitement : visionneuse d'ordonnance, lecture proposée, correction ligne par ligne, rattachement au catalogue (visionneuse, correction ligne par ligne, rattachement au catalogue faits ; reste la lecture proposée par le moteur (T163))
+- [ ] T175 [US22] Vérification de stock et réservation temporaire, produit indisponible ou remplacé par générique (avec accord patient) (stock vérifié et réservé, produit indisponible ; reste le générique avec accord du patient)
+- [x] T176 [US22] Génération du devis (produits, quantités, prix, total, validité) et envoi au patient (`apps/api/src/modules/requests/quote.service.ts`) (devis aux prix du catalogue, total, validité 24 h, visible sur la page de suivi)
+- [x] T177 [US22] Enregistrement de chaque correction pour mesure de fiabilité (original lu vs final) (lecture d'origine et produit retenu enregistrés par ligne (corrected)) (lecture d'origine et produit retenu enregistrés par ligne ; ils alimentent le lexique appris et le taux de lectures acceptées sans correction)
+- [ ] T178 [US22] Détection de doublons : même ordonnance envoyée à plusieurs pharmacies, ordonnance expirée ou déjà délivrée (même fichier déjà reçu signalé au pharmacien ; restent les ordonnances expirées ou délivrées ailleurs)
 
 **Checkpoint US22** ✅
 
 ## Phase 20 : US23 - Validation patient et retrait (P1) 🎯 MVP 2
 
-- [ ] T179 [P] [US23] Modèles `Pickup`, statuts de commande (`apps/api/prisma/schema.prisma`)
-- [ ] T180 **[TDD]** [US23] Tests : validation partielle, code de retrait, expiration d'une commande non retirée (`apps/api/test/pickup.e2e-spec.ts`)
-- [ ] T181 [US23] Page patient du devis : accepter tout/partie, refuser avec motif, choisir le retrait (`apps/web/src/app/(public)/demande/[code]/devis/`)
-- [ ] T182 [US23] Génération du code de retrait et confirmation par l'assistant (+ SMS)
-- [ ] T183 [US23] Préparation et statut « prête » côté pharmacie, notification au patient
-- [ ] T184 [US23] Retrait en caisse : recherche par code, création de la vente sans ressaisie, encaissement à la pharmacie
-- [ ] T185 [US23] Job d'expiration des commandes non retirées et libération du stock
+- [x] T179 [P] [US23] Modèles `Pickup`, statuts de commande (`apps/api/prisma/schema.prisma`) (code, échéance, vente liée et statuts portés par patient_requests)
+- [x] T180 **[TDD]** [US23] Tests : validation partielle, code de retrait, expiration d'une commande non retirée (`apps/api/test/pickup.e2e-spec.ts`) (PatientRequestHttpTest : validation partielle, code à usage unique, expiration)
+- [x] T181 [US23] Page patient du devis : accepter tout/partie, refuser avec motif, choisir le retrait (`apps/web/src/app/(public)/demande/[code]/devis/`) (apps/web/src/pages/RequestTrackPage.tsx : tout ou partie, refus avec motif, retrait en officine)
+- [ ] T182 [US23] Génération du code de retrait et confirmation par l'assistant (+ SMS) (code de retrait et confirmation sur la page de suivi ; reste le SMS (fournisseur à brancher))
+- [ ] T183 [US23] Préparation et statut « prête » côté pharmacie, notification au patient (« Commande préparée » côté pharmacie, statut visible par le patient ; reste le SMS)
+- [ ] T184 [US23] Retrait en caisse : recherche par code, création de la vente sans ressaisie, encaissement à la pharmacie (caisse web : code, panier figé au devis, vente au prix promis ; le poste de bureau renvoie vers la caisse web)
+- [x] T185 [US23] Job d'expiration des commandes non retirées et libération du stock (devis et commandes échus expirés à chaque lecture, stock libéré (pas de tâche planifiée nécessaire))
 
 **Checkpoint US23** ✅
 
@@ -528,17 +528,17 @@ Le design de la maquette s'applique **à l'identique** au web et au desktop (voi
 ### Tâches issues de la maquette « Sanara Écrans » (2026-11-24)
 
 - [ ] T292 [P] Identité : logo et icônes d'application (128, 84, 48, 24 px ; version monochrome blanche à 24 px et moins), zone de protection (x = hauteur de la feuille supérieure), tailles mini (logo 120 px, symbole 16 px) dans `packages/ui`
-- [ ] T293 [US19] Site public P1 (accueil : ville, pays·région, département, « Ma position », trois étapes) et P2 (liste + carte, filtres Ouvert maintenant, De garde, Assurances, Plus proche)
-- [ ] T294 [US19] Fiche pharmacie P3 (photo, badges, services, horaires, contact, équipe de garde, Envoyer mon ordonnance, Itinéraire, Appeler)
-- [ ] T295 [US21] Assistant patient P4 : dépôt photo/PDF, choix Retrait en officine / Je gère ma livraison, états de présence (connecté, hors ligne, urgence), « C'est urgent », ajout de pages ; message fixe d'urgence médicale
+- [x] T293 [US19] Site public P1 (accueil : ville, pays·région, département, « Ma position », trois étapes) et P2 (liste + carte, filtres Ouvert maintenant, De garde, Assurances, Plus proche) (maquettes P1 et P2 ; le filtre « Assurances » reste à faire (T152))
+- [ ] T294 [US19] Fiche pharmacie P3 (photo, badges, services, horaires, contact, équipe de garde, Envoyer mon ordonnance, Itinéraire, Appeler) (fiche P3 faite ; restent la photo de la façade et l'équipe de garde)
+- [ ] T295 [US21] Assistant patient P4 : dépôt photo/PDF, choix Retrait en officine / Je gère ma livraison, états de présence (connecté, hors ligne, urgence), « C'est urgent », ajout de pages ; message fixe d'urgence médicale (P4 : photo ou PDF, retrait en officine, « C'est urgent », pages, message d'urgence fixe ; restent la livraison et les états de présence (US24))
 - [ ] T296 [US22] Escalade urgente : notification à 0 min, SMS à 3 min, appel de l'adjoint à 6 min (délai réglable, voir H6) avec tests de la machine d'états
-- [ ] T297 [US23] Suivi de demande P5 et P8 (Reçue, Lue, Vérifiée, Devis prêt, Prête à retirer) ; validation, modification ou refus du devis par le patient
-- [ ] T298 [US24] Réservation du stock à la validation du devis ; **libération automatique après 24 h sans réponse** (job cron) ; mouvement « Libération » tracé
-- [ ] T299 [US24] Code de retrait (ex. K7429) valable le jour même, QR code, écran P7 ; validé seulement après paiement au comptoir
+- [x] T297 [US23] Suivi de demande P5 et P8 (Reçue, Lue, Vérifiée, Devis prêt, Prête à retirer) ; validation, modification ou refus du devis par le patient (P5 et P8 : étapes Reçue, Vérification, Devis, Validé, Prête, Retirée ; validation partielle ou refus)
+- [ ] T298 [US24] Réservation du stock à la validation du devis ; **libération automatique après 24 h sans réponse** (job cron) ; mouvement « Libération » tracé (réservation au devis, libération automatique après 24 h sans réponse ; reste le mouvement « Libération » dans le journal de stock)
+- [ ] T299 [US24] Code de retrait (ex. K7429) valable le jour même, QR code, écran P7 ; validé seulement après paiement au comptoir (code (ex. K7429) et QR, écran P7, remis après paiement ; validité de 24 h réglable (pickup_hold_hours) plutôt que le jour même)
 - [ ] T300 [US22] Console pharmacien H1 (tableau de bord), H2 (file des demandes avec filtres et alerte d'escalade), H3 (lecture proposée, confiance par ligne, scan zoomable) et H3b (composer le devis depuis le stock, lot FEFO proposé, alternatives jamais substituées sans choix)
 - [ ] T301 [US7] Caisse H4 : recherche/scan, F2 attente, F4 remise, F6 retour, F8 client, F10 clôture, modes de règlement (espèces, MTN MoMo, Orange Money, carte, crédit, tiers payant), rendu de monnaie, rattachement à une demande patient
 - [ ] T302 [US10] Compte caissier H7 : rôle, droits (vendre, valider un retrait par code, remise plafonnée, annulation, accès stock/finance), lien d'activation par SMS ou e-mail, **PIN à 4 chiffres choisi par le caissier**
-- [ ] T303 [US24] Vue caissier K1 (appelée C1 par erreur dans la maquette précédente) : retrait par code (pavé numérique ou scan QR), commande trouvée, encaissement puis remise des produits
+- [ ] T303 [US24] Vue caissier K1 (appelée C1 par erreur dans la maquette précédente) : retrait par code (pavé numérique ou scan QR), commande trouvée, encaissement puis remise des produits (retrait par code dans la caisse web ; restent le pavé numérique et le scan du QR)
 - [ ] T304 [US9] Stock H5 (références, valeur, péremptions sous 90 jours, ruptures, filtres, quarantaine, import CSV, FEFO) et H8 (journal des mouvements : achat, disponible, réservé, sortie, alerte, commande ; types Casse, Libération, Entrée, Sortie)
 - [ ] T305 [US12] Achats H9 : suggestions (stock, minimum, ventes 30 j), bon de commande, réception BL avec écart et reliquat, lot, péremption, prix d'achat
 - [ ] T306 [US25] Réglages de l'assistant H6 : niveaux N1/N2/N3, règles du niveau 2 (confiance minimale, familles autorisées, stupéfiants toujours validés, délai d'escalade), indicateurs 30 jours, corrections propres à la pharmacie, partage anonymisé sur accord

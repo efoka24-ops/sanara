@@ -1,4 +1,6 @@
-/** Interface remplaçable du fournisseur d'IA (constitution VIII). Implémentée en US21. */
-export interface AssistantProvider {
-  readPrescription(image: Uint8Array): Promise<unknown>;
-}
+export type { Anomaly, AssistantProvider, OcrEngine, ReadLine, Reading } from './provider';
+export { validateReading } from './provider';
+export { parsePrescription, plain } from './parse';
+export { matchCatalogue, similarity, type CatalogueItem, type Match } from './matching';
+export { createLocalProvider } from './local';
+export { learnedMatches, readKey, readText, type LearnedLink } from './learned';

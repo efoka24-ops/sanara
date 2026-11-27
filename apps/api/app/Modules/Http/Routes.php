@@ -409,7 +409,7 @@ final class Routes
 
             // --- Demandes patients (US22, US23) ---
             $g->get('/requests', fn (Request $q, Response $r) => $json($r, ['items' => $s->requests->queue(($q->getQueryParams()['closed'] ?? '') === '1')]))->add($perm('requests.process'));
-            $g->get('/requests/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->get($a['id'])))->add($perm('requests.process'));
+            $g->get('/requests/{id}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->get($a['id'], $actor($q))))->add($perm('requests.process'));
             $g->get('/requests/{id}/documents/{doc}', function (Request $q, Response $r, array $a) use ($s, $actor) {
                 $d = $s->requests->document($a['id'], $a['doc']);
                 $s->audit->record('request.document.read', ['user_id' => $actor($q), 'tenant_id' => $q->getAttribute('tenantId'), 'entity' => 'patient_request', 'entity_id' => $a['id']]);
@@ -428,8 +428,9 @@ final class Routes
             })->add($perm('requests.process'));
             $g->post('/requests/{id}/quote', function (Request $q, Response $r, array $a) use ($s, $json, $body, $actor) {
                 $s->requests->quote($a['id'], $actor($q), (array) ($body($q)['lines'] ?? []));
-                return $json($r, $s->requests->get($a['id']), 201);
+                return $json($r, $s->requests->get($a['id'], $actor($q)), 201);
             })->add($perm('requests.process'));
+            $g->get('/assistant/lexicon', fn (Request $q, Response $r) => $json($r, $s->requests->lexicon()))->add($perm('requests.process'));
             $g->get('/pickups/{code}', fn (Request $q, Response $r, array $a) => $json($r, $s->requests->pickup($a['code'])))->add($perm('pickup.validate'));
 
             // --- Catalogue (US6) ---

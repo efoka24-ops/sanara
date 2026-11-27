@@ -34,6 +34,9 @@ import { PharmaciesPage } from './pages/PharmaciesPage';
 import { PublicPharmacyPage } from './pages/PublicPharmacyPage';
 import { DutiesPage } from './pages/DutiesPage';
 import { StorefrontPage } from './pages/StorefrontPage';
+import { SendPrescriptionPage } from './pages/SendPrescriptionPage';
+import { RequestTrackPage } from './pages/RequestTrackPage';
+import { RequestPage, RequestsPage } from './pages/RequestsPages';
 import { DesktopProvider } from './app/desktop';
 import { DesktopFrame } from './app/DesktopFrame';
 import { SyncPage } from './pages/SyncPage';
@@ -53,6 +56,8 @@ export function Router() {
                     <Route path="connexion" element={<LoginPage />} />
                     <Route path="pharmacies" element={<PharmaciesPage />} />
                     <Route path="pharmacies/:id" element={<PublicPharmacyPage />} />
+                    <Route path="pharmacies/:id/envoyer" element={<SendPrescriptionPage />} />
+                    <Route path="suivi/:code" element={<RequestTrackPage />} />
                     <Route path="gardes" element={<DutiesPage />} />
                     <Route path="inscription" element={<ApplyPage />} />
                     <Route path="inscription/envoyee" element={<SentPage />} />
@@ -70,6 +75,8 @@ export function Router() {
                       <Route path="configuration" element={<SetupPage />} />
                       <Route path="equipe" element={<TeamPage />} />
                       <Route path="vitrine" element={<StorefrontPage />} />
+                      <Route path="demandes" element={<RequestsPage />} />
+                      <Route path="demandes/:id" element={<RequestPage />} />
                       <Route path="produits" element={<CatalogPage />} />
                       <Route path="stock" element={<StockPage />} />
                       <Route path="stock/inventaire" element={<InventoryPage />} />

@@ -8,11 +8,7 @@ import { locate, usePlaces } from './lib/publicSearch';
 
 type Health = { status: string; database?: { ok: boolean; version?: string } };
 
-const STEPS = [
-  { key: 'find', soon: false },
-  { key: 'send', soon: true },
-  { key: 'collect', soon: true },
-];
+const STEPS = ['find', 'send', 'collect'];
 
 /** Accueil public (maquette P1) : chercher une pharmacie d'abord. */
 export function Home() {
@@ -99,13 +95,10 @@ export function Home() {
 
       <section id="comment" className="landing__steps" aria-label={t('home.how')}>
         {STEPS.map((s, i) => (
-          <article key={s.key} className="panel">
+          <article key={s} className="panel">
             <span className="landing__number">{i + 1}</span>
-            <h2>
-              {t(`home.step.${s.key}`)}
-              {s.soon && <em>{t('home.soon')}</em>}
-            </h2>
-            <p>{t(`home.step.${s.key}.text`)}</p>
+            <h2>{t(`home.step.${s}`)}</h2>
+            <p>{t(`home.step.${s}.text`)}</p>
           </article>
         ))}
       </section>

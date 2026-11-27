@@ -15,6 +15,10 @@ use Sanara\Modules\Stock\StockService;
 final class ProcessingService
 {
     private const LOCK_MINUTES = 15;
+    private const ACCENTS = [
+        'à' => 'a', 'â' => 'a', 'ä' => 'a', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e', 'î' => 'i', 'ï' => 'i',
+        'ô' => 'o', 'ö' => 'o', 'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ç' => 'c', 'µ' => 'u',
+    ];
     private const OPEN = ['received', 'processing', 'photo_needed', 'quoted', 'accepted', 'ready'];
 
     public function __construct(
@@ -43,7 +47,7 @@ final class ProcessingService
     }
 
     /** @return array<string, mixed> */
-    public function get(string $id): array
+    public function get(string $id, ?string $actor = null): array
     {
         $this->ledger->expire();
         $r = $this->request($id);
@@ -61,6 +65,7 @@ final class ProcessingService
         $events = $this->tdb->select('request_events', ['request_id' => $id], 'seq');
         $quote = $this->tdb->select('quotes', ['request_id' => $id], null, 1)[0] ?? null;
         return $this->summary($r) + [
+            'mine' => $actor !== null && $r['status'] === 'processing' && $r['locked_by'] === $actor,
             'phone' => $r['phone'], 'advice' => $r['advice'], 'pickup_code' => $r['pickup_code'],
             'documents' => array_map(static fn (array $d) => ['id' => $d['id'], 'name' => $d['original_name'], 'mime' => $d['mime'], 'size' => (int) $d['size_bytes']], $documents),
             'duplicates' => array_values($duplicates),
@@ -241,6 +246,58 @@ final class ProcessingService
         return [
             'request_id' => $r['id'], 'number' => $r['number'], 'first_name' => $r['first_name'], 'status' => $r['status'],
             'total' => array_sum(array_map(static fn (array $l) => $l['quantity'] * $l['unit_price'], $lines)), 'lines' => $lines,
+        ];
+    }
+
+    /**
+     * Ce que le lecteur a appris dans cette pharmacie : pour chaque texte lu, le produit retenu par le
+     * pharmacien et le nombre de confirmations. Plus la fiabilité mesurée sur les 90 derniers jours.
+     *
+     * @return array{links: list<array<string, mixed>>, reliability: array{lines: int, corrected: int, accepted_rate: ?int}}
+     */
+    public function lexicon(): array
+    {
+        $since = $this->clock->stamp($this->clock->now()->modify('-90 days'));
+        $quotes = array_column(array_filter($this->tdb->select('quotes'), static fn (array $q) => $q['created_at'] >= $since), 'id', 'id');
+        $links = [];
+        $lines = 0;
+        $corrected = 0;
+        foreach ($this->tdb->select('quote_lines') as $l) {
+            if ($l['read_text'] === null) {
+                continue;
+            }
+            if (isset($quotes[$l['quote_id']])) {
+                $lines++;
+                $corrected += (int) $l['corrected'];
+            }
+            if ($l['product_id'] === null) {
+                continue;
+            }
+            // Même clé que le poste (readKey) : minuscules, sans accents ni ponctuation.
+            $key = trim((string) preg_replace('/[^a-z0-9]+/', ' ', strtr(mb_strtolower((string) $l['read_text']), self::ACCENTS)));
+            if ($key === '') {
+                continue;
+            }
+            $id = $key . '|' . $l['product_id'];
+            $links[$id] ??= ['read' => $key, 'product_id' => (string) $l['product_id'], 'uses' => 0];
+            $links[$id]['uses']++;
+        }
+        $out = [];
+        foreach ($links as $link) {
+            $p = $this->tdb->select('products', ['id' => $link['product_id']], null, 1)[0] ?? null;
+            if ($p === null || (int) $p['active'] !== 1) {
+                continue;
+            }
+            $out[] = ['read' => $link['read'], 'uses' => $link['uses'], 'product' => [
+                'id' => $p['id'], 'name' => $p['name'], 'dci' => $p['dci'], 'strength' => $p['strength'] ?? null,
+                'form' => $p['form'] ?? null, 'regulatory_status' => $p['regulatory_status'],
+                'sale_price' => (int) $p['sale_price'], 'vat_bp' => (int) $p['vat_bp'],
+            ]];
+        }
+        usort($out, static fn (array $a, array $b) => $b['uses'] <=> $a['uses']);
+        return [
+            'links' => array_slice($out, 0, 3000),
+            'reliability' => ['lines' => $lines, 'corrected' => $corrected, 'accepted_rate' => $lines === 0 ? null : intdiv(($lines - $corrected) * 100, $lines)],
         ];
     }
 

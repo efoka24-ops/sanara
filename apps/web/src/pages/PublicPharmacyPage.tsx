@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useT } from '@sanara/i18n';
 import { Badge } from '@sanara/ui';
 import { api, ApiError } from '../api/client';
@@ -19,6 +19,7 @@ const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
 /** US19 : fiche publique d'une pharmacie (maquette P3). */
 export function PublicPharmacyPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, locale } = useT();
   const [sheet, setSheet] = useState<PublicSheet | null>(null);
   const [error, setError] = useState<'missing' | 'failed' | null>(null);
@@ -68,7 +69,15 @@ export function PublicPharmacyPage() {
         {[sheet.address, sheet.district, sheet.city, sheet.region].filter(Boolean).join(' · ')}
       </p>
       <p className="sheet__actions">
-        <a className="sa-btn" href={directionsLink(sheet)} target="_blank" rel="noreferrer">
+        <Link className="sa-btn sa-btn--amber" to={`/pharmacies/${sheet.id}/envoyer`}>
+          {t('sheet.send')}
+        </Link>
+        <a
+          className="sa-btn sa-btn--secondary"
+          href={directionsLink(sheet)}
+          target="_blank"
+          rel="noreferrer"
+        >
           {t('pub.directions')}
         </a>
         {sheet.phone && (
@@ -159,7 +168,7 @@ export function PublicPharmacyPage() {
                 position={null}
                 selected={sheet.id}
                 onSelect={() => undefined}
-                onOpen={() => undefined}
+                onOpen={(pid) => navigate(`/pharmacies/${pid}/envoyer`)}
               />
             </Suspense>
           </section>
