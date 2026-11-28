@@ -36,7 +36,7 @@ test('US10-US11 : le caissier ouvre sa caisse, vend en espèces, imprime le tick
   const name = `Paracétamol ${stamp}`;
   await productWithStock(request, name, 'free', 1500, 12);
   await loginAs(page, 'cashier@demo.test');
-  await page.getByRole('link', { name: 'Caisse' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Caisse' }).click();
 
   await expect(page.getByText('Ouvrez votre caisse pour commencer à vendre.')).toBeVisible();
   await page.getByLabel('Nom du poste').fill('Caisse 1');
@@ -86,7 +86,7 @@ test('US10 : un produit sous ordonnance exige ordonnance, pharmacien et PIN', as
   const pharma = await apiAs(request, 'pharmacist@demo.test');
   await pharma('PUT', '/auth/pin', { pin: '2468' });
   await loginAs(page, 'cashier@demo.test');
-  await page.getByRole('link', { name: 'Caisse' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Caisse' }).click();
   await page.getByLabel('Nom du poste').fill('Caisse 2');
   await page.getByRole('button', { name: 'Ouvrir la caisse' }).click();
   await page.getByLabel('Scanner ou chercher un produit (F1)').fill(name);
@@ -126,7 +126,7 @@ test('US7-US8 : réception, quarantaine, inventaire à l’aveugle puis validati
   });
 
   await loginAs(page, 'owner@demo.test');
-  await page.getByRole('link', { name: 'Stock' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Stock' }).click();
   await page.getByRole('button', { name: '+ Réceptionner' }).click();
   const dlg = page.getByRole('dialog');
   await dlg.getByLabel('Choisir un produit').fill(name);
@@ -180,7 +180,7 @@ test('US12 : retour partiel d’une vente avec avoir imprimable', async ({ page,
   });
 
   await loginAs(page, 'owner@demo.test');
-  await page.getByRole('link', { name: 'Ventes et retours' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Ventes et retours' }).click();
   await page.getByRole('button', { name: sale.number }).click();
   await page.getByRole('button', { name: 'Retour ou annulation' }).click();
   await page.getByLabel(new RegExp(`${name} · Quantité rendue`)).fill('1');

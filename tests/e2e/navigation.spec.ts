@@ -26,14 +26,14 @@ test('un bouton « Retour » ramène à l’écran précédent, ou au parent d�
   // Espace pharmacie : rien sur le tableau de bord, retour ailleurs.
   await loginAs(page, 'owner@demo.test');
   await expect(back).toHaveCount(0);
-  await page.getByRole('link', { name: 'Produits' }).click();
-  await page.getByRole('link', { name: 'Stock' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Produits' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Stock' }).click();
   await back.click();
   await expect(page).toHaveURL(/\/app\/produits$/);
   await back.click();
   await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
   if (process.env.SHOTS) {
-    await page.getByRole('link', { name: 'Clients et crédit' }).click();
+    await page.getByRole('navigation').getByRole('link', { name: 'Clients et crédit' }).click();
     await page.screenshot({ path: `${process.env.SHOTS}/retour.png` });
   }
 });

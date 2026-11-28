@@ -10,7 +10,7 @@ async function loginOwner(page: Page, email = 'owner@demo.test') {
 
 test('US6 : création, recherche, changement de prix tracé, désactivation', async ({ page }) => {
   await loginOwner(page);
-  await page.getByRole('link', { name: 'Produits' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Produits' }).click();
   await page.getByRole('button', { name: '+ Nouveau produit' }).click();
   await page.getByRole('dialog').getByLabel(/^Nom/).fill('Amoxicilline 500 mg');
   await page.getByLabel(/^DCI/).fill('Amoxicilline');
@@ -56,7 +56,7 @@ test('US6 : création, recherche, changement de prix tracé, désactivation', as
 
 test('US6 : catalogue Sanara et import CSV avec rapport', async ({ page }) => {
   await loginOwner(page);
-  await page.getByRole('link', { name: 'Produits' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Produits' }).click();
   await page.getByRole('button', { name: 'Ajouter le catalogue Sanara' }).click();
   await expect(page.getByText(/produits ajoutés/)).toBeVisible();
   await page.getByLabel(/Nom, DCI ou code-barres/).fill('paracétamol');
@@ -72,7 +72,7 @@ test('US6 : catalogue Sanara et import CSV avec rapport', async ({ page }) => {
 
 test('US6 : un caissier cherche mais ne modifie pas le catalogue', async ({ page }) => {
   await loginOwner(page, 'cashier@demo.test');
-  await page.getByRole('link', { name: 'Produits' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Produits' }).click();
   await expect(page.getByLabel(/Nom, DCI ou code-barres/)).toBeVisible();
   await expect(page.getByRole('button', { name: '+ Nouveau produit' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Ajouter le catalogue Sanara' })).toHaveCount(0);

@@ -384,6 +384,7 @@ final class Routes
             $tenantId = static fn (Request $r): string => (string) ($r->getAttribute('tenantId') ?? throw new ApiException('forbidden', 403));
             $actor = static fn (Request $r): string => (string) $r->getAttribute('userId');
 
+            $g->get('/dashboard', fn (Request $q, Response $r) => $json($r, $s->dashboard->summary($actor($q))));
             $g->get('/subscription', fn (Request $q, Response $r) => $json($r, $s->subscriptions->state($tenantId($q))));
             $g->get('/settings', fn (Request $q, Response $r) => $json($r, ['settings' => $s->setup->settings(), 'opening_hours' => $s->setup->openingHours()]))->add($perm('settings.write'));
             $g->put('/settings', function (Request $q, Response $r) use ($s, $body) {

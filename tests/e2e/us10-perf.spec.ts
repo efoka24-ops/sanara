@@ -28,7 +28,7 @@ test('US10 : ajout d’un article scanné en moins de 200 ms sur un catalogue de
   expect(report.created).toBe(CATALOG + SCANS);
 
   await loginAs(page, 'cashier@demo.test');
-  await page.getByRole('link', { name: 'Caisse' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Caisse' }).click();
   const open = page.getByRole('button', { name: 'Ouvrir la caisse' });
   const search = page.getByLabel('Scanner ou chercher un produit (F1)');
   await expect(open.or(search)).toBeVisible();

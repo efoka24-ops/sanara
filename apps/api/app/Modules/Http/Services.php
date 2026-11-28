@@ -49,6 +49,7 @@ final class Services
     public readonly \Sanara\Modules\Requests\PatientService $patients;
     public readonly \Sanara\Modules\Requests\ProcessingService $requests;
     public readonly \Sanara\Modules\Requests\PresenceService $presence;
+    public readonly \Sanara\Modules\Tenants\DashboardService $dashboard;
     public readonly \Sanara\Modules\Requests\EscalationService $escalation;
     public readonly \Sanara\Modules\Notifications\Sms\SmsProvider $sms;
     public readonly \Sanara\Modules\Team\TeamService $team;
@@ -139,6 +140,7 @@ final class Services
             ? new \Sanara\Modules\Notifications\Sms\TeeeotpSmsProvider($config->smsUrl, $config->smsKey)
             : new \Sanara\Modules\Notifications\Sms\ConsoleSmsProvider());
         $this->presence = new \Sanara\Modules\Requests\PresenceService($db, $tdb, $this->tenant, $clock);
+        $this->dashboard = new \Sanara\Modules\Tenants\DashboardService($db, $tdb, $this->tenant, $clock, $this->authz, $this->cash, $this->stock, $this->presence);
         $this->escalation = new \Sanara\Modules\Requests\EscalationService($db, $tdb, $this->tenant, $clock, $this->jobs, $this->sms, $ledger);
         $this->requests = new \Sanara\Modules\Requests\ProcessingService($db, $tdb, $clock, $this->storage, $this->stock, $ledger, $this->escalation, $this->tenant);
         $this->patients = new \Sanara\Modules\Requests\PatientService($db, $tdb, $this->tenant, $clock, $this->storage, $this->jobs, $seq, $ledger, $this->publicPharmacies, $this->presence, $this->escalation);

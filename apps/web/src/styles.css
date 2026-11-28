@@ -1761,3 +1761,144 @@ main > .back + .setup {
   background: var(--sa-surface);
   border-color: var(--sa-line);
 }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Tableau de bord (maquette H1) */
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.dash__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.dash__head h1,
+.dash__head p {
+  margin: 0;
+}
+.dash__hello {
+  font-size: 18px;
+  font-weight: 600;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--sa-surface);
+  border: 1px solid var(--sa-line);
+  border-radius: var(--sa-r-card);
+  color: var(--sa-ink);
+  text-decoration: none;
+}
+a.kpi:hover {
+  border-color: var(--sa-green-700);
+}
+.kpi--alert {
+  border-left: 4px solid var(--sa-red-dot);
+}
+.tile__label {
+  color: var(--sa-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tile__value {
+  font: 800 26px var(--sa-font-display);
+}
+.tile__hint {
+  color: var(--sa-muted);
+  font-size: 13px;
+}
+.dash__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.dash__grid > .panel {
+  margin: 0;
+}
+.dash__grid h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.dash__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dash__list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sa-line-2);
+}
+.dash__list a {
+  color: var(--sa-ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+.dash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chart {
+  margin: 0;
+}
+.chart figcaption {
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.chart__base {
+  stroke: var(--sa-line-3);
+  stroke-width: 1;
+}
+.chart__bar {
+  fill: var(--sa-green-700);
+}
+.chart__bar--today {
+  fill: var(--sa-green-900);
+}
+g:hover > .chart__bar {
+  fill: var(--sa-green-900);
+}
+.chart__label {
+  fill: var(--sa-muted);
+  font: 500 11px var(--sa-font-text);
+}
+.chart__tip {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+.dash a.sa-btn {
+  color: #fff;
+  text-decoration: none;
+}
+.dash a.sa-btn.sa-btn--secondary {
+  color: var(--sa-ink);
+}

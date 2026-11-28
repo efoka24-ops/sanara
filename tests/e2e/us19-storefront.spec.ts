@@ -34,7 +34,7 @@ test('US19 : le titulaire tient sa vitrine et sa garde ; le visiteur les voit', 
     r.fulfill({ contentType: 'image/png', body: TILE }),
   );
   await loginAs(page, 'owner@demo.test');
-  await page.getByRole('link', { name: 'Ma vitrine' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Ma vitrine' }).click();
   await expect(page.getByRole('heading', { name: 'Ma vitrine' })).toBeVisible();
 
   await page.getByLabel('Région').fill('Nord');

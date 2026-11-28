@@ -16,7 +16,7 @@ test('US5 : activation de la double vérification, connexion en deux étapes, co
   await login(page, E2E.admin.email, E2E.admin.password);
   await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Sécurité' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Sécurité' }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   const secret = (await page.locator('code').first().innerText()).trim();
   await page.getByLabel(/Code à 6 chiffres/).fill(totp(secret));

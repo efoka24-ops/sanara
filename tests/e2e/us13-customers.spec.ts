@@ -26,7 +26,7 @@ test('US13 : compte client, vente à crédit plafonnée et règlement avec reçu
   const client = `Client ${stamp}`;
 
   await loginAs(page, 'owner@demo.test');
-  await page.getByRole('link', { name: 'Clients et crédit' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Clients et crédit' }).click();
   await page.getByRole('button', { name: 'Nouveau client' }).click();
   const form = page.getByRole('dialog', { name: 'Nouveau client' });
   await form.getByLabel('Nom').fill(client);
@@ -34,7 +34,7 @@ test('US13 : compte client, vente à crédit plafonnée et règlement avec reçu
   await form.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('row', { name: new RegExp(client) })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Caisse' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Caisse' }).click();
   const open = page.getByRole('button', { name: 'Ouvrir la caisse' });
   const search = page.getByLabel('Scanner ou chercher un produit (F1)');
   await expect(open.or(search)).toBeVisible();
@@ -73,7 +73,7 @@ test('US13 : compte client, vente à crédit plafonnée et règlement avec reçu
   await expect(pay.getByText('Plafond de crédit dépassé.')).toBeVisible();
   await pay.getByRole('button', { name: 'Annuler' }).click();
 
-  await page.getByRole('link', { name: 'Clients et crédit' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Clients et crédit' }).click();
   await page.getByLabel('Nom ou téléphone').fill(client);
   await page
     .getByRole('row', { name: new RegExp(client) })

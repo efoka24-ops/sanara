@@ -128,7 +128,7 @@ test('US28 : deux postes coupés 8 h vendent le même produit ; reprise sans dou
 
   // L'écart de stock se traite à l'écran.
   await loginAs(page, 'owner@demo.test');
-  await page.getByRole('link', { name: 'Synchronisation' }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'Synchronisation' }).click();
   const shortages = page.getByRole('listitem').filter({ hasText: `Hors-ligne ${stamp}` });
   await expect(shortages.first()).toContainText('au-delà du stock connu');
   const before = await shortages.count();

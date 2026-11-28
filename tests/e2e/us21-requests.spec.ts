@@ -71,7 +71,7 @@ test('US21-US23 : ordonnance envoyée, devis du pharmacien, validation, retrait 
   // Pharmacien : file des demandes, document, devis.
   const staff = await (await browser.newContext({ locale: 'fr-FR' })).newPage();
   await loginAs(staff, 'pharmacist@demo.test');
-  await staff.getByRole('link', { name: 'Demandes patients' }).click();
+  await staff.getByRole('navigation').getByRole('link', { name: 'Demandes patients' }).click();
   await staff.getByRole('link', { name: number }).click();
   await expect(staff.locator('img.rx-doc')).toBeVisible();
   await staff.getByRole('button', { name: 'Prendre en charge' }).click();
@@ -101,7 +101,7 @@ test('US21-US23 : ordonnance envoyée, devis du pharmacien, validation, retrait 
   const code = (await page.locator('.pickup__code b').innerText()).trim();
   expect(code).toMatch(/^[A-Z]\d{4}$/);
 
-  await staff.getByRole('link', { name: 'Demandes patients' }).click();
+  await staff.getByRole('navigation').getByRole('link', { name: 'Demandes patients' }).click();
   await staff.getByRole('link', { name: number }).click();
   await staff.getByRole('button', { name: 'Commande préparée : prévenir le patient' }).click();
   await expect(staff.getByText(/En attente du retrait/)).toBeVisible();
@@ -113,7 +113,7 @@ test('US21-US23 : ordonnance envoyée, devis du pharmacien, validation, retrait 
   // Caissier : la commande retrouvée par son code, encaissée sans ressaisie.
   const till = await (await browser.newContext({ locale: 'fr-FR' })).newPage();
   await loginAs(till, 'cashier@demo.test');
-  await till.getByRole('link', { name: 'Caisse' }).click();
+  await till.getByRole('navigation').getByRole('link', { name: 'Caisse' }).click();
   const station = till.getByLabel('Nom du poste');
   await expect(station.or(till.getByLabel('Scanner ou chercher un produit (F1)'))).toBeVisible();
   if (await station.isVisible()) {
@@ -249,7 +249,7 @@ test('T163 : le moteur Sanara lit une ordonnance sur le poste et retient le choi
   const staff = await (await browser.newContext({ locale: 'fr-FR' })).newPage();
   await loginAs(staff, 'pharmacist@demo.test');
   const readAndQuote = async (number: string) => {
-    await staff.getByRole('link', { name: 'Demandes patients' }).click();
+    await staff.getByRole('navigation').getByRole('link', { name: 'Demandes patients' }).click();
     await staff.getByRole('link', { name: number }).click();
     await staff.getByRole('button', { name: 'Prendre en charge' }).click();
     await staff.getByRole('button', { name: 'Lire l’ordonnance' }).click();
@@ -324,7 +324,7 @@ test('US24 : le patient voit si un pharmacien est connecté ; une urgence alerte
 
   await send(true);
   await expect(page.getByText(/les pharmaciens ont été alertés/)).toBeVisible();
-  await staff.getByRole('link', { name: 'Demandes patients' }).click();
+  await staff.getByRole('navigation').getByRole('link', { name: 'Demandes patients' }).click();
   await expect(staff.getByText('Urgent').first()).toBeVisible();
 
   await owner('PUT', '/app/visibility', { visible: false });
